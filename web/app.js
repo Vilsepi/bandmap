@@ -148,9 +148,23 @@
     // Stop previous simulation
     if (simulation) simulation.stop();
 
-    // Node radius based on overall degree
+    // Node radius based on similarity score of incident edges in this ego-graph
+    const similarityByNode = new Map();
+    for (const node of ego.nodes) similarityByNode.set(node.id, 0);
+
+    for (const link of ego.links) {
+      const score = Number(link.score) || 0;
+      const sourceId = typeof link.source === "object" ? link.source.id : link.source;
+      const targetId = typeof link.target === "object" ? link.target.id : link.target;
+      similarityByNode.set(sourceId, Math.max(similarityByNode.get(sourceId) || 0, score));
+      similarityByNode.set(targetId, Math.max(similarityByNode.get(targetId) || 0, score));
+    }
+
+    const similarityValues = [...similarityByNode.values()];
+    const maxSimilarity = d3.max(similarityValues) || 1;
+
     const rScale = d3.scaleSqrt()
-      .domain([1, d3.max(ego.nodes, (n) => (adjacency.get(n.id)?.size || 1))])
+      .domain([0, maxSimilarity])
       .range([6, 22]);
 
     // ── Links ──────────────────────────────────────────
@@ -181,12 +195,15 @@
 
     nodeSel
       .append("circle")
-      .attr("r", (d) => (d.id === centerId ? rScale(adjacency.get(d.id)?.size || 1) + 4 : rScale(adjacency.get(d.id)?.size || 1)))
+      .attr("r", (d) => {
+        const base = rScale(similarityByNode.get(d.id) || 0);
+        return d.id === centerId ? base + 4 : base;
+      })
       .attr("fill", (d) => bandColor(d));
 
     nodeSel
       .append("text")
-      .attr("dy", (d) => rScale(adjacency.get(d.id)?.size || 1) + (d.id === centerId ? 20 : 14))
+      .attr("dy", (d) => rScale(similarityByNode.get(d.id) || 0) + (d.id === centerId ? 20 : 14))
       .text((d) => truncate(d.name || `#${d.id}`, 22));
 
     // Click → recenter
@@ -218,7 +235,7 @@
       .force("link", d3.forceLink(ego.links).id((d) => d.id).distance(isMobile ? 120 : 150))
       .force("charge", d3.forceManyBody().strength(isMobile ? -300 : -200))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collision", d3.forceCollide().radius((d) => rScale(adjacency.get(d.id)?.size || 1) + 8))
+      .force("collision", d3.forceCollide().radius((d) => rScale(similarityByNode.get(d.id) || 0) + 8))
       .on("tick", () => {
         linkSel
           .attr("x1", (d) => d.source.x)

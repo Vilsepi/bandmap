@@ -18,7 +18,7 @@ body {
 /* ── Control panel (search + info) ────────────────────── */
 #control-panel {
   position: fixed;
-  top: 10px;
+  top: 5px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 24px);
@@ -31,15 +31,14 @@ body {
   background: #1b1a1a;
   border: 1px solid #222;
   border-radius: 5px;
-  padding: 16px 20px;
-  margin-top: 6px;
+  padding: 0px 20px 15px 20px;
+  margin-top: 5px;
   pointer-events: none;
-  text-align: center;
 }
 
 #band-name a {
   pointer-events: auto;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 700;
   margin-bottom: 6px;
   line-height: 1.2;
@@ -54,16 +53,18 @@ body {
   text-decoration: none;
 }
 
-#band-country,
-#band-genres,
-#band-neighbors {
-  font-size: 0.82rem;
-  color: #2d7454;
-  margin-top: 3px;
+#band-genres {
+  font-size: 0.9rem;
+  color: #557b6a;
+  margin-top: 2px;
+  font-weight: 700;
 }
 
-#band-genres {
-  font-weight: 700;
+#band-country,
+#band-neighbors {
+  font-size: 0.82rem;
+  color: #557b6a;
+  margin-top: 2px;
 }
 
 /* ── Search row (row 1 inside control-panel) ─────────── */
@@ -80,7 +81,7 @@ body {
   background: #1b1a1a;
   border: 1px solid #222;
   border-radius: 5px;
-  color: #e0e0e0;
+  color: #14be72;
   font-size: 0.9rem;
   padding: 8px 14px;
   outline: none;
@@ -91,7 +92,7 @@ body {
 }
 
 #search-input::placeholder {
-  color: #666;
+  color: #4a856a;
 }
 
 #random-btn {
@@ -115,10 +116,10 @@ body {
   top: 100%;
   left: 0;
   right: 0;
-  background: rgba(15, 15, 26, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  margin-top: 4px;
+  background: #1b1a1a;
+  border: 1px solid #222;
+  border-radius: 5px;
+  margin-top: 5px;
   max-height: 300px;
   overflow-y: auto;
   display: none;
@@ -137,12 +138,12 @@ body {
 
 #search-results li:hover,
 #search-results li.active {
-  background: rgba(255, 107, 107, 0.15);
-  color: #fff;
+  background: #14be72;
+  color: #000;
 }
 
 #search-results li .sr-country {
-  color: #777;
+  color: #555;
   font-size: 0.75rem;
   margin-left: 6px;
 }
@@ -151,9 +152,9 @@ body {
 #tooltip {
   position: fixed;
   pointer-events: none;
-  background: rgba(10, 10, 20, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
+  background: #1b1a1a;
+  border: 1px solid #222;
+  border-radius: 5px;
   padding: 8px 12px;
   font-size: 0.78rem;
   color: #ddd;
@@ -162,7 +163,6 @@ body {
   z-index: 30;
   opacity: 0;
   transition: opacity 0.15s;
-  backdrop-filter: blur(8px);
 }
 
 #tooltip.visible {
