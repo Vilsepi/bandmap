@@ -7,15 +7,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="info-panel">
-    <h1 id="band-name">Loading…</h1>
-    <p id="band-country"></p>
-    <p id="band-genres"></p>
-    <p id="band-neighbors"></p>
-  </div>
   <div id="search-box">
-    <input type="text" id="search-input" placeholder="Search band…" autocomplete="off">
+    <input type="text" id="search-input" placeholder="Search band…" autocomplete="off"><button id="random-btn" title="Random band">🔀</button>
     <ul id="search-results"></ul>
+  </div>
+  <div id="info-panel">
+    <h1 id="band-name"><a id="band-link" href="#" target="_blank" rel="noopener">Loading…</a></h1>
+    <p id="band-genres"></p>
+    <p id="band-country"></p>
   </div>
   <div id="tooltip"></div>
   <svg id="graph"></svg>

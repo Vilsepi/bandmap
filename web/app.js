@@ -44,7 +44,7 @@
     "Industrial", "Atmospheric", "Post", "Viking", "Pagan",
   ];
   const palette = [
-    "#a855f7", "#ef4444", "#3b82f6", "#f97316", "#eab308",
+    "#14be72", "#14be72", "#14be72", "#14be72", "#14be72",
     "#94a3b8", "#06b6d4", "#22c55e", "#ec4899", "#6366f1",
     "#84cc16", "#f43f5e", "#78716c", "#d97706", "#14b8a6",
     "#8b5cf6", "#64748b", "#0ea5e9", "#7c3aed", "#facc15",
@@ -83,7 +83,6 @@
   const elName = document.getElementById("band-name");
   const elCountry = document.getElementById("band-country");
   const elGenres = document.getElementById("band-genres");
-  const elNeighbors = document.getElementById("band-neighbors");
   const tooltip = document.getElementById("tooltip");
   const searchInput = document.getElementById("search-input");
   const searchResults = document.getElementById("search-results");
@@ -120,16 +119,18 @@
   // ── Render ───────────────────────────────────────────
   let currentCenter = null;
 
-  function render(centerId) {
+  function render(centerId, { updateHash = true } = {}) {
     currentCenter = centerId;
+    if (updateHash) history.replaceState(null, "", `#${centerId}`);
     const ego = egoGraph(centerId);
     const centerNode = nodeById.get(centerId);
 
     // Update info panel
-    elName.textContent = centerNode?.name || `#${centerId}`;
+    const bandLink = document.getElementById("band-link");
+    bandLink.textContent = centerNode?.name || `#${centerId}`;
+    bandLink.href = centerNode?.url || `https://www.metal-archives.com/bands/_/${centerId}`;
     elCountry.textContent = centerNode?.country || "";
     elGenres.textContent = centerNode?.genres || "";
-    elNeighbors.textContent = `${ego.nodes.length - 1} similar bands`;
 
     // Stop previous simulation
     if (simulation) simulation.stop();
@@ -145,7 +146,11 @@
       .selectAll("line")
       .data(ego.links, (d) => `${d.source}-${d.target}`)
       .join("line")
-      .attr("class", "link");
+      .attr("class", (d) => {
+        const s = typeof d.source === "object" ? d.source.id : d.source;
+        const t = typeof d.target === "object" ? d.target.id : d.target;
+        return (s === centerId || t === centerId) ? "link center-link" : "link";
+      });
 
     // ── Nodes ──────────────────────────────────────────
     nodeG.selectAll("*").remove();
@@ -185,7 +190,6 @@
           <div class="tt-name">${esc(d.name || `#${d.id}`)}</div>
           <div class="tt-detail">${esc(d.country || "")}</div>
           <div class="tt-detail">${esc(d.genres || "")}</div>
-          <div class="tt-detail">${adjacency.get(d.id)?.size || 0} connections</div>
         `;
         tooltip.classList.add("visible");
       })
@@ -302,18 +306,39 @@
     return el.innerHTML;
   }
 
-  // ── Pick initial band ────────────────────────────────
-  // Choose the node with the most connections for a good starting view
-  let bestId = data.nodes[0]?.id;
-  let bestDeg = 0;
-  for (const [id, neighbors] of adjacency) {
-    if (neighbors.size > bestDeg) {
-      bestDeg = neighbors.size;
-      bestId = id;
-    }
+  // ── Random band picker ───────────────────────────────
+  const candidates = data.nodes.filter((n) => (adjacency.get(n.id)?.size || 0) >= 3);
+
+  function pickRandom() {
+    const pool = candidates.length > 0 ? candidates : data.nodes;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    render(pick?.id);
+    resetZoom();
   }
 
-  render(bestId);
+  document.getElementById("random-btn").addEventListener("click", pickRandom);
+
+  // ── Pick initial band (or from URL hash) ────────────
+  function bandIdFromHash() {
+    const h = location.hash.replace(/^#/, "");
+    const id = Number(h);
+    return id && nodeById.has(id) ? id : null;
+  }
+
+  const initialId = bandIdFromHash();
+  if (initialId) {
+    render(initialId);
+  } else {
+    pickRandom();
+  }
+
+  window.addEventListener("hashchange", () => {
+    const id = bandIdFromHash();
+    if (id && id !== currentCenter) {
+      render(id, { updateHash: false });
+      resetZoom();
+    }
+  });
 
   // ── Handle resize ────────────────────────────────────
   window.addEventListener("resize", () => {
