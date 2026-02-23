@@ -6,7 +6,7 @@
   "use strict";
 
   // ── Load data ────────────────────────────────────────
-  const resp = await fetch("../data/exports/bandgraph_d3.json");
+  const resp = await fetch("data/bands.json.gz");
   if (!resp.ok) {
     document.getElementById("band-name").textContent = "Failed to load data";
     return;
