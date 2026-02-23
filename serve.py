@@ -13,5 +13,6 @@ class GzipHandler(http.server.SimpleHTTPRequestHandler):
         super().end_headers()
 
 if __name__ == "__main__":
-    os.chdir(os.path.dirname(__file__) or ".")
+    project_root = os.path.dirname(__file__) or "."
+    os.chdir(os.path.join(project_root, "web"))
     http.server.HTTPServer(("", 8000), GzipHandler).serve_forever()
