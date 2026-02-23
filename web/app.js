@@ -83,9 +83,21 @@
   const elName = document.getElementById("band-name");
   const elCountry = document.getElementById("band-country");
   const elGenres = document.getElementById("band-genres");
+  const spotifyLink = document.getElementById("spotify-link");
+  const metalArchivesLink = document.getElementById("band-link");
   const tooltip = document.getElementById("tooltip");
   const searchInput = document.getElementById("search-input");
   const searchResults = document.getElementById("search-results");
+
+  function toSpotifyQuery(name) {
+    return encodeURIComponent(
+      (name || "")
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .replace(/\s+/g, " ")
+    );
+  }
 
   // ── Responsive settings ──────────────────────────────
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
@@ -139,9 +151,9 @@
     const centerNode = nodeById.get(centerId);
 
     // Update info panel
-    const bandLink = document.getElementById("band-link");
-    bandLink.textContent = centerNode?.name || `#${centerId}`;
-    bandLink.href = centerNode?.url || `https://www.metal-archives.com/bands/_/${centerId}`;
+    elName.textContent = centerNode?.name || `#${centerId}`;
+    metalArchivesLink.href = centerNode?.url || `https://www.metal-archives.com/bands/_/${centerId}`;
+    spotifyLink.href = `https://open.spotify.com/search/${toSpotifyQuery(centerNode?.name || String(centerId))}`;
     elCountry.textContent = centerNode?.country || "";
     elGenres.textContent = centerNode?.genres || "";
 
