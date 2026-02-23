@@ -251,8 +251,33 @@
   }
 
   // ── Search ───────────────────────────────────────────
+  let activeResultIdx = -1;
+
+  function updateActiveResult() {
+    const items = searchResults.querySelectorAll("li");
+    items.forEach((li, i) => {
+      li.classList.toggle("active", i === activeResultIdx);
+    });
+    // Scroll the active item into view within the dropdown
+    if (activeResultIdx >= 0 && items[activeResultIdx]) {
+      items[activeResultIdx].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function selectResult(id) {
+    if (nodeById.has(id)) {
+      render(id);
+      resetZoom();
+    }
+    searchInput.value = "";
+    searchResults.classList.remove("visible");
+    searchResults.innerHTML = "";
+    activeResultIdx = -1;
+  }
+
   searchInput.addEventListener("input", () => {
     const q = searchInput.value.trim().toLowerCase();
+    activeResultIdx = -1;
     if (q.length < 2) {
       searchResults.classList.remove("visible");
       searchResults.innerHTML = "";
@@ -275,22 +300,36 @@
     searchResults.classList.add("visible");
   });
 
+  searchInput.addEventListener("keydown", (e) => {
+    const items = searchResults.querySelectorAll("li");
+    if (!items.length) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      activeResultIdx = Math.min(activeResultIdx + 1, items.length - 1);
+      updateActiveResult();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      activeResultIdx = Math.max(activeResultIdx - 1, 0);
+      updateActiveResult();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      // If an item is highlighted use it, otherwise pick the first result
+      const idx = activeResultIdx >= 0 ? activeResultIdx : 0;
+      const li = items[idx];
+      if (li) selectResult(Number(li.dataset.id));
+    }
+  });
+
   searchResults.addEventListener("click", (e) => {
     const li = e.target.closest("li");
     if (!li) return;
-    const id = Number(li.dataset.id);
-    if (nodeById.has(id)) {
-      render(id);
-      resetZoom();
-    }
-    searchInput.value = "";
-    searchResults.classList.remove("visible");
-    searchResults.innerHTML = "";
+    selectResult(Number(li.dataset.id));
   });
 
   // Close search on click outside
   document.addEventListener("click", (e) => {
-    if (!e.target.closest("#search-box")) {
+    if (!e.target.closest("#control-panel")) {
       searchResults.classList.remove("visible");
     }
   });

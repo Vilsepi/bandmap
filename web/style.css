@@ -15,19 +15,24 @@ body {
   display: block;
 }
 
-/* ── Info panel (top-center, below search) ────────────── */
-#info-panel {
+/* ── Control panel (search + info) ────────────────────── */
+#control-panel {
   position: fixed;
-  top: 58px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 500px;
+  z-index: 20;
+}
+
+/* ── Info panel (row 2 inside control-panel) ──────────── */
+#info-panel {
   background: #1b1a1a;
-  border: 1px solid #333;
+  border: 1px solid #222;
   border-radius: 5px;
-  padding: 20px 20px;
-  min-width: 250px;
-  max-width: 400px;
-  z-index: 10;
+  padding: 16px 20px;
+  margin-top: 6px;
   pointer-events: none;
   text-align: center;
 }
@@ -57,24 +62,23 @@ body {
   margin-top: 3px;
 }
 
-/* ── Search box (top-center, above info panel) ───────── */
-#search-box {
-  position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 20;
-  text-align: center;
+/* ── Search row (row 1 inside control-panel) ─────────── */
+#search-row {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  position: relative;
 }
 
 #search-input {
+  flex: 1;
+  min-width: 0;
   background: #1b1a1a;
-  border: 1px solid #333;
+  border: 1px solid #222;
   border-radius: 5px;
   color: #e0e0e0;
   font-size: 0.9rem;
   padding: 8px 14px;
-  width: 240px;
   outline: none;
 }
 
@@ -87,15 +91,14 @@ body {
 }
 
 #random-btn {
+  flex: none;
+  width: 40px;
   background: #1b1a1a;
-  border: 1px solid #333;
+  border: 1px solid #222;
   border-radius: 5px;
   color: #e0e0e0;
   font-size: 1rem;
-  padding: 6px 10px;
-  margin-left: 6px;
   cursor: pointer;
-  vertical-align: middle;
 }
 
 #random-btn:hover {
