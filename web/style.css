@@ -1,0 +1,186 @@
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #0f0f1a;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+/* ── SVG canvas ───────────────────────────────────────── */
+#graph {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+/* ── Info panel (top-left) ────────────────────────────── */
+#info-panel {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  background: rgba(15, 15, 26, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 220px;
+  max-width: 340px;
+  backdrop-filter: blur(12px);
+  z-index: 10;
+  pointer-events: none;
+}
+
+#band-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ff6b6b;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+#band-country,
+#band-genres,
+#band-neighbors {
+  font-size: 0.82rem;
+  color: #aaa;
+  margin-top: 3px;
+}
+
+#band-genres {
+  color: #ccc;
+  font-style: italic;
+}
+
+/* ── Search box (top-right) ───────────────────────────── */
+#search-box {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
+}
+
+#search-input {
+  background: rgba(15, 15, 26, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  padding: 8px 14px;
+  width: 240px;
+  outline: none;
+  backdrop-filter: blur(12px);
+}
+
+#search-input:focus {
+  border-color: #ff6b6b;
+}
+
+#search-input::placeholder {
+  color: #666;
+}
+
+#search-results {
+  list-style: none;
+  background: rgba(15, 15, 26, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+}
+
+#search-results.visible {
+  display: block;
+}
+
+#search-results li {
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+#search-results li:hover,
+#search-results li.active {
+  background: rgba(255, 107, 107, 0.15);
+  color: #fff;
+}
+
+#search-results li .sr-country {
+  color: #777;
+  font-size: 0.75rem;
+  margin-left: 6px;
+}
+
+/* ── Tooltip ──────────────────────────────────────────── */
+#tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: rgba(10, 10, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: #ddd;
+  max-width: 260px;
+  line-height: 1.4;
+  z-index: 30;
+  opacity: 0;
+  transition: opacity 0.15s;
+  backdrop-filter: blur(8px);
+}
+
+#tooltip.visible {
+  opacity: 1;
+}
+
+#tooltip .tt-name {
+  font-weight: 700;
+  color: #ff6b6b;
+  font-size: 0.88rem;
+}
+
+#tooltip .tt-detail {
+  color: #999;
+  margin-top: 2px;
+}
+
+/* ── Graph elements ───────────────────────────────────── */
+.link {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
+}
+
+.node circle {
+  cursor: pointer;
+  stroke: rgba(255, 255, 255, 0.15);
+  stroke-width: 1;
+  transition: r 0.3s;
+}
+
+.node circle:hover {
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 2;
+}
+
+.node.center circle {
+  stroke: #ff6b6b;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.5));
+}
+
+.node text {
+  fill: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.node.center text {
+  fill: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}

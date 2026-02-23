@@ -1,0 +1,322 @@
+// ── Bandmap Graph Explorer ───────────────────────────────
+// Loads bandgraph_d3.json once, then renders ego-graphs
+// (selected band + 1-hop neighbors) with D3 force layout.
+
+(async function () {
+  "use strict";
+
+  // ── Load data ────────────────────────────────────────
+  const resp = await fetch("../data/exports/bandgraph_d3.json");
+  if (!resp.ok) {
+    document.getElementById("band-name").textContent = "Failed to load data";
+    return;
+  }
+  const data = await resp.json();
+
+  // ── Build indices ────────────────────────────────────
+  const nodeById = new Map();          // id → node object
+  const adjacency = new Map();         // id → Set<neighbor id>
+  const edgeIndex = new Map();         // "lo-hi" → edge object
+
+  for (const n of data.nodes) {
+    nodeById.set(n.id, n);
+    adjacency.set(n.id, new Set());
+  }
+
+  for (const e of data.links) {
+    const s = e.source, t = e.target;
+    adjacency.get(s)?.add(t);
+    adjacency.get(t)?.add(s);
+    const key = s < t ? `${s}-${t}` : `${t}-${s}`;
+    edgeIndex.set(key, e);
+  }
+
+  // Sorted node list for search
+  const sortedNodes = [...data.nodes].sort((a, b) =>
+    (a.name || "").localeCompare(b.name || "")
+  );
+
+  // ── Genre → color mapping ───────────────────────────
+  const genreKeywords = [
+    "Black", "Death", "Doom", "Thrash", "Power", "Heavy",
+    "Progressive", "Folk", "Symphonic", "Gothic", "Grind",
+    "Speed", "Sludge", "Stoner", "Melodic", "Avant-garde",
+    "Industrial", "Atmospheric", "Post", "Viking", "Pagan",
+  ];
+  const palette = [
+    "#a855f7", "#ef4444", "#3b82f6", "#f97316", "#eab308",
+    "#94a3b8", "#06b6d4", "#22c55e", "#ec4899", "#6366f1",
+    "#84cc16", "#f43f5e", "#78716c", "#d97706", "#14b8a6",
+    "#8b5cf6", "#64748b", "#0ea5e9", "#7c3aed", "#facc15",
+    "#10b981",
+  ];
+  const genreColor = new Map();
+  genreKeywords.forEach((g, i) => genreColor.set(g.toLowerCase(), palette[i % palette.length]));
+
+  function bandColor(node) {
+    const g = (node.genres || "").toLowerCase();
+    for (const [kw, c] of genreColor) {
+      if (g.includes(kw)) return c;
+    }
+    return "#94a3b8"; // default grey
+  }
+
+  // ── SVG setup ────────────────────────────────────────
+  const svg = d3.select("#graph");
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  svg.attr("viewBox", [0, 0, width, height]);
+
+  const g = svg.append("g"); // zoom container
+
+  const zoom = d3.zoom()
+    .scaleExtent([0.15, 5])
+    .on("zoom", (e) => g.attr("transform", e.transform));
+  svg.call(zoom);
+
+  let linkG = g.append("g").attr("class", "links");
+  let nodeG = g.append("g").attr("class", "nodes");
+
+  let simulation = null;
+
+  // ── UI elements ──────────────────────────────────────
+  const elName = document.getElementById("band-name");
+  const elCountry = document.getElementById("band-country");
+  const elGenres = document.getElementById("band-genres");
+  const elNeighbors = document.getElementById("band-neighbors");
+  const tooltip = document.getElementById("tooltip");
+  const searchInput = document.getElementById("search-input");
+  const searchResults = document.getElementById("search-results");
+
+  // ── Extract ego-graph ────────────────────────────────
+  function egoGraph(centerId) {
+    const neighborIds = adjacency.get(centerId);
+    if (!neighborIds) return { nodes: [], links: [] };
+
+    const idSet = new Set([centerId, ...neighborIds]);
+
+    const nodes = [];
+    for (const id of idSet) {
+      const n = nodeById.get(id);
+      if (n) nodes.push({ ...n });
+    }
+
+    const links = [];
+    const seen = new Set();
+    for (const id of idSet) {
+      for (const nid of adjacency.get(id) || []) {
+        if (!idSet.has(nid)) continue;
+        const key = id < nid ? `${id}-${nid}` : `${nid}-${id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const orig = edgeIndex.get(key);
+        links.push({ source: id, target: nid, score: orig?.score ?? null });
+      }
+    }
+
+    return { nodes, links };
+  }
+
+  // ── Render ───────────────────────────────────────────
+  let currentCenter = null;
+
+  function render(centerId) {
+    currentCenter = centerId;
+    const ego = egoGraph(centerId);
+    const centerNode = nodeById.get(centerId);
+
+    // Update info panel
+    elName.textContent = centerNode?.name || `#${centerId}`;
+    elCountry.textContent = centerNode?.country || "";
+    elGenres.textContent = centerNode?.genres || "";
+    elNeighbors.textContent = `${ego.nodes.length - 1} similar bands`;
+
+    // Stop previous simulation
+    if (simulation) simulation.stop();
+
+    // Node radius based on overall degree
+    const rScale = d3.scaleSqrt()
+      .domain([1, d3.max(ego.nodes, (n) => (adjacency.get(n.id)?.size || 1))])
+      .range([6, 22]);
+
+    // ── Links ──────────────────────────────────────────
+    linkG.selectAll("*").remove();
+    const linkSel = linkG
+      .selectAll("line")
+      .data(ego.links, (d) => `${d.source}-${d.target}`)
+      .join("line")
+      .attr("class", "link");
+
+    // ── Nodes ──────────────────────────────────────────
+    nodeG.selectAll("*").remove();
+    const nodeSel = nodeG
+      .selectAll("g")
+      .data(ego.nodes, (d) => d.id)
+      .join("g")
+      .attr("class", (d) => (d.id === centerId ? "node center" : "node"))
+      .call(
+        d3.drag()
+          .on("start", dragStart)
+          .on("drag", dragging)
+          .on("end", dragEnd)
+      );
+
+    nodeSel
+      .append("circle")
+      .attr("r", (d) => (d.id === centerId ? rScale(adjacency.get(d.id)?.size || 1) + 4 : rScale(adjacency.get(d.id)?.size || 1)))
+      .attr("fill", (d) => bandColor(d));
+
+    nodeSel
+      .append("text")
+      .attr("dy", (d) => rScale(adjacency.get(d.id)?.size || 1) + 14)
+      .text((d) => truncate(d.name || `#${d.id}`, 22));
+
+    // Click → recenter
+    nodeSel.on("click", (event, d) => {
+      event.stopPropagation();
+      render(d.id);
+      resetZoom();
+    });
+
+    // Hover tooltip
+    nodeSel
+      .on("mouseenter", (event, d) => {
+        tooltip.innerHTML = `
+          <div class="tt-name">${esc(d.name || `#${d.id}`)}</div>
+          <div class="tt-detail">${esc(d.country || "")}</div>
+          <div class="tt-detail">${esc(d.genres || "")}</div>
+          <div class="tt-detail">${adjacency.get(d.id)?.size || 0} connections</div>
+        `;
+        tooltip.classList.add("visible");
+      })
+      .on("mousemove", (event) => {
+        tooltip.style.left = event.clientX + 14 + "px";
+        tooltip.style.top = event.clientY - 10 + "px";
+      })
+      .on("mouseleave", () => tooltip.classList.remove("visible"));
+
+    // ── Force simulation ───────────────────────────────
+    simulation = d3
+      .forceSimulation(ego.nodes)
+      .force("link", d3.forceLink(ego.links).id((d) => d.id).distance(120))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius((d) => rScale(adjacency.get(d.id)?.size || 1) + 8))
+      .on("tick", () => {
+        linkSel
+          .attr("x1", (d) => d.source.x)
+          .attr("y1", (d) => d.source.y)
+          .attr("x2", (d) => d.target.x)
+          .attr("y2", (d) => d.target.y);
+
+        nodeSel.attr("transform", (d) => `translate(${d.x},${d.y})`);
+      });
+
+    // Pin center node
+    const cn = ego.nodes.find((n) => n.id === centerId);
+    if (cn) {
+      cn.fx = width / 2;
+      cn.fy = height / 2;
+    }
+  }
+
+  // ── Drag handlers ────────────────────────────────────
+  function dragStart(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+
+  function dragging(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+
+  function dragEnd(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    // Keep center node pinned, release others
+    if (d.id !== currentCenter) {
+      d.fx = null;
+      d.fy = null;
+    }
+  }
+
+  // ── Zoom reset ───────────────────────────────────────
+  function resetZoom() {
+    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+  }
+
+  // ── Search ───────────────────────────────────────────
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (q.length < 2) {
+      searchResults.classList.remove("visible");
+      searchResults.innerHTML = "";
+      return;
+    }
+    const matches = sortedNodes
+      .filter((n) => (n.name || "").toLowerCase().includes(q))
+      .slice(0, 20);
+    if (matches.length === 0) {
+      searchResults.classList.remove("visible");
+      searchResults.innerHTML = "";
+      return;
+    }
+    searchResults.innerHTML = matches
+      .map(
+        (n) =>
+          `<li data-id="${n.id}">${esc(n.name)}<span class="sr-country">${esc(n.country || "")}</span></li>`
+      )
+      .join("");
+    searchResults.classList.add("visible");
+  });
+
+  searchResults.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    const id = Number(li.dataset.id);
+    if (nodeById.has(id)) {
+      render(id);
+      resetZoom();
+    }
+    searchInput.value = "";
+    searchResults.classList.remove("visible");
+    searchResults.innerHTML = "";
+  });
+
+  // Close search on click outside
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#search-box")) {
+      searchResults.classList.remove("visible");
+    }
+  });
+
+  // ── Helpers ──────────────────────────────────────────
+  function truncate(s, max) {
+    return s.length > max ? s.slice(0, max - 1) + "…" : s;
+  }
+
+  function esc(s) {
+    const el = document.createElement("span");
+    el.textContent = s;
+    return el.innerHTML;
+  }
+
+  // ── Pick initial band ────────────────────────────────
+  // Choose the node with the most connections for a good starting view
+  let bestId = data.nodes[0]?.id;
+  let bestDeg = 0;
+  for (const [id, neighbors] of adjacency) {
+    if (neighbors.size > bestDeg) {
+      bestDeg = neighbors.size;
+      bestId = id;
+    }
+  }
+
+  render(bestId);
+
+  // ── Handle resize ────────────────────────────────────
+  window.addEventListener("resize", () => {
+    svg.attr("viewBox", [0, 0, window.innerWidth, window.innerHeight]);
+  });
+})();
