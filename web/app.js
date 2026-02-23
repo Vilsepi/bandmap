@@ -44,10 +44,10 @@
     "Industrial", "Atmospheric", "Post", "Viking", "Pagan",
   ];
   const palette = [
-    "#14be72", "#14be72", "#14be72", "#14be72", "#14be72",
-    "#94a3b8", "#06b6d4", "#22c55e", "#ec4899", "#6366f1",
-    "#84cc16", "#f43f5e", "#78716c", "#d97706", "#14b8a6",
-    "#8b5cf6", "#64748b", "#0ea5e9", "#7c3aed", "#facc15",
+    "#14be72", "#23875a", "#279588", "#309095", "#2f6097",
+    "#826d5b", "#06b6d4", "#22c55e", "#6c3d9b", "#6366f1",
+    "#84cc16", "#43914c", "#78716c", "#a77134", "#14b8a6",
+    "#8b5cf6", "#64748b", "#2a7eab", "#5c36ba", "#32a43c",
     "#10b981",
   ];
   const genreColor = new Map();
@@ -70,7 +70,7 @@
   const g = svg.append("g"); // zoom container
 
   const zoom = d3.zoom()
-    .scaleExtent([0.15, 5])
+    .scaleExtent([0.3, 4])
     .on("zoom", (e) => g.attr("transform", e.transform));
   svg.call(zoom);
 
@@ -87,12 +87,25 @@
   const searchInput = document.getElementById("search-input");
   const searchResults = document.getElementById("search-results");
 
+  // ── Responsive settings ──────────────────────────────
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  const MAX_NEIGHBORS = isMobile ? 20 : 50;
+
   // ── Extract ego-graph ────────────────────────────────
   function egoGraph(centerId) {
     const neighborIds = adjacency.get(centerId);
     if (!neighborIds) return { nodes: [], links: [] };
 
-    const idSet = new Set([centerId, ...neighborIds]);
+    // Rank neighbors by edge score (highest first), then cap
+    let ranked = [...neighborIds].map((nid) => {
+      const key = centerId < nid ? `${centerId}-${nid}` : `${nid}-${centerId}`;
+      const score = edgeIndex.get(key)?.score ?? 0;
+      return { id: nid, score };
+    });
+    ranked.sort((a, b) => b.score - a.score);
+    if (ranked.length > MAX_NEIGHBORS) ranked = ranked.slice(0, MAX_NEIGHBORS);
+
+    const idSet = new Set([centerId, ...ranked.map((r) => r.id)]);
 
     const nodes = [];
     for (const id of idSet) {
@@ -173,7 +186,7 @@
 
     nodeSel
       .append("text")
-      .attr("dy", (d) => rScale(adjacency.get(d.id)?.size || 1) + 14)
+      .attr("dy", (d) => rScale(adjacency.get(d.id)?.size || 1) + (d.id === centerId ? 20 : 14))
       .text((d) => truncate(d.name || `#${d.id}`, 22));
 
     // Click → recenter
@@ -202,8 +215,8 @@
     // ── Force simulation ───────────────────────────────
     simulation = d3
       .forceSimulation(ego.nodes)
-      .force("link", d3.forceLink(ego.links).id((d) => d.id).distance(120))
-      .force("charge", d3.forceManyBody().strength(-300))
+      .force("link", d3.forceLink(ego.links).id((d) => d.id).distance(isMobile ? 120 : 150))
+      .force("charge", d3.forceManyBody().strength(isMobile ? -300 : -200))
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide().radius((d) => rScale(adjacency.get(d.id)?.size || 1) + 8))
       .on("tick", () => {
@@ -246,8 +259,12 @@
   }
 
   // ── Zoom reset ───────────────────────────────────────
+  const defaultZoom = isMobile
+    ? d3.zoomIdentity
+    : d3.zoomIdentity.translate(width / 2, height / 2).scale(1.5).translate(-width / 2, -height / 2);
+
   function resetZoom() {
-    svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+    svg.transition().duration(500).call(zoom.transform, defaultZoom);
   }
 
   // ── Search ───────────────────────────────────────────
@@ -367,6 +384,7 @@
   const initialId = bandIdFromHash();
   if (initialId) {
     render(initialId);
+    resetZoom();
   } else {
     pickRandom();
   }

@@ -62,6 +62,10 @@ body {
   margin-top: 3px;
 }
 
+#band-genres {
+  font-weight: 700;
+}
+
 /* ── Search row (row 1 inside control-panel) ─────────── */
 #search-row {
   display: flex;
@@ -96,7 +100,7 @@ body {
   background: #1b1a1a;
   border: 1px solid #222;
   border-radius: 5px;
-  color: #e0e0e0;
+  color: #14be72;
   font-size: 1rem;
   cursor: pointer;
 }
@@ -196,18 +200,18 @@ body {
 }
 
 .node circle:hover {
-  stroke: rgba(255, 255, 255, 0.5);
+  stroke: #14be7280;
   stroke-width: 2;
 }
 
 .node.center circle {
   stroke: #14be72;
   stroke-width: 3;
-  filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.5));
+  filter: drop-shadow(0 0 10px #14be7280);
 }
 
 .node text {
-  fill: rgba(255, 255, 255, 0.7);
+  fill: rgba(255, 255, 255, 0.8);
   font-size: 10px;
   text-anchor: middle;
   pointer-events: none;
