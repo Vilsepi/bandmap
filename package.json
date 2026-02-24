@@ -12,7 +12,8 @@
     "build": "tsc --build",
     "clean": "tsc --build --clean",
     "lint": "eslint packages/*/src/**/*.ts",
-    "format": "prettier --write 'packages/*/src/**/*.ts'"
+    "format": "prettier --write 'packages/*/src/**/*.ts'",
+    "test": "npm test --workspaces --if-present"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

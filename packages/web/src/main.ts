@@ -52,9 +52,7 @@ async function main(): Promise<void> {
       tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
     }
   }
-  const sortedTags = [...tagCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 50);
+  const sortedTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50);
   for (const [tag, count] of sortedTags) {
     const option = document.createElement('option');
     option.value = tag;
@@ -81,9 +79,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const matches = artistIndex
-      .filter((a) => a.nameLower.includes(query))
-      .slice(0, 20);
+    const matches = artistIndex.filter((a) => a.nameLower.includes(query)).slice(0, 20);
 
     if (matches.length === 0) {
       searchResults.classList.remove('visible');

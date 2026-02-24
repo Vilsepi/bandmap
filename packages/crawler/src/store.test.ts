@@ -44,7 +44,9 @@ describe('SqliteStore', () => {
     it('upserts tags idempotently', () => {
       const tag: Tag = { id: tagId('Rock'), name: 'Rock', url: 'https://www.last.fm/tag/Rock' };
       store.upsertTags([tag]);
-      store.upsertTags([{ id: tagId('Rock'), name: 'Rock', url: 'https://www.last.fm/tag/Rock-updated' }]);
+      store.upsertTags([
+        { id: tagId('Rock'), name: 'Rock', url: 'https://www.last.fm/tag/Rock-updated' },
+      ]);
 
       const result = store.getAllTags();
       assert.equal(result.length, 1);
@@ -54,7 +56,9 @@ describe('SqliteStore', () => {
 
   describe('artists', () => {
     it('upserts and retrieves an artist', () => {
-      const tags: Tag[] = [{ id: tagId('Post-Metal'), name: 'Post-Metal', url: 'https://last.fm/tag/Post-Metal' }];
+      const tags: Tag[] = [
+        { id: tagId('Post-Metal'), name: 'Post-Metal', url: 'https://last.fm/tag/Post-Metal' },
+      ];
       store.upsertTags(tags);
 
       const artist: Artist = {

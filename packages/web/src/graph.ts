@@ -5,10 +5,26 @@ import type { GraphExport } from '@bandmap/shared';
 
 // Stable palette of distinct hues for tag coloring
 const TAG_COLORS = [
-  '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
-  '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4',
-  '#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000',
-  '#aaffc3', '#808000', '#ffd8b1', '#000075', '#a9a9a9',
+  '#e6194b',
+  '#3cb44b',
+  '#ffe119',
+  '#4363d8',
+  '#f58231',
+  '#911eb4',
+  '#42d4f4',
+  '#f032e6',
+  '#bfef45',
+  '#fabed4',
+  '#469990',
+  '#dcbeff',
+  '#9A6324',
+  '#fffac8',
+  '#800000',
+  '#aaffc3',
+  '#808000',
+  '#ffd8b1',
+  '#000075',
+  '#a9a9a9',
 ];
 
 export interface GraphManager {
@@ -43,9 +59,7 @@ export function createGraph(container: HTMLElement, data: GraphExport): GraphMan
       tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
     }
   }
-  const sortedTags = [...tagCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map((e) => e[0]);
+  const sortedTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
   const tagColorMap = new Map<string, string>();
   sortedTags.forEach((tag, i) => {
     tagColorMap.set(tag, TAG_COLORS[i % TAG_COLORS.length]);
@@ -127,7 +141,11 @@ export function createGraph(container: HTMLElement, data: GraphExport): GraphMan
       const weight = attrs['originalWeight'] as number;
       const sourceHidden = graph.getNodeAttribute(source, 'hidden') as boolean;
       const targetHidden = graph.getNodeAttribute(target, 'hidden') as boolean;
-      graph.setEdgeAttribute(edge, 'hidden', sourceHidden || targetHidden || weight < activeMinWeight);
+      graph.setEdgeAttribute(
+        edge,
+        'hidden',
+        sourceHidden || targetHidden || weight < activeMinWeight,
+      );
     });
   }
 
@@ -156,13 +174,11 @@ export function createGraph(container: HTMLElement, data: GraphExport): GraphMan
     });
 
     graph.forEachEdge((edge, _attrs, source, target) => {
-      const connected = (source === id || target === id);
+      const connected = source === id || target === id;
       graph.setEdgeAttribute(
         edge,
         'color',
-        connected
-          ? 'rgba(108,140,255,0.6)'
-          : 'rgba(255,255,255,0.02)',
+        connected ? 'rgba(108,140,255,0.6)' : 'rgba(255,255,255,0.02)',
       );
     });
   }

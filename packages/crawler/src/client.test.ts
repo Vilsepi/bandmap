@@ -6,15 +6,20 @@ import { LastFmClient, LastFmApiError } from './client.js';
 
 // Load sample responses from doc/ directory
 const sampleDir = resolve(import.meta.dirname, '../../../doc');
-const sampleGetInfo = JSON.parse(readFileSync(resolve(sampleDir, 'sample.artist.getinfo.json'), 'utf-8'));
-const sampleGetSimilar = JSON.parse(readFileSync(resolve(sampleDir, 'sample.artist.getsimilar.json'), 'utf-8'));
+const sampleGetInfo = JSON.parse(
+  readFileSync(resolve(sampleDir, 'sample.artist.getinfo.json'), 'utf-8'),
+);
+const sampleGetSimilar = JSON.parse(
+  readFileSync(resolve(sampleDir, 'sample.artist.getsimilar.json'), 'utf-8'),
+);
 
 /**
  * Create a mock fetch that returns canned responses based on the method parameter.
  */
 function mockFetch(responses: Map<string, unknown>): typeof globalThis.fetch {
   return (async (input: string | URL | Request) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const url =
+      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const params = new URL(url).searchParams;
     const method = params.get('method') ?? '';
 
@@ -112,9 +117,7 @@ describe('LastFmClient', () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getsimilar', {
         similarartists: {
-          artist: [
-            { name: 'No MBID Artist', mbid: '', match: '0.5', url: 'https://last.fm/test' },
-          ],
+          artist: [{ name: 'No MBID Artist', mbid: '', match: '0.5', url: 'https://last.fm/test' }],
         },
       });
       globalThis.fetch = mockFetch(responses);

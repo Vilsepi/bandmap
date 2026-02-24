@@ -50,10 +50,7 @@ export async function crawl(
 
     try {
       // 1. Fetch artist info
-      const info = await rateLimiter.execute(
-        () => client.getArtistInfo(entry.mbid),
-        isRetryable,
-      );
+      const info = await rateLimiter.execute(() => client.getArtistInfo(entry.mbid), isRetryable);
 
       const now = new Date().toISOString();
 

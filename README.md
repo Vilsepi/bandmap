@@ -4,10 +4,10 @@ Crawls artists from [Last.fm](https://www.last.fm) and builds a graph of similar
 
 ## Prerequisites
 
-- Node.js ≥ 20
+- Node.js ≥ 24
 - A [Last.fm API key](https://www.last.fm/api/account/create)
 
-## Install
+## Install dependencies
 
 ```sh
 npm install
@@ -19,15 +19,6 @@ npm install
 npm run build
 ```
 
-## Configure
-
-Copy `.env.example` to `.env` and set your API key:
-
-```sh
-cp .env.example .env
-# edit .env and set LASTFM_API_KEY
-```
-
 ## Run tests
 
 ```sh
@@ -36,6 +27,8 @@ npm test
 ```
 
 ## Crawl
+
+Set the environment variable `LASTFM_API_KEY`.
 
 Seed the crawler with one or more artist MBIDs (MusicBrainz IDs). Find MBIDs on [MusicBrainz](https://musicbrainz.org) or from Last.fm API responses.
 

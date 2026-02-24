@@ -27,71 +27,73 @@ program
   .option('--max-depth <n>', 'Maximum BFS depth', '5')
   .option('--max-artists <n>', 'Maximum number of artists to crawl', '10000')
   .option('--db <path>', 'SQLite database path', './data/artists.db')
-  .action(async (opts: {
-    seedMbid?: string[];
-    seedFile?: string;
-    maxDepth: string;
-    maxArtists: string;
-    db: string;
-  }) => {
-    const apiKey = process.env['LASTFM_API_KEY'];
-    if (!apiKey) {
-      console.error('Error: LASTFM_API_KEY environment variable is required');
-      console.error('Set it in .env or export it before running the crawler');
-      process.exit(1);
-    }
-
-    // Collect seed MBIDs
-    const seeds: { mbid: string; name: string }[] = [];
-
-    if (opts.seedMbid) {
-      for (const mbid of opts.seedMbid) {
-        seeds.push({ mbid: mbid.trim(), name: '' });
+  .action(
+    async (opts: {
+      seedMbid?: string[];
+      seedFile?: string;
+      maxDepth: string;
+      maxArtists: string;
+      db: string;
+    }) => {
+      const apiKey = process.env['LASTFM_API_KEY'];
+      if (!apiKey) {
+        console.error('Error: LASTFM_API_KEY environment variable is required');
+        console.error('Set it in .env or export it before running the crawler');
+        process.exit(1);
       }
-    }
 
-    if (opts.seedFile) {
-      const content = readFileSync(opts.seedFile, 'utf-8');
-      for (const line of content.split('\n')) {
-        // Strip inline comments (everything after #)
-        const stripped = line.replace(/#.*$/, '').trim();
-        if (stripped) {
-          // Support "mbid name" or just "mbid" format
-          const parts = stripped.split(/\s+/);
-          seeds.push({ mbid: parts[0], name: parts.slice(1).join(' ') });
+      // Collect seed MBIDs
+      const seeds: { mbid: string; name: string }[] = [];
+
+      if (opts.seedMbid) {
+        for (const mbid of opts.seedMbid) {
+          seeds.push({ mbid: mbid.trim(), name: '' });
         }
       }
-    }
 
-    if (seeds.length === 0) {
-      console.error('Error: provide at least one seed via --seed-mbid or --seed-file');
-      process.exit(1);
-    }
-
-    // Ensure data directory exists
-    const dbPath = resolve(opts.db);
-    mkdirSync(dirname(dbPath), { recursive: true });
-
-    const store = new SqliteStore(dbPath);
-    const client = new LastFmClient(apiKey);
-
-    // Enqueue seed artists
-    for (const seed of seeds) {
-      if (!store.isInQueue(seed.mbid) && !store.hasArtist(seed.mbid)) {
-        store.enqueue(seed.mbid, seed.name, 0);
-        console.log(`Enqueued seed: ${seed.name || seed.mbid}`);
+      if (opts.seedFile) {
+        const content = readFileSync(opts.seedFile, 'utf-8');
+        for (const line of content.split('\n')) {
+          // Strip inline comments (everything after #)
+          const stripped = line.replace(/#.*$/, '').trim();
+          if (stripped) {
+            // Support "mbid name" or just "mbid" format
+            const parts = stripped.split(/\s+/);
+            seeds.push({ mbid: parts[0], name: parts.slice(1).join(' ') });
+          }
+        }
       }
-    }
 
-    try {
-      await crawl(client, store, {
-        maxDepth: parseInt(opts.maxDepth, 10),
-        maxArtists: parseInt(opts.maxArtists, 10),
-      });
-    } finally {
-      store.close();
-    }
-  });
+      if (seeds.length === 0) {
+        console.error('Error: provide at least one seed via --seed-mbid or --seed-file');
+        process.exit(1);
+      }
+
+      // Ensure data directory exists
+      const dbPath = resolve(opts.db);
+      mkdirSync(dirname(dbPath), { recursive: true });
+
+      const store = new SqliteStore(dbPath);
+      const client = new LastFmClient(apiKey);
+
+      // Enqueue seed artists
+      for (const seed of seeds) {
+        if (!store.isInQueue(seed.mbid) && !store.hasArtist(seed.mbid)) {
+          store.enqueue(seed.mbid, seed.name, 0);
+          console.log(`Enqueued seed: ${seed.name || seed.mbid}`);
+        }
+      }
+
+      try {
+        await crawl(client, store, {
+          maxDepth: parseInt(opts.maxDepth, 10),
+          maxArtists: parseInt(opts.maxArtists, 10),
+        });
+      } finally {
+        store.close();
+      }
+    },
+  );
 
 program
   .command('status')

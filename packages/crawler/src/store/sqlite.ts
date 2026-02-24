@@ -113,7 +113,9 @@ export class SqliteStore implements CrawlStore {
     if (!row) return null;
 
     const tags = this.db
-      .prepare('SELECT t.name as tag_name FROM artist_tags at JOIN tags t ON at.tag_id = t.id WHERE at.artist_mbid = ?')
+      .prepare(
+        'SELECT t.name as tag_name FROM artist_tags at JOIN tags t ON at.tag_id = t.id WHERE at.artist_mbid = ?',
+      )
       .all(mbid) as { tag_name: string }[];
 
     return {
@@ -126,9 +128,9 @@ export class SqliteStore implements CrawlStore {
   }
 
   hasArtist(mbid: string): boolean {
-    const row = this.db
-      .prepare('SELECT 1 FROM artists WHERE mbid = ?')
-      .get(mbid) as Record<string, unknown> | undefined;
+    const row = this.db.prepare('SELECT 1 FROM artists WHERE mbid = ?').get(mbid) as
+      | Record<string, unknown>
+      | undefined;
     return row !== undefined;
   }
 
@@ -200,9 +202,7 @@ export class SqliteStore implements CrawlStore {
 
   markDone(mbid: string): void {
     this.db
-      .prepare(
-        `UPDATE crawl_queue SET status = 'done', completed_at = ? WHERE mbid = ?`,
-      )
+      .prepare(`UPDATE crawl_queue SET status = 'done', completed_at = ? WHERE mbid = ?`)
       .run(new Date().toISOString(), mbid);
   }
 
@@ -221,9 +221,7 @@ export class SqliteStore implements CrawlStore {
 
   getQueueStats(): QueueStats {
     const rows = this.db
-      .prepare(
-        `SELECT status, COUNT(*) as count FROM crawl_queue GROUP BY status`,
-      )
+      .prepare(`SELECT status, COUNT(*) as count FROM crawl_queue GROUP BY status`)
       .all() as { status: string; count: number }[];
 
     const stats: QueueStats = { pending: 0, done: 0, error: 0 };
@@ -236,9 +234,9 @@ export class SqliteStore implements CrawlStore {
   }
 
   isInQueue(mbid: string): boolean {
-    const row = this.db
-      .prepare('SELECT 1 FROM crawl_queue WHERE mbid = ?')
-      .get(mbid) as Record<string, unknown> | undefined;
+    const row = this.db.prepare('SELECT 1 FROM crawl_queue WHERE mbid = ?').get(mbid) as
+      | Record<string, unknown>
+      | undefined;
     return row !== undefined;
   }
 
@@ -247,13 +245,17 @@ export class SqliteStore implements CrawlStore {
   exportGraph(): GraphExport {
     const tags = this.getAllTags();
 
-    const artistRows = this.db
-      .prepare('SELECT mbid, name, url FROM artists')
-      .all() as { mbid: string; name: string; url: string }[];
+    const artistRows = this.db.prepare('SELECT mbid, name, url FROM artists').all() as {
+      mbid: string;
+      name: string;
+      url: string;
+    }[];
 
     const artists = artistRows.map((a) => {
       const artistTags = this.db
-        .prepare('SELECT t.name as tag_name FROM artist_tags at JOIN tags t ON at.tag_id = t.id WHERE at.artist_mbid = ?')
+        .prepare(
+          'SELECT t.name as tag_name FROM artist_tags at JOIN tags t ON at.tag_id = t.id WHERE at.artist_mbid = ?',
+        )
         .all(a.mbid) as { tag_name: string }[];
 
       return {
