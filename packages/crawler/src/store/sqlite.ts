@@ -1,10 +1,12 @@
 import Database from 'better-sqlite3';
+import { tagId } from '@bandmap/shared';
 import type { Tag, Artist, ArtistRelation, GraphExport } from '@bandmap/shared';
 import type { CrawlStore, QueueStats } from './interface.js';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS tags (
-  name         TEXT PRIMARY KEY,
+  id           TEXT PRIMARY KEY,
+  name         TEXT NOT NULL UNIQUE,
   url          TEXT NOT NULL
 );
 
@@ -17,11 +19,11 @@ CREATE TABLE IF NOT EXISTS artists (
 
 CREATE TABLE IF NOT EXISTS artist_tags (
   artist_mbid  TEXT NOT NULL REFERENCES artists(mbid),
-  tag_name     TEXT NOT NULL REFERENCES tags(name),
-  PRIMARY KEY (artist_mbid, tag_name)
+  tag_id       TEXT NOT NULL REFERENCES tags(id),
+  PRIMARY KEY (artist_mbid, tag_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_artist_tags_tag ON artist_tags(tag_name);
+CREATE INDEX IF NOT EXISTS idx_artist_tags_tag ON artist_tags(tag_id);
 
 CREATE TABLE IF NOT EXISTS relations (
   source_mbid  TEXT NOT NULL,
@@ -61,18 +63,18 @@ export class SqliteStore implements CrawlStore {
 
   upsertTags(tags: Tag[]): void {
     const stmt = this.db.prepare(
-      'INSERT INTO tags (name, url) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET url = excluded.url',
+      'INSERT INTO tags (id, name, url) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name, url = excluded.url',
     );
     const tx = this.db.transaction((items: Tag[]) => {
       for (const tag of items) {
-        stmt.run(tag.name, tag.url);
+        stmt.run(tag.id, tag.name, tag.url);
       }
     });
     tx(tags);
   }
 
   getAllTags(): Tag[] {
-    return this.db.prepare('SELECT name, url FROM tags').all() as Tag[];
+    return this.db.prepare('SELECT id, name, url FROM tags').all() as Tag[];
   }
 
   // --- Artists ---
@@ -94,10 +96,10 @@ export class SqliteStore implements CrawlStore {
       this.db.prepare('DELETE FROM artist_tags WHERE artist_mbid = ?').run(a.mbid);
 
       const tagStmt = this.db.prepare(
-        'INSERT OR IGNORE INTO artist_tags (artist_mbid, tag_name) VALUES (?, ?)',
+        'INSERT OR IGNORE INTO artist_tags (artist_mbid, tag_id) VALUES (?, ?)',
       );
       for (const tagName of a.tags) {
-        tagStmt.run(a.mbid, tagName);
+        tagStmt.run(a.mbid, tagId(tagName));
       }
     });
     tx(artist);
@@ -111,7 +113,7 @@ export class SqliteStore implements CrawlStore {
     if (!row) return null;
 
     const tags = this.db
-      .prepare('SELECT tag_name FROM artist_tags WHERE artist_mbid = ?')
+      .prepare('SELECT t.name as tag_name FROM artist_tags at JOIN tags t ON at.tag_id = t.id WHERE at.artist_mbid = ?')
       .all(mbid) as { tag_name: string }[];
 
     return {
@@ -251,7 +253,7 @@ export class SqliteStore implements CrawlStore {
 
     const artists = artistRows.map((a) => {
       const artistTags = this.db
-        .prepare('SELECT tag_name FROM artist_tags WHERE artist_mbid = ?')
+        .prepare('SELECT t.name as tag_name FROM artist_tags at JOIN tags t ON at.tag_id = t.id WHERE at.artist_mbid = ?')
         .all(a.mbid) as { tag_name: string }[];
 
       return {

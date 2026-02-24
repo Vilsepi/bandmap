@@ -1,8 +1,10 @@
 /** A genre/style tag from Last.fm */
 export interface Tag {
-  /** PRIMARY KEY — e.g. "Post-Metal" */
+  /** PRIMARY KEY — deterministic hash of normalized name */
+  id: string;
+  /** Unique tag name, e.g. "post-metal" */
   name: string;
-  /** last.fm tag page, e.g. "https://www.last.fm/tag/Post-Metal" */
+  /** last.fm tag page, e.g. "https://www.last.fm/tag/post-metal" */
   url: string;
 }
 
@@ -13,7 +15,7 @@ export interface Artist {
   name: string;
   /** last.fm artist page */
   url: string;
-  /** tag names, e.g. ["Post-Metal", "Sludge"] — FK → Tag.name */
+  /** tag names, e.g. ["post-metal", "sludge"] — FK → Tag.name */
   tags: string[];
   /** ISO 8601 timestamp of last crawl */
   fetchedAt: string;
@@ -55,6 +57,7 @@ export interface QueueEntry {
 /** Export format for the web frontend */
 export interface GraphExport {
   tags: {
+    id: string;
     name: string;
     url: string;
   }[];

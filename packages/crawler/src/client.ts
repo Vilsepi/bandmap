@@ -1,3 +1,4 @@
+import { normalizeTagName, tagId } from '@bandmap/shared';
 import type { Tag, Artist, ArtistRelation } from '@bandmap/shared';
 
 /** Raw Last.fm API response types (only the fields we use) */
@@ -82,10 +83,14 @@ export class LastFmClient {
     const data = (await this.request(params)) as LastFmArtistInfoResponse;
 
     const artist = data.artist;
-    const tags: Tag[] = (artist.tags?.tag ?? []).map((t) => ({
-      name: t.name,
-      url: t.url,
-    }));
+    const tags: Tag[] = (artist.tags?.tag ?? []).map((t) => {
+      const name = normalizeTagName(t.name);
+      return {
+        id: tagId(name),
+        name,
+        url: t.url.toLowerCase(),
+      };
+    });
 
     return {
       artist: {

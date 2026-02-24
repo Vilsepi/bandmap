@@ -57,8 +57,9 @@ describe('LastFmClient', () => {
       assert.equal(result.artist.mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
       assert.equal(result.artist.url, 'https://www.last.fm/music/Rosetta');
       assert.equal(result.artist.tags.length, 5);
-      assert.equal(result.artist.tags[0].name, 'Post-Metal');
-      assert.equal(result.artist.tags[0].url, 'https://www.last.fm/tag/Post-Metal');
+      assert.equal(result.artist.tags[0].name, 'post-metal');
+      assert.ok(result.artist.tags[0].id, 'tag should have an id');
+      assert.equal(result.artist.tags[0].url, 'https://www.last.fm/tag/post-metal');
     });
 
     it('extracts all tags with names and urls', async () => {
@@ -70,7 +71,7 @@ describe('LastFmClient', () => {
       const result = await client.getArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d');
 
       const tagNames = result.artist.tags.map((t) => t.name);
-      assert.deepEqual(tagNames, ['Post-Metal', 'Sludge', 'post-rock', 'ambient', 'post-hardcore']);
+      assert.deepEqual(tagNames, ['post-metal', 'sludge', 'post-rock', 'ambient', 'post-hardcore']);
     });
   });
 

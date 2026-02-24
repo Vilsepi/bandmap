@@ -80,3 +80,26 @@ npx vite
 ```
 
 Then open http://localhost:5173 in your browser.
+
+## Browsing the database
+
+You can use e.g. `sqlite3` to view the data:
+
+```sql
+SELECT * from artists limit 10000;
+
+-- Number of artists
+SELECT COUNT(*) AS artist_count FROM artists;
+
+-- Last fetched artists
+SELECT * FROM artists ORDER BY fetched_at DESC LIMIT 3;
+
+-- Latest additions to the crawl queue
+SELECT * FROM crawl_queue ORDER BY added_at DESC LIMIT 3;
+
+-- Find artists with duplicate names
+SELECT mbid, name, COUNT(*) AS duplicate_count
+FROM artists
+GROUP BY name
+HAVING COUNT(*) > 1;
+```

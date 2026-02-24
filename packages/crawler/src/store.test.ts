@@ -2,6 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, unlinkSync } from 'node:fs';
 import { SqliteStore } from './store/sqlite.js';
+import { tagId } from '@bandmap/shared';
 import type { Artist, ArtistRelation, Tag } from '@bandmap/shared';
 
 const TEST_DB = '/tmp/bandmap-test.db';
@@ -29,20 +30,21 @@ describe('SqliteStore', () => {
   describe('tags', () => {
     it('upserts and retrieves tags', () => {
       const tags: Tag[] = [
-        { name: 'Post-Metal', url: 'https://www.last.fm/tag/Post-Metal' },
-        { name: 'Sludge', url: 'https://www.last.fm/tag/Sludge' },
+        { id: tagId('Post-Metal'), name: 'Post-Metal', url: 'https://www.last.fm/tag/Post-Metal' },
+        { id: tagId('Sludge'), name: 'Sludge', url: 'https://www.last.fm/tag/Sludge' },
       ];
       store.upsertTags(tags);
 
       const result = store.getAllTags();
       assert.equal(result.length, 2);
       assert.equal(result[0].name, 'Post-Metal');
+      assert.equal(result[0].id, tagId('Post-Metal'));
     });
 
     it('upserts tags idempotently', () => {
-      const tag: Tag = { name: 'Rock', url: 'https://www.last.fm/tag/Rock' };
+      const tag: Tag = { id: tagId('Rock'), name: 'Rock', url: 'https://www.last.fm/tag/Rock' };
       store.upsertTags([tag]);
-      store.upsertTags([{ name: 'Rock', url: 'https://www.last.fm/tag/Rock-updated' }]);
+      store.upsertTags([{ id: tagId('Rock'), name: 'Rock', url: 'https://www.last.fm/tag/Rock-updated' }]);
 
       const result = store.getAllTags();
       assert.equal(result.length, 1);
@@ -52,7 +54,7 @@ describe('SqliteStore', () => {
 
   describe('artists', () => {
     it('upserts and retrieves an artist', () => {
-      const tags: Tag[] = [{ name: 'Post-Metal', url: 'https://last.fm/tag/Post-Metal' }];
+      const tags: Tag[] = [{ id: tagId('Post-Metal'), name: 'Post-Metal', url: 'https://last.fm/tag/Post-Metal' }];
       store.upsertTags(tags);
 
       const artist: Artist = {
@@ -71,7 +73,7 @@ describe('SqliteStore', () => {
     });
 
     it('hasArtist returns true for existing artist', () => {
-      store.upsertTags([{ name: 'Rock', url: 'https://last.fm/tag/Rock' }]);
+      store.upsertTags([{ id: tagId('Rock'), name: 'Rock', url: 'https://last.fm/tag/Rock' }]);
       store.upsertArtist({
         mbid: 'test-mbid-2',
         name: 'Another Artist',
@@ -179,7 +181,7 @@ describe('SqliteStore', () => {
 
   describe('exportGraph', () => {
     it('exports artists and edges', () => {
-      store.upsertTags([{ name: 'Metal', url: 'https://last.fm/tag/Metal' }]);
+      store.upsertTags([{ id: tagId('Metal'), name: 'Metal', url: 'https://last.fm/tag/Metal' }]);
       store.upsertArtist({
         mbid: 'a',
         name: 'A',
@@ -213,7 +215,7 @@ describe('SqliteStore', () => {
     });
 
     it('excludes edges to non-crawled artists', () => {
-      store.upsertTags([{ name: 'Metal', url: 'https://last.fm/tag/Metal' }]);
+      store.upsertTags([{ id: tagId('Metal'), name: 'Metal', url: 'https://last.fm/tag/Metal' }]);
       store.upsertArtist({
         mbid: 'a',
         name: 'A',
