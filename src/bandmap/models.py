@@ -81,3 +81,4 @@ class CrawlState(BaseModel):
 
     crawled_ids: list[int] = []
     pending_queue: list[tuple[int, int]] = []
+    crawled_depths: dict[int, int] = {}  # band_id -> BFS depth when crawled

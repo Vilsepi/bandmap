@@ -41,7 +41,7 @@ class Crawler:
         cache_dir: Path | None = Path("data/cache"),
         concurrency: int = 1,
         save_path: Path = Path("data"),
-        save_every: int = 10,
+        save_every: int = 50,
     ) -> None:
         self.seeds = seeds
         self.max_depth = max_depth
@@ -55,6 +55,7 @@ class Crawler:
         self.scraper = Scraper(rate_limit=rate_limit, cache_dir=cache_dir)
         self.graph = BandGraph()
         self.visited: set[int] = set()
+        self._crawled_depths: dict[int, int] = {}
         self._resume_queue: deque[tuple[int, int]] = deque()
 
         # Load existing progress if available
@@ -66,6 +67,7 @@ class Crawler:
             self.graph = existing
             if state is not None:
                 self.visited = set(state.crawled_ids)
+                self._crawled_depths = dict(state.crawled_depths)
                 self._resume_queue = deque(
                     (band_id, depth)
                     for band_id, depth in state.pending_queue
@@ -90,6 +92,7 @@ class Crawler:
             CrawlState(
                 crawled_ids=sorted(self.visited),
                 pending_queue=list(queue),
+                crawled_depths=self._crawled_depths,
             )
         )
         self._dirty = False
@@ -107,6 +110,60 @@ class Crawler:
         if self._dirty:
             self._save_checkpoint(queue)
 
+    def _reconstruct_depths_from_graph(self) -> dict[int, int]:
+        """Reconstruct crawl depths via BFS from seeds through the edge graph.
+
+        Used for backward compatibility when resuming from a crawl_state.json
+        that predates the *crawled_depths* field.
+        """
+        adj: dict[int, list[int]] = {}
+        for edge in self.graph.edges:
+            adj.setdefault(edge.source_id, []).append(edge.target_id)
+
+        depths: dict[int, int] = {}
+        bfs: deque[tuple[int, int]] = deque()
+        for seed in self.seeds:
+            if seed in self.visited:
+                depths[seed] = 0
+                bfs.append((seed, 0))
+
+        while bfs:
+            band_id, depth = bfs.popleft()
+            for target_id in adj.get(band_id, []):
+                if target_id in self.visited and target_id not in depths:
+                    depths[target_id] = depth + 1
+                    bfs.append((target_id, depth + 1))
+
+        return depths
+
+    def _rebuild_frontier(self) -> deque[tuple[int, int]]:
+        """Rebuild the BFS queue from the frontier of already-crawled bands.
+
+        Called when the persisted pending queue is empty (previous crawl
+        completed) but the user increased ``max_depth`` or ``max_bands``.
+        """
+        if not self._crawled_depths and self.visited:
+            self._crawled_depths = self._reconstruct_depths_from_graph()
+
+        adj: dict[int, list[int]] = {}
+        for edge in self.graph.edges:
+            adj.setdefault(edge.source_id, []).append(edge.target_id)
+
+        seen: set[int] = set()
+        queue: deque[tuple[int, int]] = deque()
+        for band_id, depth in self._crawled_depths.items():
+            if depth + 1 > self.max_depth:
+                continue
+            for target_id in adj.get(band_id, []):
+                if target_id not in self.visited and target_id not in seen:
+                    seen.add(target_id)
+                    queue.append((target_id, depth + 1))
+
+        if queue:
+            logger.info("Rebuilt frontier: %d bands to explore", len(queue))
+
+        return queue
+
     def _build_initial_queue(self) -> deque[tuple[int, int]]:
         queue: deque[tuple[int, int]] = deque(self._resume_queue)
         if queue:
@@ -115,6 +172,11 @@ class Crawler:
         for seed in self.seeds:
             if seed not in self.visited:
                 queue.append((seed, 0))
+
+        if not queue and self.visited:
+            # Previous crawl completed but scope may have increased.
+            queue = self._rebuild_frontier()
+
         return queue
 
     async def _fetch_recommendations(
@@ -176,6 +238,7 @@ class Crawler:
                         continue
 
                     self.visited.add(band_id)
+                    self._crawled_depths[band_id] = depth
 
                     fetched = await self._fetch_recommendations(session, sem, band_id)
                     if fetched is None:
@@ -216,7 +279,7 @@ def run_crawl(
     max_bands: int = 500,
     rate_limit: float = 1.0,
     save_path: Path = Path("data"),
-    save_every: int = 10,
+    save_every: int = 50,
 ) -> BandGraph:
     """Synchronous convenience wrapper around the async crawler."""
     crawler = Crawler(
