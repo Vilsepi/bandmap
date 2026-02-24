@@ -1,10 +1,14 @@
-.venv
 node_modules/
 dist/
 data/
 temp/
-__pycache__/
-*.pyc
 .env
 *.db
+*.gz
 *.tsbuildinfo
+
+packages/web/public/*.json
+
+.venv
+__pycache__/
+*.pyc
