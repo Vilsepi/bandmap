@@ -76,6 +76,7 @@ def main(argv: list[str] | None = None) -> None:
 
     # -- crawl -----------------------------------------------------------
     p_crawl = sub.add_parser("crawl", help="Crawl band recommendations")
+    p_crawl.add_argument("-v", "--verbose", action="store_true")
     p_crawl.add_argument(
         "--seed",
         nargs="+",
@@ -96,11 +97,13 @@ def main(argv: list[str] | None = None) -> None:
 
     # -- export ----------------------------------------------------------
     p_export = sub.add_parser("export", help="Export graph to GEXF/GraphML/D3")
+    p_export.add_argument("-v", "--verbose", action="store_true")
     p_export.add_argument("--input", default="data")
     p_export.add_argument("--output-dir", default="data")
 
     # -- stats -----------------------------------------------------------
     p_stats = sub.add_parser("stats", help="Print graph statistics")
+    p_stats.add_argument("-v", "--verbose", action="store_true")
     p_stats.add_argument("--input", default="data")
     p_stats.add_argument("--top", type=int, default=20)
 

@@ -36,6 +36,11 @@
     (a.name || "").localeCompare(b.name || "")
   );
 
+  // ── Footer: total band count ─────────────────────────
+  const totalBands = data.nodes.length;
+  const pct = Math.round((totalBands / 195600) * 100);
+  document.getElementById("footer").textContent = `Contains ${totalBands.toLocaleString()} bands (${pct}% of Metal Archives)`;
+
   // ── Genre → color mapping ───────────────────────────
   const genreKeywords = [
     "Black", "Death", "Doom", "Thrash", "Power", "Heavy",
@@ -101,7 +106,7 @@
 
   // ── Responsive settings ──────────────────────────────
   const isMobile = window.matchMedia("(max-width: 768px)").matches;
-  const MAX_NEIGHBORS = isMobile ? 20 : 50;
+  const MAX_NEIGHBORS = isMobile ? 15 : 30;
 
   // ── Extract ego-graph ────────────────────────────────
   function egoGraph(centerId) {
@@ -197,13 +202,7 @@
       .selectAll("g")
       .data(ego.nodes, (d) => d.id)
       .join("g")
-      .attr("class", (d) => (d.id === centerId ? "node center" : "node"))
-      .call(
-        d3.drag()
-          .on("start", dragStart)
-          .on("drag", dragging)
-          .on("end", dragEnd)
-      );
+      .attr("class", (d) => (d.id === centerId ? "node center" : "node"));
 
     nodeSel
       .append("circle")
@@ -215,7 +214,8 @@
 
     nodeSel
       .append("text")
-      .attr("dy", (d) => rScale(similarityByNode.get(d.id) || 0) + (d.id === centerId ? 20 : 14))
+      .attr("dy", (d) => d.id === centerId ? "0.35em" : rScale(similarityByNode.get(d.id) || 0) + 14)
+      .attr("text-anchor", (d) => d.id === centerId ? "middle" : null)
       .text((d) => truncate(d.name || `#${d.id}`, 22));
 
     // Click → recenter
@@ -230,8 +230,8 @@
       .on("mouseenter", (event, d) => {
         tooltip.innerHTML = `
           <div class="tt-name">${esc(d.name || `#${d.id}`)}</div>
-          <div class="tt-detail">${esc(d.country || "")}</div>
           <div class="tt-detail">${esc(d.genres || "")}</div>
+          <div class="tt-detail">${esc(d.country || "")}</div>
         `;
         tooltip.classList.add("visible");
       })

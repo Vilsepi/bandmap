@@ -15,4 +15,5 @@ class GzipHandler(http.server.SimpleHTTPRequestHandler):
 if __name__ == "__main__":
     project_root = os.path.dirname(__file__) or "."
     os.chdir(os.path.join(project_root, "web"))
+    print("Serving on http://localhost:8000")
     http.server.HTTPServer(("", 8000), GzipHandler).serve_forever()

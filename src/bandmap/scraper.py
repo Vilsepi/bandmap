@@ -83,6 +83,7 @@ class Scraper:
         if cached is not None:
             return cached, "cache"
 
+        logger.debug(f"Requesting {url}")
         for attempt in range(1, self.max_retries + 1):
             await self._throttle()
             try:

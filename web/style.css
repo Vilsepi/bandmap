@@ -1,9 +1,21 @@
+/* ── Brand colors ──────────────────────────────────────── */
+:root {
+  --color-bg:           #202020;
+  --color-surface:      #303030;
+  --color-border:       #303030;
+  --color-accent:       #14dc82;
+  --color-accent-glow:  #1bff91;
+  --color-text-default: #fff;
+  --color-text-light:   #ddd;
+  --color-text-dim:     #5e987e;
+}
+
 /* ── Reset ─────────────────────────────────────────────── */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  background: #141414;
-  color: #e0e0e0;
+  background: var(--color-bg);
+  color: var(--color-text-default);
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   overflow: hidden;
 }
@@ -28,8 +40,8 @@ body {
 
 /* ── Info panel (row 2 inside control-panel) ──────────── */
 #info-panel {
-  background: #1b1a1a;
-  border: 1px solid #222;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   padding: 10px 20px 10px 20px;
   margin-top: 5px;
   pointer-events: none;
@@ -37,7 +49,7 @@ body {
 
 #band-name {
   min-width: 0;
-  color: #14be72;
+  color: var(--color-accent);
   pointer-events: auto;
   font-size: 1.4rem;
   font-weight: 700;
@@ -47,7 +59,7 @@ body {
 
 #band-genres {
   font-size: 0.9rem;
-  color: #557b6a;
+  color: var(--color-text-dim);
   margin-top: 2px;
   font-weight: 700;
 }
@@ -55,7 +67,7 @@ body {
 #band-country,
 #band-neighbors {
   font-size: 0.82rem;
-  color: #557b6a;
+  color: var(--color-text-dim);
   margin-top: 2px;
 }
 
@@ -70,19 +82,25 @@ body {
 #external-links a {
   flex: 1;
   min-width: 0;
-  background: #1b1a1a;
-  border: 1px solid #222;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
-  color: #14be72;
+  color: var(--color-accent);
   text-decoration: none;
   text-align: center;
+  font-weight: 700;
   font-size: 0.88rem;
   line-height: 1;
   padding: 11px 12px;
 }
 
 #external-links a:hover {
-  border-color: #14be72;
+  border-color: var(--color-accent);
+}
+
+#external-links a:active {
+  background: var(--color-accent);
+  color: var(--color-surface);
 }
 
 /* ── Search row (row 1 inside control-panel) ─────────── */
@@ -96,36 +114,42 @@ body {
 #search-input {
   flex: 1;
   min-width: 0;
-  background: #1b1a1a;
-  border: 1px solid #222;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
-  color: #14be72;
+  color: var(--color-accent);
   font-size: 0.9rem;
-  padding: 8px 14px;
+  padding: 14px 14px;
   outline: none;
 }
 
 #search-input:focus {
-  border-color: #14be72;
+  border-color: var(--color-accent);
 }
 
 #search-input::placeholder {
-  color: #4a856a;
+  color: var(--color-text-dim);
 }
 
 #random-btn {
   flex: none;
-  width: 40px;
-  background: #1b1a1a;
-  border: 1px solid #222;
+  width: 80px;
+  min-height: 48px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
-  color: #14be72;
+  color: var(--color-accent);
   font-size: 1rem;
   cursor: pointer;
 }
 
 #random-btn:hover {
-  border-color: #14be72;
+  border-color: var(--color-accent);
+}
+
+#random-btn:active {
+  background: var(--color-accent);
+  color: var(--color-surface);
 }
 
 #search-results {
@@ -134,8 +158,8 @@ body {
   top: 100%;
   left: 0;
   right: 0;
-  background: #1b1a1a;
-  border: 1px solid #222;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
   margin-top: 5px;
   max-height: 300px;
@@ -156,12 +180,12 @@ body {
 
 #search-results li:hover,
 #search-results li.active {
-  background: #14be72;
-  color: #000;
+  background: var(--color-accent);
+  color: var(--color-surface);
 }
 
 #search-results li .sr-country {
-  color: #555;
+  color: var(--color-text-dim);
   font-size: 0.75rem;
   margin-left: 6px;
 }
@@ -170,12 +194,12 @@ body {
 #tooltip {
   position: fixed;
   pointer-events: none;
-  background: #1b1a1a;
-  border: 1px solid #222;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 5px;
   padding: 8px 12px;
   font-size: 0.78rem;
-  color: #ddd;
+  color: var(--color-text-light);
   max-width: 260px;
   line-height: 1.4;
   z-index: 30;
@@ -189,13 +213,30 @@ body {
 
 #tooltip .tt-name {
   font-weight: 700;
-  color: #14be72;
+  color: var(--color-accent);
   font-size: 0.88rem;
 }
 
 #tooltip .tt-detail {
-  color: #999;
+  color: var(--color-text-dim);
   margin-top: 2px;
+  font-weight: 700;
+}
+
+/* ── Footer ───────────────────────────────────────────── */
+#footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: none;
+  padding: 5px 15px;
+  font-size: 0.8rem;
+  color: var(--color-text-dim);
+  font-weight: 700;
+  text-align: center;
+  z-index: 20;
+  pointer-events: none;
 }
 
 /* ── Graph elements ───────────────────────────────────── */
@@ -205,7 +246,7 @@ body {
 }
 
 .link.center-link {
-  stroke: #14be72;
+  stroke: var(--color-accent);
   stroke-width: 2;
   stroke-opacity: 0.6;
 }
@@ -218,18 +259,18 @@ body {
 }
 
 .node circle:hover {
-  stroke: #14be7280;
-  stroke-width: 2;
+  stroke: var(--color-accent);
+  stroke-width: 3;
 }
 
 .node.center circle {
-  stroke: #14be72;
-  stroke-width: 3;
-  filter: drop-shadow(0 0 10px #14be7280);
+  stroke: var(--color-accent);
+  stroke-width: 0;
+  filter: drop-shadow(0 0 12px var(--color-accent-glow));
 }
 
 .node text {
-  fill: rgba(255, 255, 255, 0.8);
+  fill: var(--color-text-default);
   font-size: 10px;
   text-anchor: middle;
   pointer-events: none;
@@ -237,7 +278,7 @@ body {
 }
 
 .node.center text {
-  fill: #fff;
+  fill: var(--color-text-default);
   font-size: 12px;
   font-weight: 600;
 }

@@ -137,30 +137,68 @@ class Crawler:
         return depths
 
     def _rebuild_frontier(self) -> deque[tuple[int, int]]:
-        """Rebuild the BFS queue from the frontier of already-crawled bands.
+        """Rebuild the BFS queue from the full edge graph.
 
-        Called when the persisted pending queue is empty (previous crawl
-        completed) but the user increased ``max_depth`` or ``max_bands``.
+        Re-computes minimum depths from seeds via BFS over all known edges.
+        This handles:
+        - Crash recovery with a lost ``pending_queue``.
+        - Depth increases (``max_depth`` raised since last crawl).
+        - Depth optimisation (shorter paths found through edges added in
+          later crawl rounds).
         """
         if not self._crawled_depths and self.visited:
             self._crawled_depths = self._reconstruct_depths_from_graph()
 
+        # Build forward adjacency (source → target) from all edges.
         adj: dict[int, list[int]] = {}
         for edge in self.graph.edges:
             adj.setdefault(edge.source_id, []).append(edge.target_id)
 
-        seen: set[int] = set()
-        queue: deque[tuple[int, int]] = deque()
-        for band_id, depth in self._crawled_depths.items():
-            if depth + 1 > self.max_depth:
-                continue
+        # BFS from seeds to compute the minimum reachable depth for every
+        # band in the graph (visited or not).
+        min_depth: dict[int, int] = {}
+        bfs: deque[tuple[int, int]] = deque()
+        for seed in self.seeds:
+            if seed not in min_depth:
+                min_depth[seed] = 0
+                bfs.append((seed, 0))
+
+        while bfs:
+            band_id, depth = bfs.popleft()
             for target_id in adj.get(band_id, []):
-                if target_id not in self.visited and target_id not in seen:
-                    seen.add(target_id)
-                    queue.append((target_id, depth + 1))
+                if target_id not in min_depth:
+                    min_depth[target_id] = depth + 1
+                    bfs.append((target_id, depth + 1))
+
+        # Update crawled_depths where a shorter path was found.
+        updated = 0
+        for band_id, new_d in min_depth.items():
+            if band_id in self._crawled_depths and new_d < self._crawled_depths[band_id]:
+                self._crawled_depths[band_id] = new_d
+                updated += 1
+        if updated:
+            logger.info(
+                "Optimised depths for %d bands (shorter paths found)", updated
+            )
+
+        # Queue every unvisited band reachable within max_depth.
+        queue: deque[tuple[int, int]] = deque()
+        unvisited_beyond = 0
+        for band_id, depth in min_depth.items():
+            if band_id not in self.visited:
+                if depth <= self.max_depth:
+                    queue.append((band_id, depth))
+                else:
+                    unvisited_beyond += 1
 
         if queue:
             logger.info("Rebuilt frontier: %d bands to explore", len(queue))
+        elif unvisited_beyond:
+            logger.info(
+                "Crawl complete at depth %d (%d unvisited bands beyond that depth)",
+                self.max_depth,
+                unvisited_beyond,
+            )
 
         return queue
 

@@ -1,4 +1,4 @@
-# bandmap
+# Band map
 
 Scrapes metal bands from [Metal Archives](https://www.metal-archives.com) and builds a graph of similar metal bands. Each band is a *node* and each "similar to" relationship is an *edge* in the graph.
 
@@ -13,7 +13,7 @@ python3 -m venv .venv
 
 All commands are run from the project root with `PYTHONPATH=src`:
 
-### Crawl
+### Crawling data
 
 Fetch recommendations starting from one or more seed band IDs (numeric ID in the URL of the band page) via breadth-first search:
 
@@ -35,7 +35,7 @@ Command-line arguments:
 | `--save-every` | `10`         | Save to disk every N bands (0 = only at end)                |
 | `-v`           |              | Verbose logging                                             |
 
-Crawls are **resumable** — re-running with the same `--output` continues where it left off.
+Crawls are resumable — re-running with the same `--output` continues where it left off.
 
 JSON output is split across files in the output directory:
 
@@ -75,10 +75,6 @@ src/bandmap/
 ├── store.py       # JSON and SQLite persistence
 └── graph.py       # NetworkX graph building, export, and analytics
 ```
-
-## Data
-
-Crawled data is saved to `data/` (gitignored). Raw HTML responses are cached in `data/cache/` to avoid redundant requests during development.
 
 ## Limitations
 
