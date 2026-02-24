@@ -1,0 +1,109 @@
+{
+ "artist": {
+  "bio": {
+   "content": "A long text description of the artist is here.",
+   "links": {
+    "link": {
+     "#text": "",
+     "href": "https://last.fm/music/Rosetta/+wiki",
+     "rel": "original"
+    }
+   },
+   "published": "09 Mar 2006, 04:53",
+   "summary": "A shorter text summary of the artist is here."
+  },
+  "image": [
+   {
+    "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+    "size": "small"
+   }
+  ],
+  "mbid": "79489e1b-5658-4e5f-8841-3e313946dc4d",
+  "name": "Rosetta",
+  "ontour": "0",
+  "similar": {
+   "artist": [
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      }
+     ],
+     "name": "Cult of Luna",
+     "url": "https://www.last.fm/music/Cult+of+Luna"
+    },
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      }
+     ],
+     "name": "Isis",
+     "url": "https://www.last.fm/music/Isis"
+    },
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      }
+     ],
+     "name": "Mouth of the Architect",
+     "url": "https://www.last.fm/music/Mouth+of+the+Architect"
+    },
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      }
+     ],
+     "name": "Year of No Light",
+     "url": "https://www.last.fm/music/Year+of+No+Light"
+    },
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      }
+     ],
+     "name": "The Moth Gatherer",
+     "url": "https://www.last.fm/music/The+Moth+Gatherer"
+    }
+   ]
+  },
+  "stats": {
+   "listeners": "151136",
+   "playcount": "6564756"
+  },
+  "streamable": "0",
+  "tags": {
+   "tag": [
+    {
+     "name": "Post-Metal",
+     "url": "https://www.last.fm/tag/Post-Metal"
+    },
+    {
+     "name": "Sludge",
+     "url": "https://www.last.fm/tag/Sludge"
+    },
+    {
+     "name": "post-rock",
+     "url": "https://www.last.fm/tag/post-rock"
+    },
+    {
+     "name": "ambient",
+     "url": "https://www.last.fm/tag/ambient"
+    },
+    {
+     "name": "post-hardcore",
+     "url": "https://www.last.fm/tag/post-hardcore"
+    }
+   ]
+  },
+  "url": "https://www.last.fm/music/Rosetta"
+ }
+}

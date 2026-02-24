@@ -1,81 +1,82 @@
-# Band map
+# Bandmap
 
-Scrapes metal bands from [Metal Archives](https://www.metal-archives.com) and builds a graph of similar metal bands. Each band is a *node* and each "similar to" relationship is an *edge* in the graph.
+Crawls artists from [Last.fm](https://www.last.fm) and builds a graph of similar artists. Used to find new interesting artists you haven't listened to yet, based on similarity to music you like.
 
-## Setup
+## Prerequisites
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+- Node.js ≥ 20
+- A [Last.fm API key](https://www.last.fm/api/account/create)
+
+## Install
+
+```sh
+npm install
 ```
 
-## Usage
+## Build
 
-All commands are run from the project root with `PYTHONPATH=src`:
-
-### Crawling data
-
-Fetch recommendations starting from one or more seed band IDs (numeric ID in the URL of the band page) via breadth-first search:
-
-```bash
-PYTHONPATH=src .venv/bin/python -m bandmap crawl --seed 12613 --depth 2 --max-bands 500
-PYTHONPATH=src .venv/bin/python -m bandmap crawl --seed 12613 6 151 --depth 2
+```sh
+npm run build
 ```
 
-Command-line arguments:
+## Configure
 
-| Argument       | Default                  | Description                                     |
-|----------------|--------------|-------------------------------------------------------------|
-| `--seed`       | *(required)* | One or more band IDs to start from                          |
-| `--depth`      | `2`          | Max BFS hops from any seed                                  |
-| `--max-bands`  | `500`        | Stop after visiting this many bands                         |
-| `--rate-limit` | `1.0`        | Min seconds between HTTP requests                           |
-| `--output`     | `data`       | Output dir/path for JSON files (`bands.json`, `edges.json`) |
-| `--sqlite`     | *(none)*     | Also save to this SQLite file                               |
-| `--save-every` | `10`         | Save to disk every N bands (0 = only at end)                |
-| `-v`           |              | Verbose logging                                             |
+Copy `.env.example` to `.env` and set your API key:
 
-Crawls are resumable — re-running with the same `--output` continues where it left off.
-
-JSON output is split across files in the output directory:
-
-- `bands.json`: hashmap of `band_id -> band metadata` (`name`, `country`, `genre`, `url`)
-- `edges.json`: list of `{source_id, target_id, score}` edges
-- `crawl_state.json`: crawler checkpoint (`crawled_ids` + pending BFS queue)
-
-You can find band IDs in Metal Archives URLs, e.g. `https://www.metal-archives.com/bands/Swallow_the_Sun/12613` → ID is `12613`.
-
-### Export
-
-Export the crawled graph to GEXF (Gephi), GraphML, and D3-compatible JSON:
-
-```bash
-PYTHONPATH=src .venv/bin/python -m bandmap export --input data --output-dir data/exports
+```sh
+cp .env.example .env
+# edit .env and set LASTFM_API_KEY
 ```
 
-Produces `bandgraph.gexf`, `bandgraph.graphml`, and `bandgraph_d3.json` in the output directory.
+## Run tests
 
-### Stats
-
-Print graph statistics and most-connected bands:
-
-```bash
-PYTHONPATH=src .venv/bin/python -m bandmap stats --input data --top 20
+```sh
+cd packages/crawler
+npm test
 ```
 
-## Project structure
+## Crawl
 
+Seed the crawler with one or more artist MBIDs (MusicBrainz IDs). Find MBIDs on [MusicBrainz](https://musicbrainz.org) or from Last.fm API responses.
+
+```sh
+# Single seed
+node packages/crawler/dist/index.js crawl \
+  --seed-mbid 79489e1b-5658-4e5f-8841-3e313946dc4d \
+  --max-depth 3 --max-artists 500
+
+# Multiple seeds
+node packages/crawler/dist/index.js crawl \
+  --seed-mbid 79489e1b-5658-4e5f-8841-3e313946dc4d \
+  --seed-mbid c14b4180-dc87-481e-b17a-64e4150f90f6 \
+  --max-depth 5 --max-artists 10000
+
+# Seeds from file (one MBID per line)
+node packages/crawler/dist/index.js crawl \
+  --seed-file ./data/seeds.txt \
+  --max-depth 5 --max-artists 10000
+
+# Check progress
+node packages/crawler/dist/index.js status
 ```
-src/bandmap/
-├── __init__.py
-├── __main__.py    # CLI entry point
-├── models.py      # Pydantic data models (Band, SimilarEdge, BandGraph)
-├── scraper.py     # HTTP fetching + HTML parsing
-├── crawler.py     # BFS traversal logic
-├── store.py       # JSON and SQLite persistence
-└── graph.py       # NetworkX graph building, export, and analytics
+
+Data is stored in `./data/artists.db` (SQLite) by default. Use `--db <path>` to change.
+
+The crawl is resumable — rerun the same command to continue where it left off.
+
+## Export data for the frontend
+
+```sh
+node packages/crawler/dist/index.js export \
+  --db ./data/artists.db \
+  --out ./packages/web/public/graph.json
 ```
 
-## Limitations
+## Run the frontend
 
-For now, this only includes metal bands which Metal Archives deems as *metal*.
+```sh
+cd packages/web
+npx vite
+```
+
+Then open http://localhost:5173 in your browser.

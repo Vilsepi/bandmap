@@ -1,0 +1,48 @@
+{
+ "similarartists": {
+  "@attr": {
+   "artist": "Rosetta"
+  },
+  "artist": [
+   {
+    "image": [
+     {
+      "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+      "size": "small"
+     }
+    ],
+    "match": "1",
+    "mbid": "d347406f-839d-4423-9a28-188939282afa",
+    "name": "Cult of Luna",
+    "streamable": "0",
+    "url": "https://www.last.fm/music/Cult+of+Luna"
+   },
+   {
+    "image": [
+     {
+      "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+      "size": "small"
+     }
+    ],
+    "match": "0.927844",
+    "mbid": "5e521e8c-0ab2-44c4-8fd8-14d8d3321265",
+    "name": "Isis",
+    "streamable": "0",
+    "url": "https://www.last.fm/music/Isis"
+   },
+   {
+    "image": [
+     {
+      "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+      "size": "small"
+     }
+    ],
+    "match": "0.768387",
+    "mbid": "e3a3c55a-b95e-47e9-b4cb-7bfd63c51bfa",
+    "name": "Mouth of the Architect",
+    "streamable": "0",
+    "url": "https://www.last.fm/music/Mouth+of+the+Architect"
+   }
+  ]
+ }
+}

@@ -1,0 +1,12 @@
+
+# This is a list of artists to seed the crawl
+# IDs are universal MusicBrainz artist identifiers
+
+79489e1b-5658-4e5f-8841-3e313946dc4d Rosetta
+1c5efd53-d6b6-4d63-9d22-a15025cf5f07 Gojira
+e979c1bc-5cc2-497b-801f-823244a9166d Mokoma
+f74c7996-4c0b-4ebd-b1e7-219e21c41286 Stam1na
+e86fc1f5-d632-44b2-8aea-38f83aadffe8 Lorna Shore
+a3e5da19-2f38-4741-a956-9153e6787bc6 The Moth Gatherer
+95b6eca9-289f-4993-b788-172627220477 Kaunis Kuolematon
+28091a29-d11e-4fbe-a774-380daa0f7cfb Marianas Rest
