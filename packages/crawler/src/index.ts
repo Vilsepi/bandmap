@@ -2,9 +2,8 @@
 
 import { Command } from 'commander';
 import { config } from 'dotenv';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { LastFmClient } from './client.js';
 import { SqliteStore } from './store/sqlite.js';
 import { crawl } from './crawl.js';
@@ -86,8 +85,8 @@ program
 
       try {
         await crawl(client, store, {
-          maxDepth: parseInt(opts.maxDepth, 10),
-          maxArtists: parseInt(opts.maxArtists, 10),
+          maxDepth: Number.parseInt(opts.maxDepth, 10),
+          maxArtists: Number.parseInt(opts.maxArtists, 10),
         });
       } finally {
         store.close();

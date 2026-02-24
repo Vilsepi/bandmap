@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS crawl_queue (
 `;
 
 export class SqliteStore implements CrawlStore {
-  private db: Database.Database;
+  private readonly db: Database.Database;
 
   constructor(dbPath: string) {
     this.db = new Database(dbPath);

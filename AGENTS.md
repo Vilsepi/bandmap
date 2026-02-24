@@ -17,6 +17,8 @@ Verify that your changes work by running the following commands:
     npm run lint
     npm run test
 
+Check the IDE SonarQube extension problems and fix any code issues.
+
 # Secrets
 
 Do NOT read the the `.env` file! There are secrets which the user manages. You should not use these.

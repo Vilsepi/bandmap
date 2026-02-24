@@ -1,5 +1,5 @@
 import { normalizeTagName, tagId } from '@bandmap/shared';
-import type { Tag, Artist, ArtistRelation } from '@bandmap/shared';
+import type { Tag } from '@bandmap/shared';
 
 /** Raw Last.fm API response types (only the fields we use) */
 
@@ -120,7 +120,7 @@ export class LastFmClient {
     return (data.similarartists?.artist ?? []).map((a) => ({
       mbid: a.mbid ?? '',
       name: a.name,
-      match: parseFloat(a.match),
+      match: Number.parseFloat(a.match),
       url: a.url,
     }));
   }

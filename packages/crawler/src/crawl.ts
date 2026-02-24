@@ -8,6 +8,55 @@ export interface CrawlOptions {
   maxArtists: number;
 }
 
+/** Process a single artist entry: fetch info, similar artists, upsert, and enqueue. */
+async function processEntry(
+  entry: { mbid: string; name: string; depth: number },
+  client: LastFmClient,
+  store: CrawlStore,
+  rateLimiter: RateLimiter,
+): Promise<void> {
+  const info = await rateLimiter.execute(() => client.getArtistInfo(entry.mbid), isRetryable);
+  const now = new Date().toISOString();
+
+  if (info.artist.tags.length > 0) {
+    store.upsertTags(info.artist.tags);
+  }
+
+  store.upsertArtist({
+    mbid: info.artist.mbid,
+    name: info.artist.name,
+    url: info.artist.url,
+    tags: info.artist.tags.map((t: Tag) => t.name),
+    fetchedAt: now,
+  });
+
+  const similar = await rateLimiter.execute(
+    () => client.getSimilarArtists(entry.mbid),
+    isRetryable,
+  );
+
+  const relations: ArtistRelation[] = similar.map((s) => ({
+    sourceMbid: entry.mbid,
+    targetMbid: s.mbid,
+    targetName: s.name,
+    targetUrl: s.url,
+    match: s.match,
+    fetchedAt: now,
+  }));
+
+  if (relations.length > 0) {
+    store.upsertRelations(relations);
+  }
+
+  for (const s of similar) {
+    if (s.mbid && !store.hasArtist(s.mbid) && !store.isInQueue(s.mbid)) {
+      store.enqueue(s.mbid, s.name, entry.depth + 1);
+    }
+  }
+
+  store.markDone(entry.mbid);
+}
+
 /**
  * BFS crawler that traverses the Last.fm artist similarity graph.
  */
@@ -24,12 +73,7 @@ export async function crawl(
     `Starting crawl: ${stats.pending} pending, ${stats.done} done, ${stats.error} errors`,
   );
 
-  while (true) {
-    if (crawledCount >= options.maxArtists) {
-      console.log(`Reached max artists limit (${options.maxArtists}). Stopping.`);
-      break;
-    }
-
+  while (crawledCount < options.maxArtists) {
     const entry = store.dequeue();
     if (!entry) {
       console.log('No more pending artists in queue. Crawl complete.');
@@ -37,7 +81,6 @@ export async function crawl(
     }
 
     if (entry.depth > options.maxDepth) {
-      // This artist exceeds max depth; skip and mark done without crawling
       store.markDone(entry.mbid);
       continue;
     }
@@ -49,60 +92,17 @@ export async function crawl(
     );
 
     try {
-      // 1. Fetch artist info
-      const info = await rateLimiter.execute(() => client.getArtistInfo(entry.mbid), isRetryable);
-
-      const now = new Date().toISOString();
-
-      // Upsert tags
-      if (info.artist.tags.length > 0) {
-        store.upsertTags(info.artist.tags);
-      }
-
-      // Upsert artist
-      store.upsertArtist({
-        mbid: info.artist.mbid,
-        name: info.artist.name,
-        url: info.artist.url,
-        tags: info.artist.tags.map((t: Tag) => t.name),
-        fetchedAt: now,
-      });
-
-      // 2. Fetch similar artists
-      const similar = await rateLimiter.execute(
-        () => client.getSimilarArtists(entry.mbid),
-        isRetryable,
-      );
-
-      // Build relations
-      const relations: ArtistRelation[] = similar.map((s) => ({
-        sourceMbid: entry.mbid,
-        targetMbid: s.mbid,
-        targetName: s.name,
-        targetUrl: s.url,
-        match: s.match,
-        fetchedAt: now,
-      }));
-
-      if (relations.length > 0) {
-        store.upsertRelations(relations);
-      }
-
-      // 3. Enqueue new artists (only those with mbid)
-      for (const s of similar) {
-        if (s.mbid && !store.hasArtist(s.mbid) && !store.isInQueue(s.mbid)) {
-          store.enqueue(s.mbid, s.name, entry.depth + 1);
-        }
-      }
-
-      // 4. Mark done
-      store.markDone(entry.mbid);
+      await processEntry(entry, client, store, rateLimiter);
       crawledCount++;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`Error crawling "${entry.name}" (${entry.mbid}): ${message}`);
       store.markError(entry.mbid, message);
     }
+  }
+
+  if (crawledCount >= options.maxArtists) {
+    console.log(`Reached max artists limit (${options.maxArtists}). Stopping.`);
   }
 
   const finalStats = store.getQueueStats();

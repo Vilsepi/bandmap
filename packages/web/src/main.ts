@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 
   // Min weight filter
   minWeightSlider.addEventListener('input', () => {
-    const val = parseFloat(minWeightSlider.value);
+    const val = Number.parseFloat(minWeightSlider.value);
     minWeightValue.textContent = val.toFixed(2);
     manager.filterByMinWeight(val);
   });
@@ -177,4 +177,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(console.error);
+await main();
