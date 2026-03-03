@@ -40,8 +40,8 @@ export class BandmapStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    const opinionsTable = new dynamodb.Table(this, 'OpinionsTable', {
-      tableName: 'bandmap-opinions',
+    const ratingsTable = new dynamodb.Table(this, 'RatingsTable', {
+      tableName: 'bandmap-ratings',
       partitionKey: { name: 'apiKey', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'artistMbid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -69,7 +69,7 @@ export class BandmapStack extends cdk.Stack {
 
     const fn = new lambdaNode.NodejsFunction(this, 'ApiHandler', {
       functionName: 'bandmap-api',
-      runtime: lambda.Runtime.NODEJS_22_X,
+      runtime: lambda.Runtime.NODEJS_24_X,
       entry: backendEntry,
       handler: 'handler',
       timeout: cdk.Duration.seconds(30),
@@ -79,14 +79,14 @@ export class BandmapStack extends cdk.Stack {
         USERS_TABLE: usersTable.tableName,
         ARTISTS_TABLE: artistsTable.tableName,
         RELATED_ARTISTS_TABLE: relatedArtistsTable.tableName,
-        OPINIONS_TABLE: opinionsTable.tableName,
+        RATINGS_TABLE: ratingsTable.tableName,
         RECOMMENDATIONS_TABLE: recommendationsTable.tableName,
         SEARCHES_TABLE: searchesTable.tableName,
         LASTFM_API_KEY: props.lastFmApiKey,
       },
       bundling: {
         format: lambdaNode.OutputFormat.ESM,
-        target: 'node22',
+        target: 'node24',
         mainFields: ['module', 'main'],
         externalModules: ['@aws-sdk/*'],
       },
@@ -96,7 +96,7 @@ export class BandmapStack extends cdk.Stack {
     usersTable.grantReadData(fn);
     artistsTable.grantReadWriteData(fn);
     relatedArtistsTable.grantReadWriteData(fn);
-    opinionsTable.grantReadWriteData(fn);
+    ratingsTable.grantReadWriteData(fn);
     recommendationsTable.grantReadWriteData(fn);
     searchesTable.grantReadWriteData(fn);
 

@@ -11,7 +11,7 @@ import { getOrFetchRelatedArtists } from './cache.js';
  * Generate recommendations for a user based on their highly-rated artists.
  *
  * Algorithm:
- * 1. Get all rated opinions for the user, sorted by score descending.
+ * 1. Get all rated ratings for the user, sorted by score descending.
  * 2. For the top N liked artists (score >= RECOMMENDATION_MIN_SCORE), fetch related artists.
  * 3. For each related artist, compute a relevance score = userScore × match.
  *    If an artist appears from multiple sources, sum the scores.
@@ -20,19 +20,19 @@ import { getOrFetchRelatedArtists } from './cache.js';
  * 6. Write to the recommendations table and return.
  */
 export async function generateRecommendations(apiKey: string): Promise<Recommendation[]> {
-  // 1. Get all user opinions to know what to exclude and what to seed from
-  const allOpinions = await db.listOpinions(apiKey);
+  // 1. Get all user ratings to know what to exclude and what to seed from
+  const allRatings = await db.listRatings(apiKey);
 
   // Set of all artist mbids the user has interacted with
-  const interactedMbids = new Set(allOpinions.map((o) => o.artistMbid));
+  const interactedMbids = new Set(allRatings.map((o) => o.artistMbid));
 
   // Liked artists sorted by score descending
-  const likedOpinions = allOpinions
+  const likedRatings = allRatings
     .filter((o) => o.status === 'rated' && o.score !== null && o.score >= RECOMMENDATION_MIN_SCORE)
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .slice(0, RECOMMENDATION_MAX_SEEDS);
 
-  if (likedOpinions.length === 0) {
+  if (likedRatings.length === 0) {
     await db.putRecommendations(apiKey, []);
     return [];
   }
@@ -52,17 +52,17 @@ export async function generateRecommendations(apiKey: string): Promise<Recommend
 
   // We also need artist names for the sources — fetch them in parallel
   const seedArtists = await Promise.all(
-    likedOpinions.map(async (opinion) => {
+    likedRatings.map(async (rating) => {
       const [related, artist] = await Promise.all([
-        getOrFetchRelatedArtists(opinion.artistMbid),
-        db.getArtist(opinion.artistMbid),
+        getOrFetchRelatedArtists(rating.artistMbid),
+        db.getArtist(rating.artistMbid),
       ]);
-      return { opinion, related, artistName: artist?.name ?? 'Unknown' };
+      return { rating, related, artistName: artist?.name ?? 'Unknown' };
     }),
   );
 
-  for (const { opinion, related, artistName } of seedArtists) {
-    const userScore = opinion.score ?? 0;
+  for (const { rating, related, artistName } of seedArtists) {
+    const userScore = rating.score ?? 0;
 
     for (const rel of related) {
       // Skip artists the user already knows about
@@ -74,7 +74,7 @@ export async function generateRecommendations(apiKey: string): Promise<Recommend
       if (existing) {
         existing.totalScore += contribution;
         if (contribution > existing.bestContribution) {
-          existing.bestSourceMbid = opinion.artistMbid;
+          existing.bestSourceMbid = rating.artistMbid;
           existing.bestSourceName = artistName;
           existing.bestContribution = contribution;
         }
@@ -82,7 +82,7 @@ export async function generateRecommendations(apiKey: string): Promise<Recommend
         candidateMap.set(rel.targetMbid, {
           totalScore: contribution,
           artistName: rel.targetName,
-          bestSourceMbid: opinion.artistMbid,
+          bestSourceMbid: rating.artistMbid,
           bestSourceName: artistName,
           bestContribution: contribution,
         });

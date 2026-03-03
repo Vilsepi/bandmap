@@ -1,14 +1,14 @@
-export type { Tag, Artist, RelatedArtist, User, Opinion, Recommendation } from './types.js';
+export type { Tag, Artist, RelatedArtist, User, Rating, Recommendation } from './types.js';
 export type {
   SearchQuery,
-  PutOpinionBody,
-  ListOpinionsQuery,
+  PutRatingBody,
+  ListRatingsQuery,
   SearchResult,
   SearchResponse,
   ArtistResponse,
   RelatedArtistsResponse,
-  OpinionResponse,
-  OpinionsListResponse,
+  RatingResponse,
+  RatingsListResponse,
   RecommendationsResponse,
   ErrorResponse,
 } from './api.js';

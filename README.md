@@ -5,7 +5,7 @@ Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm
 ## Architecture
 
 - **Frontend** (`packages/web`): Vite SPA with search, ratings, todo list, recommendations, and an artist similarity graph
-- **Backend** (`packages/backend`): Single AWS Lambda behind API Gateway — pull-through cache for Last.fm data + user opinions & recommendations
+- **Backend** (`packages/backend`): Single AWS Lambda behind API Gateway — pull-through cache for Last.fm data + user ratings & recommendations
 - **Infrastructure** (`packages/infra`): AWS CDK stack — API Gateway HTTP API, Lambda, 5 DynamoDB tables
 - **Shared** (`packages/shared`): TypeScript types and constants shared between frontend and backend
 
@@ -16,7 +16,7 @@ Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm
 | Users | `apiKey` | — | App users & metadata |
 | Artists | `mbid` | — | Cached Last.fm artist data (7-day TTL) |
 | RelatedArtists | `sourceMbid` | `targetMbid` | Cached artist similarity edges |
-| Opinions | `apiKey` | `artistMbid` | User ratings & todo bookmarks |
+| Ratings | `apiKey` | `artistMbid` | User ratings & todo bookmarks |
 | Recommendations | `apiKey` | `artistMbid` | Per-user recommendations |
 
 ### API Endpoints
@@ -26,9 +26,9 @@ Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm
 | GET | `/search?q=...` | No | Search Last.fm for artists |
 | GET | `/artists/{mbid}` | Yes | Get artist (pull-through cache) |
 | GET | `/artists/{mbid}/related` | Yes | Get related artists (pull-through cache) |
-| GET | `/opinions?status=...` | Yes | List user's ratings/todos |
-| PUT | `/opinions/{mbid}` | Yes | Rate or bookmark an artist |
-| DELETE | `/opinions/{mbid}` | Yes | Remove a rating/bookmark |
+| GET | `/ratings?status=...` | Yes | List user's ratings/todos |
+| PUT | `/ratings/{mbid}` | Yes | Rate or bookmark an artist |
+| DELETE | `/ratings/{mbid}` | Yes | Remove a rating/bookmark |
 | GET | `/recommendations` | Yes | Get current recommendations |
 | POST | `/recommendations/generate` | Yes | Regenerate recommendations |
 

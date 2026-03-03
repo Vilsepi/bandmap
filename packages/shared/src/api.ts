@@ -1,4 +1,4 @@
-import type { Artist, Opinion, Recommendation, RelatedArtist } from './types.js';
+import type { Artist, Rating, Recommendation, RelatedArtist } from './types.js';
 
 // ── Request types ────────────────────────────────────────────
 
@@ -6,12 +6,12 @@ export interface SearchQuery {
   q: string;
 }
 
-export interface PutOpinionBody {
+export interface PutRatingBody {
   score: number | null;
   status: 'rated' | 'todo';
 }
 
-export interface ListOpinionsQuery {
+export interface ListRatingsQuery {
   status?: 'rated' | 'todo';
 }
 
@@ -36,12 +36,12 @@ export interface RelatedArtistsResponse {
   related: RelatedArtist[];
 }
 
-export interface OpinionResponse {
-  opinion: Opinion;
+export interface RatingResponse {
+  rating: Rating;
 }
 
-export interface OpinionsListResponse {
-  opinions: Opinion[];
+export interface RatingsListResponse {
+  ratings: Rating[];
 }
 
 export interface RecommendationsResponse {

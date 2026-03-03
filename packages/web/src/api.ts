@@ -2,10 +2,10 @@ import type {
   SearchResponse,
   ArtistResponse,
   RelatedArtistsResponse,
-  OpinionResponse,
-  OpinionsListResponse,
+  RatingResponse,
+  RatingsListResponse,
   RecommendationsResponse,
-  PutOpinionBody,
+  PutRatingBody,
 } from '@bandmap/shared';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
@@ -81,23 +81,20 @@ export async function getRelatedArtists(mbid: string): Promise<RelatedArtistsRes
   return apiFetch<RelatedArtistsResponse>(`/artists/${mbid}/related`);
 }
 
-export async function listOpinions(status?: 'rated' | 'todo'): Promise<OpinionsListResponse> {
+export async function listRatings(status?: 'rated' | 'todo'): Promise<RatingsListResponse> {
   const params = status ? `?status=${status}` : '';
-  return apiFetch<OpinionsListResponse>(`/opinions${params}`);
+  return apiFetch<RatingsListResponse>(`/ratings${params}`);
 }
 
-export async function putOpinion(
-  artistMbid: string,
-  body: PutOpinionBody,
-): Promise<OpinionResponse> {
-  return apiFetch<OpinionResponse>(`/opinions/${artistMbid}`, {
+export async function putRating(artistMbid: string, body: PutRatingBody): Promise<RatingResponse> {
+  return apiFetch<RatingResponse>(`/ratings/${artistMbid}`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
 }
 
-export async function deleteOpinion(artistMbid: string): Promise<void> {
-  return apiFetch<void>(`/opinions/${artistMbid}`, { method: 'DELETE' });
+export async function deleteRating(artistMbid: string): Promise<void> {
+  return apiFetch<void>(`/ratings/${artistMbid}`, { method: 'DELETE' });
 }
 
 export async function getRecommendations(): Promise<RecommendationsResponse> {
