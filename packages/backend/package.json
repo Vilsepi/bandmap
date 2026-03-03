@@ -1,0 +1,21 @@
+{
+  "name": "@bandmap/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/handler.js",
+  "types": "./dist/handler.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --import tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@bandmap/shared": "*",
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "@types/aws-lambda": "^8.10.145"
+  }
+}

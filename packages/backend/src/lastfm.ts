@@ -1,0 +1,194 @@
+import { normalizeTagName, tagId } from '@bandmap/shared';
+import type { Tag, Artist, RelatedArtist } from '@bandmap/shared';
+
+/** Raw Last.fm API response types (only the fields we use) */
+
+/** artist.getInfo response */
+export interface LastFmArtistInfoResponse {
+  artist: {
+    name: string;
+    mbid: string;
+    url: string;
+    tags: {
+      tag: {
+        name: string;
+        url: string;
+      }[];
+    };
+  };
+}
+
+/** artist.getSimilar response */
+export interface LastFmSimilarArtistsResponse {
+  similarartists: {
+    artist: {
+      name: string;
+      mbid: string;
+      match: string;
+      url: string;
+    }[];
+  };
+}
+
+/** artist.search response */
+export interface LastFmArtistSearchResponse {
+  results: {
+    artistmatches: {
+      artist: {
+        name: string;
+        mbid: string;
+        url: string;
+      }[];
+    };
+  };
+}
+
+/** Parsed artist info result */
+export interface ArtistInfoResult {
+  artist: {
+    mbid: string;
+    name: string;
+    url: string;
+    tags: Tag[];
+  };
+}
+
+/** Parsed similar artist entry */
+export interface SimilarArtistEntry {
+  mbid: string;
+  name: string;
+  match: number;
+  url: string;
+}
+
+export class LastFmApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+    public readonly retryable: boolean,
+  ) {
+    super(message);
+    this.name = 'LastFmApiError';
+  }
+}
+
+const LASTFM_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
+
+/**
+ * Fetch artist info by mbid from Last.fm.
+ * Returns parsed artist data with tags.
+ */
+export async function fetchArtistInfo(mbid: string, apiKey: string): Promise<Artist> {
+  const params = new URLSearchParams({
+    method: 'artist.getinfo',
+    mbid,
+    api_key: apiKey,
+    format: 'json',
+  });
+
+  const data = (await lastfmRequest(params)) as LastFmArtistInfoResponse;
+
+  const artist = data.artist;
+  const tags: Tag[] = (artist.tags?.tag ?? []).map((t) => {
+    const name = normalizeTagName(t.name);
+    return {
+      id: tagId(name),
+      name,
+      url: t.url.toLowerCase(),
+    };
+  });
+
+  return {
+    mbid: artist.mbid,
+    name: artist.name,
+    url: artist.url,
+    tags: tags.map((t) => t.name),
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Fetch similar artists by mbid from Last.fm.
+ * Returns list of related artist records.
+ */
+export async function fetchSimilarArtists(
+  mbid: string,
+  apiKey: string,
+  limit = 100,
+): Promise<RelatedArtist[]> {
+  const params = new URLSearchParams({
+    method: 'artist.getsimilar',
+    mbid,
+    api_key: apiKey,
+    format: 'json',
+    limit: String(limit),
+  });
+
+  const data = (await lastfmRequest(params)) as LastFmSimilarArtistsResponse;
+  const now = new Date().toISOString();
+
+  return (data.similarartists?.artist ?? [])
+    .filter((a) => a.mbid && a.mbid.length > 0)
+    .map((a) => ({
+      sourceMbid: mbid,
+      targetMbid: a.mbid,
+      targetName: a.name,
+      match: Number.parseFloat(a.match),
+      fetchedAt: now,
+    }));
+}
+
+/**
+ * Search for artists by name on Last.fm.
+ */
+export async function searchArtists(
+  query: string,
+  apiKey: string,
+  limit = 20,
+): Promise<{ mbid: string; name: string; url: string }[]> {
+  const params = new URLSearchParams({
+    method: 'artist.search',
+    artist: query,
+    api_key: apiKey,
+    format: 'json',
+    limit: String(limit),
+  });
+
+  const data = (await lastfmRequest(params)) as LastFmArtistSearchResponse;
+
+  return (data.results?.artistmatches?.artist ?? [])
+    .filter((a) => a.mbid && a.mbid.length > 0)
+    .map((a) => ({
+      mbid: a.mbid,
+      name: a.name,
+      url: a.url,
+    }));
+}
+
+async function lastfmRequest(params: URLSearchParams): Promise<unknown> {
+  const url = `${LASTFM_BASE_URL}?${params.toString()}`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const retryable = response.status === 429 || response.status >= 500;
+    throw new LastFmApiError(
+      `Last.fm API error: ${response.status} ${response.statusText}`,
+      response.status,
+      retryable,
+    );
+  }
+
+  const json: unknown = await response.json();
+
+  // Last.fm sometimes returns errors inside a 200 response
+  if (typeof json === 'object' && json !== null && 'error' in json) {
+    const errObj = json as { error: number; message: string };
+    throw new LastFmApiError(
+      `Last.fm API error ${errObj.error}: ${errObj.message}`,
+      errObj.error,
+      false,
+    );
+  }
+
+  return json;
+}

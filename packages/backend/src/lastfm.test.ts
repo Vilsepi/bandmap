@@ -1,8 +1,8 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { LastFmClient, LastFmApiError } from './client.js';
+import { fetchArtistInfo, fetchSimilarArtists, searchArtists, LastFmApiError } from './lastfm.js';
 
 // Load sample responses from doc/ directory
 const sampleDir = resolve(import.meta.dirname, '../../../doc');
@@ -18,8 +18,14 @@ const sampleGetSimilar = JSON.parse(
  */
 function mockFetch(responses: Map<string, unknown>): typeof globalThis.fetch {
   return (async (input: string | URL | Request) => {
-    const url =
-      typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    let url: string;
+    if (typeof input === 'string') {
+      url = input;
+    } else if (input instanceof URL) {
+      url = input.toString();
+    } else {
+      url = input.url;
+    }
     const params = new URL(url).searchParams;
     const method = params.get('method') ?? '';
 
@@ -42,64 +48,68 @@ function mockFetch(responses: Map<string, unknown>): typeof globalThis.fetch {
   }) as typeof globalThis.fetch;
 }
 
-describe('LastFmClient', () => {
+describe('lastfm', () => {
   const originalFetch = globalThis.fetch;
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
   });
 
-  describe('getArtistInfo', () => {
+  describe('fetchArtistInfo', () => {
     it('parses artist info from sample response', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getinfo', sampleGetInfo);
       globalThis.fetch = mockFetch(responses);
 
-      const client = new LastFmClient('test-api-key');
-      const result = await client.getArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d');
+      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
 
-      assert.equal(result.artist.name, 'Rosetta');
-      assert.equal(result.artist.mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
-      assert.equal(result.artist.url, 'https://www.last.fm/music/Rosetta');
-      assert.equal(result.artist.tags.length, 5);
-      assert.equal(result.artist.tags[0].name, 'post-metal');
-      assert.ok(result.artist.tags[0].id, 'tag should have an id');
-      assert.equal(result.artist.tags[0].url, 'https://www.last.fm/tag/post-metal');
+      assert.equal(result.name, 'Rosetta');
+      assert.equal(result.mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
+      assert.equal(result.url, 'https://www.last.fm/music/Rosetta');
+      assert.equal(result.tags.length, 5);
+      assert.equal(result.tags[0], 'post-metal');
+      assert.ok(result.fetchedAt, 'should have a fetchedAt timestamp');
     });
 
-    it('extracts all tags with names and urls', async () => {
+    it('extracts all tag names', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getinfo', sampleGetInfo);
       globalThis.fetch = mockFetch(responses);
 
-      const client = new LastFmClient('test-api-key');
-      const result = await client.getArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d');
+      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
 
-      const tagNames = result.artist.tags.map((t) => t.name);
-      assert.deepEqual(tagNames, ['post-metal', 'sludge', 'post-rock', 'ambient', 'post-hardcore']);
+      assert.deepEqual(result.tags, [
+        'post-metal',
+        'sludge',
+        'post-rock',
+        'ambient',
+        'post-hardcore',
+      ]);
     });
   });
 
-  describe('getSimilarArtists', () => {
+  describe('fetchSimilarArtists', () => {
     it('parses similar artists from sample response', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getsimilar', sampleGetSimilar);
       globalThis.fetch = mockFetch(responses);
 
-      const client = new LastFmClient('test-api-key');
-      const result = await client.getSimilarArtists('79489e1b-5658-4e5f-8841-3e313946dc4d');
+      const result = await fetchSimilarArtists(
+        '79489e1b-5658-4e5f-8841-3e313946dc4d',
+        'test-api-key',
+      );
 
       assert.equal(result.length, 3);
 
-      assert.equal(result[0].name, 'Cult of Luna');
-      assert.equal(result[0].mbid, 'd347406f-839d-4423-9a28-188939282afa');
+      assert.equal(result[0].targetName, 'Cult of Luna');
+      assert.equal(result[0].targetMbid, 'd347406f-839d-4423-9a28-188939282afa');
       assert.equal(result[0].match, 1);
-      assert.equal(result[0].url, 'https://www.last.fm/music/Cult+of+Luna');
+      assert.equal(result[0].sourceMbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
 
-      assert.equal(result[1].name, 'Isis');
+      assert.equal(result[1].targetName, 'Isis');
       assert.equal(result[1].match, 0.927844);
 
-      assert.equal(result[2].name, 'Mouth of the Architect');
+      assert.equal(result[2].targetName, 'Mouth of the Architect');
       assert.equal(result[2].match, 0.768387);
     });
 
@@ -108,12 +118,11 @@ describe('LastFmClient', () => {
       responses.set('artist.getsimilar', { similarartists: { artist: [] } });
       globalThis.fetch = mockFetch(responses);
 
-      const client = new LastFmClient('test-api-key');
-      const result = await client.getSimilarArtists('some-mbid');
+      const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
       assert.equal(result.length, 0);
     });
 
-    it('handles missing mbid in similar artist', async () => {
+    it('filters out artists with empty mbid', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getsimilar', {
         similarartists: {
@@ -122,11 +131,56 @@ describe('LastFmClient', () => {
       });
       globalThis.fetch = mockFetch(responses);
 
-      const client = new LastFmClient('test-api-key');
-      const result = await client.getSimilarArtists('some-mbid');
+      const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
+      assert.equal(result.length, 0);
+    });
+  });
+
+  describe('searchArtists', () => {
+    it('parses search results', async () => {
+      const responses = new Map<string, unknown>();
+      responses.set('artist.search', {
+        results: {
+          artistmatches: {
+            artist: [
+              {
+                name: 'Rosetta',
+                mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d',
+                url: 'https://www.last.fm/music/Rosetta',
+              },
+            ],
+          },
+        },
+      });
+      globalThis.fetch = mockFetch(responses);
+
+      const result = await searchArtists('Rosetta', 'test-api-key');
       assert.equal(result.length, 1);
-      assert.equal(result[0].mbid, '');
-      assert.equal(result[0].name, 'No MBID Artist');
+      assert.equal(result[0].name, 'Rosetta');
+      assert.equal(result[0].mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
+    });
+
+    it('filters out results without mbid', async () => {
+      const responses = new Map<string, unknown>();
+      responses.set('artist.search', {
+        results: {
+          artistmatches: {
+            artist: [
+              { name: 'No MBID', mbid: '', url: 'https://last.fm/test' },
+              {
+                name: 'Has MBID',
+                mbid: 'abc-123',
+                url: 'https://last.fm/test2',
+              },
+            ],
+          },
+        },
+      });
+      globalThis.fetch = mockFetch(responses);
+
+      const result = await searchArtists('test', 'test-api-key');
+      assert.equal(result.length, 1);
+      assert.equal(result[0].name, 'Has MBID');
     });
   });
 
@@ -139,9 +193,8 @@ describe('LastFmClient', () => {
         json: async () => ({}),
       })) as unknown as typeof globalThis.fetch;
 
-      const client = new LastFmClient('test-api-key');
       await assert.rejects(
-        () => client.getArtistInfo('some-mbid'),
+        () => fetchArtistInfo('some-mbid', 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.statusCode, 500);
@@ -159,9 +212,8 @@ describe('LastFmClient', () => {
         json: async () => ({}),
       })) as unknown as typeof globalThis.fetch;
 
-      const client = new LastFmClient('test-api-key');
       await assert.rejects(
-        () => client.getArtistInfo('some-mbid'),
+        () => fetchArtistInfo('some-mbid', 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.retryable, false);
@@ -178,9 +230,8 @@ describe('LastFmClient', () => {
         json: async () => ({}),
       })) as unknown as typeof globalThis.fetch;
 
-      const client = new LastFmClient('test-api-key');
       await assert.rejects(
-        () => client.getArtistInfo('some-mbid'),
+        () => fetchArtistInfo('some-mbid', 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.retryable, true);
@@ -197,18 +248,13 @@ describe('LastFmClient', () => {
         json: async () => ({ error: 6, message: 'Artist not found' }),
       })) as unknown as typeof globalThis.fetch;
 
-      const client = new LastFmClient('test-api-key');
       await assert.rejects(
-        () => client.getArtistInfo('nonexistent'),
+        () => fetchArtistInfo('nonexistent', 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           return true;
         },
       );
-    });
-
-    it('throws if API key is empty', () => {
-      assert.throws(() => new LastFmClient(''), /LASTFM_API_KEY is required/);
     });
   });
 });

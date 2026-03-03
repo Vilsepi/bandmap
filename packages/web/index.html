@@ -3,41 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bandmap — Artist Similarity Graph</title>
+  <title>Bandmap</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
   <div id="app">
-    <div id="controls">
+    <!-- Sidebar navigation -->
+    <nav id="sidebar">
       <h1>Bandmap</h1>
-      <div class="search-box">
-        <input type="text" id="search" placeholder="Search artist..." autocomplete="off" />
-        <ul id="search-results"></ul>
-      </div>
-      <div class="filters">
+      <ul class="nav-list">
+        <li><a href="#" data-view="search" class="nav-link active">Search</a></li>
+        <li><a href="#" data-view="ratings" class="nav-link">My Ratings</a></li>
+        <li><a href="#" data-view="todo" class="nav-link">Todo List</a></li>
+        <li><a href="#" data-view="recommendations" class="nav-link">Recommendations</a></li>
+        <li><a href="#" data-view="graph" class="nav-link">Graph</a></li>
+      </ul>
+      <div id="settings">
         <label>
-          <span>Filter by tag:</span>
-          <select id="tag-filter">
-            <option value="">All tags</option>
-          </select>
+          <span>API Key:</span>
+          <input type="password" id="api-key-input" placeholder="Enter your API key" />
         </label>
-        <label>
-          <span>Min similarity:</span>
-          <input type="range" id="min-weight" min="0" max="1" step="0.05" value="0" />
-          <span id="min-weight-value">0</span>
-        </label>
+        <button id="save-api-key">Save</button>
       </div>
-      <div id="stats"></div>
-    </div>
-    <div id="graph-container"></div>
-    <div id="detail-panel" class="hidden">
-      <button id="close-panel">&times;</button>
-      <h2 id="detail-name"></h2>
-      <div id="detail-tags"></div>
-      <a id="detail-url" href="#" target="_blank" rel="noopener">View on Last.fm</a>
-      <h3>Similar artists</h3>
-      <ul id="detail-similar"></ul>
-    </div>
+    </nav>
+
+    <!-- Main content area -->
+    <main id="content">
+      <!-- Search view -->
+      <div id="view-search" class="view active">
+        <h2>Search Artists</h2>
+        <div class="search-box">
+          <input type="text" id="search" placeholder="Search for an artist..." autocomplete="off" />
+        </div>
+        <div id="search-results" class="card-list"></div>
+        <div id="artist-detail" class="hidden">
+          <button id="back-to-results" class="btn-secondary">&larr; Back</button>
+          <div id="detail-content"></div>
+        </div>
+      </div>
+
+      <!-- Ratings view -->
+      <div id="view-ratings" class="view">
+        <h2>My Ratings</h2>
+        <div id="ratings-list" class="card-list">
+          <p class="empty-state">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Bookmark view -->
+      <div id="view-todo" class="view">
+        <h2>Todo List</h2>
+        <div id="todo-list" class="card-list">
+          <p class="empty-state">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Recommendations view -->
+      <div id="view-recommendations" class="view">
+        <div class="view-header">
+          <h2>Recommendations</h2>
+          <button id="refresh-recommendations" class="btn-primary">Refresh</button>
+        </div>
+        <div id="recommendations-list" class="card-list">
+          <p class="empty-state">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Graph view -->
+      <div id="view-graph" class="view">
+        <h2>Artist Graph</h2>
+        <div class="graph-controls">
+          <label>
+            <span>Filter by tag:</span>
+            <select id="tag-filter">
+              <option value="">All tags</option>
+            </select>
+          </label>
+          <label>
+            <span>Min similarity:</span>
+            <input type="range" id="min-weight" min="0" max="1" step="0.05" value="0" />
+            <span id="min-weight-value">0</span>
+          </label>
+        </div>
+        <div id="graph-container"></div>
+        <div id="graph-detail" class="hidden">
+          <button id="close-graph-detail">&times;</button>
+          <h3 id="graph-detail-name" aria-label="Artist name"></h3>
+          <div id="graph-detail-tags"></div>
+          <ul id="graph-detail-similar"></ul>
+        </div>
+      </div>
+    </main>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>

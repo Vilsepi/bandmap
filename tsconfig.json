@@ -2,7 +2,8 @@
   "files": [],
   "references": [
     { "path": "packages/shared" },
-    { "path": "packages/crawler" },
-    { "path": "packages/web" }
+    { "path": "packages/backend" },
+    { "path": "packages/web" },
+    { "path": "packages/infra" }
   ]
 }
