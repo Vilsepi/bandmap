@@ -86,7 +86,7 @@ searchInput.addEventListener('input', () => {
 
   searchTimeout = setTimeout(() => {
     void performSearch(query);
-  }, 1000);
+  }, 2000);
 });
 
 async function performSearch(query: string): Promise<void> {

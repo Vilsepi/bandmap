@@ -1,6 +1,18 @@
 /** How long before a cached artist/relations record is considered stale (7 days) */
 export const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** How long before a cached search result is considered stale (1 day) */
+export const SEARCH_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Maximum concurrent outgoing requests to the Last.fm API per Lambda instance */
+export const LASTFM_MAX_CONCURRENT = 3;
+
+/** Maximum number of retry attempts for retryable Last.fm API errors */
+export const LASTFM_MAX_RETRIES = 3;
+
+/** Base delay in ms for exponential backoff on Last.fm retries */
+export const LASTFM_RETRY_BASE_MS = 200;
+
 /** Minimum score (inclusive) for an artist to be considered "liked" for recommendations */
 export const RECOMMENDATION_MIN_SCORE = 4;
 

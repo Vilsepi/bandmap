@@ -7,7 +7,14 @@ import {
   DeleteCommand,
   BatchWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
-import type { Artist, User, RelatedArtist, Opinion, Recommendation } from '@bandmap/shared';
+import type {
+  Artist,
+  User,
+  RelatedArtist,
+  Opinion,
+  Recommendation,
+  SearchResult,
+} from '@bandmap/shared';
 
 // ── Client setup ─────────────────────────────────────────────
 
@@ -222,4 +229,35 @@ export async function putRecommendations(apiKey: string, items: Recommendation[]
       }),
     );
   }
+}
+
+// ── Search Results Cache ─────────────────────────────────────
+
+export interface CachedSearchResults {
+  query: string;
+  results: SearchResult[];
+  fetchedAt: string;
+}
+
+export async function getSearchResults(query: string): Promise<CachedSearchResults | null> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: tableName('SEARCHES_TABLE'),
+      Key: { query },
+    }),
+  );
+  return (result.Item as CachedSearchResults | undefined) ?? null;
+}
+
+export async function putSearchResults(query: string, results: SearchResult[]): Promise<void> {
+  await docClient.send(
+    new PutCommand({
+      TableName: tableName('SEARCHES_TABLE'),
+      Item: {
+        query,
+        results,
+        fetchedAt: new Date().toISOString(),
+      },
+    }),
+  );
 }

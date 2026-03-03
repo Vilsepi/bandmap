@@ -2,7 +2,13 @@ import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { fetchArtistInfo, fetchSimilarArtists, searchArtists, LastFmApiError } from './lastfm.js';
+import {
+  fetchArtistInfo,
+  fetchSimilarArtists,
+  searchArtists,
+  LastFmApiError,
+  Semaphore,
+} from './lastfm.js';
 
 // Load sample responses from doc/ directory
 const sampleDir = resolve(import.meta.dirname, '../../../doc');
@@ -13,11 +19,13 @@ const sampleGetSimilar = JSON.parse(
   readFileSync(resolve(sampleDir, 'sample.artist.getsimilar.json'), 'utf-8'),
 );
 
+type FetchInput = string | URL | Request;
+
 /**
  * Create a mock fetch that returns canned responses based on the method parameter.
  */
 function mockFetch(responses: Map<string, unknown>): typeof globalThis.fetch {
-  return (async (input: string | URL | Request) => {
+  return (async (input: FetchInput) => {
     let url: string;
     if (typeof input === 'string') {
       url = input;
@@ -255,6 +263,155 @@ describe('lastfm', () => {
           return true;
         },
       );
+    });
+  });
+
+  describe('retry with backoff', () => {
+    it('retries on 429 and eventually succeeds', async () => {
+      let callCount = 0;
+      const responses = new Map<string, unknown>();
+      responses.set('artist.getinfo', sampleGetInfo);
+
+      globalThis.fetch = (async (input: FetchInput) => {
+        callCount++;
+        if (callCount <= 2) {
+          return {
+            ok: false,
+            status: 429,
+            statusText: 'Too Many Requests',
+            json: async () => ({}),
+          } as Response;
+        }
+        // Third call succeeds
+        return mockFetch(responses)(input);
+      }) as typeof globalThis.fetch;
+
+      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
+      assert.equal(result.name, 'Rosetta');
+      assert.equal(callCount, 3);
+    });
+
+    it('retries on 500 and eventually succeeds', async () => {
+      let callCount = 0;
+      const responses = new Map<string, unknown>();
+      responses.set('artist.getinfo', sampleGetInfo);
+
+      globalThis.fetch = (async (input: FetchInput) => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error',
+            json: async () => ({}),
+          } as Response;
+        }
+        return mockFetch(responses)(input);
+      }) as typeof globalThis.fetch;
+
+      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
+      assert.equal(result.name, 'Rosetta');
+      assert.equal(callCount, 2);
+    });
+
+    it('does not retry non-retryable errors', async () => {
+      let callCount = 0;
+
+      globalThis.fetch = (async () => {
+        callCount++;
+        return {
+          ok: false,
+          status: 400,
+          statusText: 'Bad Request',
+          json: async () => ({}),
+        } as Response;
+      }) as typeof globalThis.fetch;
+
+      await assert.rejects(
+        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        (err: unknown) => {
+          assert.ok(err instanceof LastFmApiError);
+          assert.equal(err.retryable, false);
+          return true;
+        },
+      );
+      assert.equal(callCount, 1);
+    });
+
+    it('throws after exhausting retries', async () => {
+      let callCount = 0;
+
+      globalThis.fetch = (async () => {
+        callCount++;
+        return {
+          ok: false,
+          status: 429,
+          statusText: 'Too Many Requests',
+          json: async () => ({}),
+        } as Response;
+      }) as typeof globalThis.fetch;
+
+      await assert.rejects(
+        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        (err: unknown) => {
+          assert.ok(err instanceof LastFmApiError);
+          assert.equal(err.statusCode, 429);
+          assert.equal(err.retryable, true);
+          return true;
+        },
+      );
+      // 1 initial + 3 retries = 4 total
+      assert.equal(callCount, 4);
+    });
+  });
+
+  describe('Semaphore', () => {
+    it('limits concurrent access', async () => {
+      const sem = new Semaphore(2);
+      let running = 0;
+      let maxRunning = 0;
+
+      const task = async () => {
+        await sem.acquire();
+        running++;
+        maxRunning = Math.max(maxRunning, running);
+        // Simulate async work
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        running--;
+        sem.release();
+      };
+
+      await Promise.all([task(), task(), task(), task(), task()]);
+      assert.equal(maxRunning, 2);
+    });
+
+    it('allows up to max concurrent', async () => {
+      const sem = new Semaphore(3);
+
+      // Acquire 3 — should all succeed immediately
+      await sem.acquire();
+      await sem.acquire();
+      await sem.acquire();
+
+      // 4th should block
+      let acquired = false;
+      const blocked = sem.acquire().then(() => {
+        acquired = true;
+      });
+
+      // Give microtasks a chance to run
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      assert.equal(acquired, false);
+
+      // Release one — the blocked one should now acquire
+      sem.release();
+      await blocked;
+      assert.equal(acquired, true);
+
+      // Clean up
+      sem.release();
+      sem.release();
+      sem.release();
     });
   });
 });

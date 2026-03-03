@@ -10,9 +10,8 @@ import type {
   PutOpinionBody,
 } from '@bandmap/shared';
 import { authenticate } from './auth.js';
-import { getOrFetchArtist, getOrFetchRelatedArtists } from './cache.js';
+import { getOrFetchArtist, getOrFetchRelatedArtists, getOrFetchSearchResults } from './cache.js';
 import * as db from './db.js';
-import { searchArtists } from './lastfm.js';
 import { generateRecommendations } from './recommendations.js';
 
 // ── Route definitions ────────────────────────────────────────
@@ -128,7 +127,7 @@ async function handleSearch(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   }
 
   const apiKey = getLastFmApiKey();
-  const results = await searchArtists(q, apiKey);
+  const results = await getOrFetchSearchResults(q, apiKey);
 
   return jsonResponse<SearchResponse>(200, { results });
 }
