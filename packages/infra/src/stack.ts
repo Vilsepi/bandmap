@@ -56,6 +56,13 @@ export class BandmapStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    const searchesTable = new dynamodb.Table(this, 'SearchesTable', {
+      tableName: 'bandmap-searches',
+      partitionKey: { name: 'query', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // ── Lambda function ────────────────────────────────────
 
     const backendEntry = resolve(import.meta.dirname, '../../backend/src/handler.ts');
@@ -65,14 +72,16 @@ export class BandmapStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_22_X,
       entry: backendEntry,
       handler: 'handler',
-      timeout: cdk.Duration.seconds(60),
-      memorySize: 512,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 256,
+      reservedConcurrentExecutions: 10,
       environment: {
         USERS_TABLE: usersTable.tableName,
         ARTISTS_TABLE: artistsTable.tableName,
         RELATED_ARTISTS_TABLE: relatedArtistsTable.tableName,
         OPINIONS_TABLE: opinionsTable.tableName,
         RECOMMENDATIONS_TABLE: recommendationsTable.tableName,
+        SEARCHES_TABLE: searchesTable.tableName,
         LASTFM_API_KEY: props.lastFmApiKey,
       },
       bundling: {
@@ -89,6 +98,7 @@ export class BandmapStack extends cdk.Stack {
     relatedArtistsTable.grantReadWriteData(fn);
     opinionsTable.grantReadWriteData(fn);
     recommendationsTable.grantReadWriteData(fn);
+    searchesTable.grantReadWriteData(fn);
 
     // ── API Gateway HTTP API ───────────────────────────────
 
@@ -107,6 +117,13 @@ export class BandmapStack extends cdk.Stack {
         maxAge: cdk.Duration.days(1),
       },
     });
+
+    // Configure default stage throttling
+    const defaultStage = httpApi.defaultStage?.node.defaultChild as apigatewayv2.CfnStage;
+    defaultStage.defaultRouteSettings = {
+      throttlingBurstLimit: 20,
+      throttlingRateLimit: 10,
+    };
 
     const integration = new apigatewayv2Integrations.HttpLambdaIntegration('LambdaIntegration', fn);
 

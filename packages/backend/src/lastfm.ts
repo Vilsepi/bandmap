@@ -1,4 +1,10 @@
-import { normalizeTagName, tagId } from '@bandmap/shared';
+import {
+  normalizeTagName,
+  tagId,
+  LASTFM_MAX_CONCURRENT,
+  LASTFM_MAX_RETRIES,
+  LASTFM_RETRY_BASE_MS,
+} from '@bandmap/shared';
 import type { Tag, Artist, RelatedArtist } from '@bandmap/shared';
 
 /** Raw Last.fm API response types (only the fields we use) */
@@ -165,8 +171,81 @@ export async function searchArtists(
     }));
 }
 
+// ── Semaphore for limiting concurrent Last.fm requests ────────
+
+/**
+ * Simple promise-based semaphore to limit concurrent outgoing requests.
+ * Module-level state: works within a single invocation and across warm reuse.
+ */
+class Semaphore {
+  private running = 0;
+  private readonly queue: (() => void)[] = [];
+
+  constructor(private readonly max: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.running < this.max) {
+      this.running++;
+      return;
+    }
+    return new Promise<void>((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    const next = this.queue.shift();
+    if (next) {
+      next();
+    } else {
+      this.running--;
+    }
+  }
+}
+
+const semaphore = new Semaphore(LASTFM_MAX_CONCURRENT);
+
+/** Exported for testing only */
+export { Semaphore };
+
+// ── Core request with retry + semaphore ───────────────────────
+
 async function lastfmRequest(params: URLSearchParams): Promise<unknown> {
+  await semaphore.acquire();
+  try {
+    return await lastfmRequestWithRetry(params);
+  } finally {
+    semaphore.release();
+  }
+}
+
+async function lastfmRequestWithRetry(params: URLSearchParams): Promise<unknown> {
+  let lastError: LastFmApiError | undefined;
+
+  for (let attempt = 0; attempt <= LASTFM_MAX_RETRIES; attempt++) {
+    try {
+      return await lastfmFetch(params);
+    } catch (err) {
+      if (err instanceof LastFmApiError && err.retryable && attempt < LASTFM_MAX_RETRIES) {
+        lastError = err;
+        const delay = LASTFM_RETRY_BASE_MS * Math.pow(4, attempt);
+        await sleep(delay);
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function lastfmFetch(params: URLSearchParams): Promise<unknown> {
   const url = `${LASTFM_BASE_URL}?${params.toString()}`;
+  console.log(`Calling Last.fm API: ${url}`);
   const response = await fetch(url);
 
   if (!response.ok) {
