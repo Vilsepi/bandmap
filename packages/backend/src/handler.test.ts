@@ -125,7 +125,7 @@ describe('handler', () => {
 
     it('Rating type has required fields', () => {
       const rating: Rating = {
-        apiKey: 'key',
+        userId: 'user-uuid',
         artistMbid: 'mbid',
         score: 4,
         status: 'rated',
@@ -137,7 +137,7 @@ describe('handler', () => {
 
     it('Rating todo has null score', () => {
       const rating: Rating = {
-        apiKey: 'key',
+        userId: 'user-uuid',
         artistMbid: 'mbid',
         score: null,
         status: 'todo',
@@ -149,17 +149,19 @@ describe('handler', () => {
 
     it('User type has required fields', () => {
       const user: User = {
+        id: 'user-uuid',
         apiKey: 'test-key',
         name: 'Test User',
         createdAt: new Date().toISOString(),
       };
+      assert.ok(user.id);
       assert.ok(user.apiKey);
       assert.ok(user.name);
     });
 
     it('Recommendation type has required fields', () => {
       const rec: Recommendation = {
-        apiKey: 'key',
+        userId: 'user-uuid',
         artistMbid: 'mbid',
         artistName: 'Band',
         score: 4.2,

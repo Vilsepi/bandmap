@@ -51,12 +51,15 @@ function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
 
 export async function getUser(apiKey: string): Promise<User | null> {
   const result = await docClient.send(
-    new GetCommand({
+    new QueryCommand({
       TableName: tableName('USERS_TABLE'),
-      Key: { apiKey },
+      IndexName: tableName('USERS_API_KEY_INDEX_NAME'),
+      KeyConditionExpression: 'apiKey = :key',
+      ExpressionAttributeValues: { ':key': apiKey },
+      Limit: 1,
     }),
   );
-  return (result.Item as User | undefined) ?? null;
+  return ((result.Items as User[] | undefined) ?? [])[0] ?? null;
 }
 
 // ── Artists ──────────────────────────────────────────────────
@@ -139,17 +142,17 @@ export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist
 
 // ── Ratings ──────────────────────────────────────────────────
 
-export async function getRating(apiKey: string, artistMbid: string): Promise<Rating | null> {
+export async function getRating(userId: string, artistMbid: string): Promise<Rating | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName('RATINGS_TABLE'),
-      Key: { apiKey, artistMbid },
+      Key: { userId, artistMbid },
     }),
   );
   return (result.Item as Rating | undefined) ?? null;
 }
 
-export async function listRatings(apiKey: string, status?: 'rated' | 'todo'): Promise<Rating[]> {
+export async function listRatings(userId: string, status?: 'rated' | 'todo'): Promise<Rating[]> {
   const params: {
     TableName: string;
     KeyConditionExpression: string;
@@ -157,8 +160,8 @@ export async function listRatings(apiKey: string, status?: 'rated' | 'todo'): Pr
     FilterExpression?: string;
   } = {
     TableName: tableName('RATINGS_TABLE'),
-    KeyConditionExpression: 'apiKey = :key',
-    ExpressionAttributeValues: { ':key': apiKey },
+    KeyConditionExpression: 'userId = :id',
+    ExpressionAttributeValues: { ':id': userId },
   };
 
   if (status) {
@@ -184,33 +187,33 @@ export async function putRating(rating: Rating): Promise<void> {
   );
 }
 
-export async function deleteRating(apiKey: string, artistMbid: string): Promise<void> {
+export async function deleteRating(userId: string, artistMbid: string): Promise<void> {
   await docClient.send(
     new DeleteCommand({
       TableName: tableName('RATINGS_TABLE'),
-      Key: { apiKey, artistMbid },
+      Key: { userId, artistMbid },
     }),
   );
 }
 
 // ── Recommendations ──────────────────────────────────────────
 
-export async function listRecommendations(apiKey: string): Promise<Recommendation[]> {
+export async function listRecommendations(userId: string): Promise<Recommendation[]> {
   const result = await docClient.send(
     new QueryCommand({
       TableName: tableName('RECOMMENDATIONS_TABLE'),
-      KeyConditionExpression: 'apiKey = :key',
-      ExpressionAttributeValues: { ':key': apiKey },
+      KeyConditionExpression: 'userId = :id',
+      ExpressionAttributeValues: { ':id': userId },
     }),
   );
   return (result.Items as Recommendation[] | undefined) ?? [];
 }
 
-export async function putRecommendations(apiKey: string, items: Recommendation[]): Promise<void> {
+export async function putRecommendations(userId: string, items: Recommendation[]): Promise<void> {
   const table = tableName('RECOMMENDATIONS_TABLE');
 
   // Delete existing recommendations for this user
-  const existing = await listRecommendations(apiKey);
+  const existing = await listRecommendations(userId);
   const deleteBatches: Recommendation[][] = [];
   for (let i = 0; i < existing.length; i += 25) {
     deleteBatches.push(existing.slice(i, i + 25));
@@ -221,7 +224,7 @@ export async function putRecommendations(apiKey: string, items: Recommendation[]
         RequestItems: {
           [table]: batch.map((item) => ({
             DeleteRequest: {
-              Key: { apiKey: item.apiKey, artistMbid: item.artistMbid },
+              Key: { userId: item.userId, artistMbid: item.artistMbid },
             },
           })),
         },

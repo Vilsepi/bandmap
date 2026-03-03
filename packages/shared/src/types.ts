@@ -10,7 +10,9 @@ export interface Tag {
 
 /** A user of the bandmap application */
 export interface User {
-  /** PRIMARY KEY — API key for authentication */
+  /** PRIMARY KEY — UUID */
+  id: string;
+  /** Unique API key used for authentication */
   apiKey: string;
   /** Display name */
   name: string;
@@ -51,8 +53,8 @@ export interface RelatedArtist {
 
 /** A user's rating on an artist — rated or bookmarked for later */
 export interface Rating {
-  /** PK — FK → User.apiKey */
-  apiKey: string;
+  /** PK — FK → User.id */
+  userId: string;
   /** SK — FK → Artist.mbid */
   artistMbid: string;
   /** 1–5 star rating (only set when status is "rated") */
@@ -65,8 +67,8 @@ export interface Rating {
 
 /** A recommended artist for a user */
 export interface Recommendation {
-  /** PK — FK → User.apiKey */
-  apiKey: string;
+  /** PK — FK → User.id */
+  userId: string;
   /** SK — FK → Artist.mbid */
   artistMbid: string;
   /** denormalized artist name for display */
