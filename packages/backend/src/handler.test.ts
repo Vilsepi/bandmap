@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
-import type { Artist, RelatedArtist, Opinion, User, Recommendation } from '@bandmap/shared';
+import type { Artist, RelatedArtist, Rating, User, Recommendation } from '@bandmap/shared';
 
 // ── Module-level mocks ───────────────────────────────────────
 // We mock db, lastfm, cache, and recommendations by importing and overriding
@@ -72,13 +72,13 @@ describe('handler', () => {
     });
 
     it('makeEvent produces valid API Gateway v2 event shape', () => {
-      const event = makeEvent('PUT', '/opinions/test-mbid', {
+      const event = makeEvent('PUT', '/ratings/test-mbid', {
         headers: { 'x-api-key': 'test-key' },
         body: JSON.stringify({ score: 5, status: 'rated' }),
       });
 
       assert.equal(event.requestContext.http.method, 'PUT');
-      assert.equal(event.rawPath, '/opinions/test-mbid');
+      assert.equal(event.rawPath, '/ratings/test-mbid');
       assert.equal(event.headers['x-api-key'], 'test-key');
       assert.ok(event.body);
     });
@@ -123,28 +123,28 @@ describe('handler', () => {
       assert.ok(related.match >= 0 && related.match <= 1);
     });
 
-    it('Opinion type has required fields', () => {
-      const opinion: Opinion = {
+    it('Rating type has required fields', () => {
+      const rating: Rating = {
         apiKey: 'key',
         artistMbid: 'mbid',
         score: 4,
         status: 'rated',
         updatedAt: new Date().toISOString(),
       };
-      assert.equal(opinion.status, 'rated');
-      assert.equal(opinion.score, 4);
+      assert.equal(rating.status, 'rated');
+      assert.equal(rating.score, 4);
     });
 
-    it('Opinion todo has null score', () => {
-      const opinion: Opinion = {
+    it('Rating todo has null score', () => {
+      const rating: Rating = {
         apiKey: 'key',
         artistMbid: 'mbid',
         score: null,
         status: 'todo',
         updatedAt: new Date().toISOString(),
       };
-      assert.equal(opinion.status, 'todo');
-      assert.equal(opinion.score, null);
+      assert.equal(rating.status, 'todo');
+      assert.equal(rating.score, null);
     });
 
     it('User type has required fields', () => {

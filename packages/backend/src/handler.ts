@@ -2,12 +2,12 @@ import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda
 import type {
   ArtistResponse,
   RelatedArtistsResponse,
-  OpinionResponse,
-  OpinionsListResponse,
+  RatingResponse,
+  RatingsListResponse,
   RecommendationsResponse,
   SearchResponse,
   ErrorResponse,
-  PutOpinionBody,
+  PutRatingBody,
 } from '@bandmap/shared';
 import { authenticate } from './auth.js';
 import { getOrFetchArtist, getOrFetchRelatedArtists, getOrFetchSearchResults } from './cache.js';
@@ -28,15 +28,24 @@ interface RouteMatch {
 
 const ARTISTS_PATTERN = /^\/artists\/([^/]+)$/;
 const RELATED_PATTERN = /^\/artists\/([^/]+)\/related$/;
-const OPINIONS_MBID_PATTERN = /^\/opinions\/([^/]+)$/;
+const RATINGS_MBID_PATTERN = /^\/ratings\/([^/]+)$/;
 
 function matchRoute(method: string, path: string): RouteMatch | null {
+  const staticRoute = matchStaticRoute(method, path);
+  if (staticRoute) {
+    return staticRoute;
+  }
+
+  return matchEntityRoute(method, path);
+}
+
+function matchStaticRoute(method: string, path: string): RouteMatch | null {
   if (method === 'GET' && path === '/search') {
     return { params: [], requiresAuth: false, handle: handleSearch };
   }
 
-  if (method === 'GET' && path === '/opinions') {
-    return { params: [], requiresAuth: true, handle: handleListOpinions };
+  if (method === 'GET' && path === '/ratings') {
+    return { params: [], requiresAuth: true, handle: handleListRatings };
   }
 
   if (method === 'GET' && path === '/recommendations') {
@@ -47,6 +56,10 @@ function matchRoute(method: string, path: string): RouteMatch | null {
     return { params: [], requiresAuth: true, handle: handleGenerateRecommendations };
   }
 
+  return null;
+}
+
+function matchEntityRoute(method: string, path: string): RouteMatch | null {
   const artistExec = ARTISTS_PATTERN.exec(path);
   if (method === 'GET' && artistExec) {
     return { params: [artistExec[1]], requiresAuth: true, handle: handleGetArtist };
@@ -57,13 +70,13 @@ function matchRoute(method: string, path: string): RouteMatch | null {
     return { params: [relatedExec[1]], requiresAuth: true, handle: handleGetRelatedArtists };
   }
 
-  const opinionExec = OPINIONS_MBID_PATTERN.exec(path);
-  if (opinionExec) {
+  const ratingExec = RATINGS_MBID_PATTERN.exec(path);
+  if (ratingExec) {
     if (method === 'PUT') {
-      return { params: [opinionExec[1]], requiresAuth: true, handle: handlePutOpinion };
+      return { params: [ratingExec[1]], requiresAuth: true, handle: handlePutRating };
     }
     if (method === 'DELETE') {
-      return { params: [opinionExec[1]], requiresAuth: true, handle: handleDeleteOpinion };
+      return { params: [ratingExec[1]], requiresAuth: true, handle: handleDeleteRating };
     }
   }
 
@@ -151,23 +164,23 @@ async function handleGetRelatedArtists(
   return jsonResponse<RelatedArtistsResponse>(200, { sourceMbid: mbid, related });
 }
 
-async function handleListOpinions(
+async function handleListRatings(
   event: APIGatewayProxyEventV2,
   apiKey: string,
 ): Promise<APIGatewayProxyResultV2> {
   const statusParam = event.queryStringParameters?.['status'];
   const status = statusParam === 'rated' || statusParam === 'todo' ? statusParam : undefined;
-  const opinions = await db.listOpinions(apiKey, status);
-  return jsonResponse<OpinionsListResponse>(200, { opinions });
+  const ratings = await db.listRatings(apiKey, status);
+  return jsonResponse<RatingsListResponse>(200, { ratings });
 }
 
-async function handlePutOpinion(
+async function handlePutRating(
   event: APIGatewayProxyEventV2,
   apiKey: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
   const artistMbid = params[0];
-  const body = parseBody<PutOpinionBody>(event.body);
+  const body = parseBody<PutRatingBody>(event.body);
   if (!body) {
     return jsonResponse<ErrorResponse>(400, { error: 'Invalid request body' });
   }
@@ -184,7 +197,7 @@ async function handlePutOpinion(
     }
   }
 
-  const opinion = {
+  const rating = {
     apiKey,
     artistMbid,
     score: body.status === 'rated' ? body.score : null,
@@ -192,16 +205,16 @@ async function handlePutOpinion(
     updatedAt: new Date().toISOString(),
   };
 
-  await db.putOpinion(opinion);
-  return jsonResponse<OpinionResponse>(200, { opinion });
+  await db.putRating(rating);
+  return jsonResponse<RatingResponse>(200, { rating });
 }
 
-async function handleDeleteOpinion(
+async function handleDeleteRating(
   _event: APIGatewayProxyEventV2,
   apiKey: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
-  await db.deleteOpinion(apiKey, params[0]);
+  await db.deleteRating(apiKey, params[0]);
   return jsonResponse(204, null);
 }
 

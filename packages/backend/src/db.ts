@@ -11,7 +11,7 @@ import type {
   Artist,
   User,
   RelatedArtist,
-  Opinion,
+  Rating,
   Recommendation,
   SearchResult,
 } from '@bandmap/shared';
@@ -121,26 +121,26 @@ export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist
   }
 }
 
-// ── Opinions ─────────────────────────────────────────────────
+// ── Ratings ──────────────────────────────────────────────────
 
-export async function getOpinion(apiKey: string, artistMbid: string): Promise<Opinion | null> {
+export async function getRating(apiKey: string, artistMbid: string): Promise<Rating | null> {
   const result = await docClient.send(
     new GetCommand({
-      TableName: tableName('OPINIONS_TABLE'),
+      TableName: tableName('RATINGS_TABLE'),
       Key: { apiKey, artistMbid },
     }),
   );
-  return (result.Item as Opinion | undefined) ?? null;
+  return (result.Item as Rating | undefined) ?? null;
 }
 
-export async function listOpinions(apiKey: string, status?: 'rated' | 'todo'): Promise<Opinion[]> {
+export async function listRatings(apiKey: string, status?: 'rated' | 'todo'): Promise<Rating[]> {
   const params: {
     TableName: string;
     KeyConditionExpression: string;
     ExpressionAttributeValues: Record<string, string>;
     FilterExpression?: string;
   } = {
-    TableName: tableName('OPINIONS_TABLE'),
+    TableName: tableName('RATINGS_TABLE'),
     KeyConditionExpression: 'apiKey = :key',
     ExpressionAttributeValues: { ':key': apiKey },
   };
@@ -156,22 +156,22 @@ export async function listOpinions(apiKey: string, status?: 'rated' | 'todo'): P
       ...(status ? { ExpressionAttributeNames: { '#s': 'status' } } : {}),
     }),
   );
-  return (result.Items as Opinion[] | undefined) ?? [];
+  return (result.Items as Rating[] | undefined) ?? [];
 }
 
-export async function putOpinion(opinion: Opinion): Promise<void> {
+export async function putRating(rating: Rating): Promise<void> {
   await docClient.send(
     new PutCommand({
-      TableName: tableName('OPINIONS_TABLE'),
-      Item: opinion,
+      TableName: tableName('RATINGS_TABLE'),
+      Item: rating,
     }),
   );
 }
 
-export async function deleteOpinion(apiKey: string, artistMbid: string): Promise<void> {
+export async function deleteRating(apiKey: string, artistMbid: string): Promise<void> {
   await docClient.send(
     new DeleteCommand({
-      TableName: tableName('OPINIONS_TABLE'),
+      TableName: tableName('RATINGS_TABLE'),
       Key: { apiKey, artistMbid },
     }),
   );

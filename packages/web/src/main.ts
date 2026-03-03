@@ -1,11 +1,11 @@
-import type { Artist, RelatedArtist, Opinion, Recommendation } from '@bandmap/shared';
+import type { Artist, RelatedArtist, Rating, Recommendation } from '@bandmap/shared';
 import {
   searchArtists,
   getArtist,
   getRelatedArtists,
-  listOpinions,
-  putOpinion,
-  deleteOpinion,
+  listRatings,
+  putRating,
+  deleteRating,
   getRecommendations,
   generateRecommendations,
   setApiKey,
@@ -178,7 +178,7 @@ function attachDetailActions(artist: Artist, _related: RelatedArtist[]): void {
   stars.forEach((star) => {
     star.addEventListener('click', () => {
       const score = Number(star.dataset['score']);
-      void putOpinion(artist.mbid, { score, status: 'rated' });
+      void putRating(artist.mbid, { score, status: 'rated' });
       stars.forEach((s) => {
         s.classList.toggle('active', Number(s.dataset['score']) <= score);
       });
@@ -188,7 +188,7 @@ function attachDetailActions(artist: Artist, _related: RelatedArtist[]): void {
   // Bookmark button
   const todoBtn = detailContentEl.querySelector('#btn-todo');
   todoBtn?.addEventListener('click', () => {
-    void putOpinion(artist.mbid, { score: null, status: 'todo' });
+    void putRating(artist.mbid, { score: null, status: 'todo' });
     if (todoBtn instanceof HTMLButtonElement) {
       todoBtn.textContent = 'Added!';
       todoBtn.disabled = true;
@@ -212,16 +212,16 @@ async function loadRatings(): Promise<void> {
   container.innerHTML = '<p class="empty-state">Loading...</p>';
 
   try {
-    const { opinions } = await listOpinions('rated');
-    if (opinions.length === 0) {
+    const { ratings } = await listRatings('rated');
+    if (ratings.length === 0) {
       container.innerHTML =
         '<p class="empty-state">No ratings yet. Search and rate some artists!</p>';
       return;
     }
 
     container.innerHTML = '';
-    for (const opinion of opinions) {
-      const card = renderOpinionCard(opinion);
+    for (const rating of ratings) {
+      const card = renderRatingCard(rating);
       container.appendChild(card);
     }
   } catch (err) {
@@ -236,15 +236,15 @@ async function loadTodo(): Promise<void> {
   container.innerHTML = '<p class="empty-state">Loading...</p>';
 
   try {
-    const { opinions } = await listOpinions('todo');
-    if (opinions.length === 0) {
+    const { ratings } = await listRatings('todo');
+    if (ratings.length === 0) {
       container.innerHTML = '<p class="empty-state">No items in your todo list.</p>';
       return;
     }
 
     container.innerHTML = '';
-    for (const opinion of opinions) {
-      const card = renderOpinionCard(opinion);
+    for (const rating of ratings) {
+      const card = renderRatingCard(rating);
       container.appendChild(card);
     }
   } catch (err) {
@@ -252,29 +252,29 @@ async function loadTodo(): Promise<void> {
   }
 }
 
-function renderOpinionCard(opinion: Opinion): HTMLElement {
+function renderRatingCard(rating: Rating): HTMLElement {
   const card = document.createElement('div');
   card.className = 'card';
 
   const scoreDisplay =
-    opinion.status === 'rated' && opinion.score !== null
-      ? '&#9733;'.repeat(opinion.score) + '&#9734;'.repeat(5 - opinion.score)
+    rating.status === 'rated' && rating.score !== null
+      ? '&#9733;'.repeat(rating.score) + '&#9734;'.repeat(5 - rating.score)
       : '<span class="badge">Todo</span>';
 
   card.innerHTML = `
     <div class="card-row">
-      <div class="card-title clickable-text" data-mbid="${escapeHtml(opinion.artistMbid)}">
-        ${escapeHtml(opinion.artistMbid)}
+      <div class="card-title clickable-text" data-mbid="${escapeHtml(rating.artistMbid)}">
+        ${escapeHtml(rating.artistMbid)}
       </div>
       <div class="card-score">${scoreDisplay}</div>
     </div>
     <div class="card-actions">
-      <button class="btn-small btn-danger" data-action="delete" data-mbid="${escapeHtml(opinion.artistMbid)}">Remove</button>
+      <button class="btn-small btn-danger" data-action="delete" data-mbid="${escapeHtml(rating.artistMbid)}">Remove</button>
     </div>
   `;
 
   // Load the actual artist name
-  void getArtist(opinion.artistMbid).then(({ artist }) => {
+  void getArtist(rating.artistMbid).then(({ artist }) => {
     const titleEl = card.querySelector('.card-title');
     if (titleEl) titleEl.textContent = artist.name;
   });
@@ -282,13 +282,13 @@ function renderOpinionCard(opinion: Opinion): HTMLElement {
   // Click to view detail
   card.querySelector('.card-title')?.addEventListener('click', () => {
     showView('search');
-    void showArtistDetail(opinion.artistMbid);
+    void showArtistDetail(rating.artistMbid);
   });
 
   // Delete button
   card.querySelector('[data-action="delete"]')?.addEventListener('click', async (e) => {
     e.stopPropagation();
-    await deleteOpinion(opinion.artistMbid);
+    await deleteRating(rating.artistMbid);
     card.remove();
   });
 
@@ -399,9 +399,9 @@ async function initGraph(): Promise<void> {
 
   // Also load user's rated artists into the graph
   try {
-    const { opinions } = await listOpinions('rated');
+    const { ratings } = await listRatings('rated');
     await Promise.all(
-      opinions.slice(0, 20).map(async (op) => {
+      ratings.slice(0, 20).map(async (op) => {
         try {
           const [{ artist }, { related }] = await Promise.all([
             getArtist(op.artistMbid),
@@ -414,7 +414,7 @@ async function initGraph(): Promise<void> {
       }),
     );
   } catch {
-    // If opinions fail, just use what we have
+    // If ratings fail, just use what we have
   }
 
   const data = buildGraphData();

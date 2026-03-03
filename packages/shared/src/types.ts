@@ -49,15 +49,15 @@ export interface RelatedArtist {
   fetchedAt: string;
 }
 
-/** A user's opinion on an artist — rating or bookmarked for later */
-export interface Opinion {
+/** A user's rating on an artist — rated or bookmarked for later */
+export interface Rating {
   /** PK — FK → User.apiKey */
   apiKey: string;
   /** SK — FK → Artist.mbid */
   artistMbid: string;
   /** 1–5 star rating (only set when status is "rated") */
   score: number | null;
-  /** Status: "rated" means user has scored it, "todo" means bookmarked for later */
+  /** Status values: rated means user has scored it, or saved for later */
   status: 'rated' | 'todo';
   /** ISO 8601 timestamp */
   updatedAt: string;
