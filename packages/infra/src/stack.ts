@@ -20,9 +20,15 @@ export class BandmapStack extends cdk.Stack {
 
     const usersTable = new dynamodb.Table(this, 'UsersTable', {
       tableName: 'bandmap-users',
-      partitionKey: { name: 'apiKey', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    usersTable.addGlobalSecondaryIndex({
+      indexName: 'apiKey-index',
+      partitionKey: { name: 'apiKey', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
     const artistsTable = new dynamodb.Table(this, 'ArtistsTable', {
@@ -42,7 +48,7 @@ export class BandmapStack extends cdk.Stack {
 
     const ratingsTable = new dynamodb.Table(this, 'RatingsTable', {
       tableName: 'bandmap-ratings',
-      partitionKey: { name: 'apiKey', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'artistMbid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -50,7 +56,7 @@ export class BandmapStack extends cdk.Stack {
 
     const recommendationsTable = new dynamodb.Table(this, 'RecommendationsTable', {
       tableName: 'bandmap-recommendations',
-      partitionKey: { name: 'apiKey', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'artistMbid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -77,6 +83,7 @@ export class BandmapStack extends cdk.Stack {
       reservedConcurrentExecutions: 10,
       environment: {
         USERS_TABLE: usersTable.tableName,
+        USERS_API_KEY_INDEX_NAME: 'apiKey-index',
         ARTISTS_TABLE: artistsTable.tableName,
         RELATED_ARTISTS_TABLE: relatedArtistsTable.tableName,
         RATINGS_TABLE: ratingsTable.tableName,

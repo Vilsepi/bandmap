@@ -21,7 +21,7 @@ interface RouteMatch {
   requiresAuth: boolean;
   handle: (
     event: APIGatewayProxyEventV2,
-    apiKey: string,
+    userId: string,
     params: string[],
   ) => Promise<APIGatewayProxyResultV2>;
 }
@@ -88,9 +88,11 @@ function matchEntityRoute(method: string, path: string): RouteMatch | null {
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   try {
     const method = event.requestContext.http.method;
-    const path = event.rawPath;
+    const path = normalizeIncomingPath(event);
 
     console.log(`${method} ${path}`, {
+      rawPath: event.rawPath,
+      stage: event.requestContext.stage,
       queryStringParameters: event.queryStringParameters,
     });
 
@@ -114,17 +116,17 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
       return jsonResponse<ErrorResponse>(404, { error: 'Not found' });
     }
 
-    let apiKey = '';
+    let userId = '';
     if (route.requiresAuth) {
       const headers = normalizeHeaders(event.headers);
       const user = await authenticate(headers);
       if (!user) {
         return jsonResponse<ErrorResponse>(401, { error: 'Invalid or missing API key' });
       }
-      apiKey = user.apiKey;
+      userId = user.id;
     }
 
-    return await route.handle(event, apiKey, route.params);
+    return await route.handle(event, userId, route.params);
   } catch (err) {
     console.error('Unhandled error:', err);
     return jsonResponse<ErrorResponse>(500, { error: 'Internal server error' });
@@ -147,7 +149,7 @@ async function handleSearch(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
 
 async function handleGetArtist(
   _event: APIGatewayProxyEventV2,
-  _apiKey: string,
+  _userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
   const artist = await getOrFetchArtist(params[0]);
@@ -156,7 +158,7 @@ async function handleGetArtist(
 
 async function handleGetRelatedArtists(
   _event: APIGatewayProxyEventV2,
-  _apiKey: string,
+  _userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
   const mbid = params[0];
@@ -166,17 +168,17 @@ async function handleGetRelatedArtists(
 
 async function handleListRatings(
   event: APIGatewayProxyEventV2,
-  apiKey: string,
+  userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const statusParam = event.queryStringParameters?.['status'];
   const status = statusParam === 'rated' || statusParam === 'todo' ? statusParam : undefined;
-  const ratings = await db.listRatings(apiKey, status);
+  const ratings = await db.listRatings(userId, status);
   return jsonResponse<RatingsListResponse>(200, { ratings });
 }
 
 async function handlePutRating(
   event: APIGatewayProxyEventV2,
-  apiKey: string,
+  userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
   const artistMbid = params[0];
@@ -198,7 +200,7 @@ async function handlePutRating(
   }
 
   const rating = {
-    apiKey,
+    userId,
     artistMbid,
     score: body.status === 'rated' ? body.score : null,
     status: body.status,
@@ -211,26 +213,26 @@ async function handlePutRating(
 
 async function handleDeleteRating(
   _event: APIGatewayProxyEventV2,
-  apiKey: string,
+  userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
-  await db.deleteRating(apiKey, params[0]);
+  await db.deleteRating(userId, params[0]);
   return jsonResponse(204, null);
 }
 
 async function handleGetRecommendations(
   _event: APIGatewayProxyEventV2,
-  apiKey: string,
+  userId: string,
 ): Promise<APIGatewayProxyResultV2> {
-  const recommendations = await db.listRecommendations(apiKey);
+  const recommendations = await db.listRecommendations(userId);
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 
 async function handleGenerateRecommendations(
   _event: APIGatewayProxyEventV2,
-  apiKey: string,
+  userId: string,
 ): Promise<APIGatewayProxyResultV2> {
-  const recommendations = await generateRecommendations(apiKey);
+  const recommendations = await generateRecommendations(userId);
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 
@@ -274,4 +276,24 @@ function getLastFmApiKey(): string {
     throw new Error('Missing environment variable: LASTFM_API_KEY');
   }
   return key;
+}
+
+function normalizeIncomingPath(event: APIGatewayProxyEventV2): string {
+  const rawPath = event.rawPath || '/';
+  const stage = event.requestContext.stage;
+
+  if (!stage || stage === '$default') {
+    return rawPath;
+  }
+
+  const stagePrefix = `/${stage}`;
+  if (rawPath === stagePrefix) {
+    return '/';
+  }
+
+  if (rawPath.startsWith(`${stagePrefix}/`)) {
+    return rawPath.slice(stagePrefix.length);
+  }
+
+  return rawPath;
 }

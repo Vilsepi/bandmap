@@ -19,9 +19,9 @@ import { getOrFetchRelatedArtists } from './cache.js';
  * 5. Sort by aggregate score, take the top RECOMMENDATION_MAX_RESULTS.
  * 6. Write to the recommendations table and return.
  */
-export async function generateRecommendations(apiKey: string): Promise<Recommendation[]> {
+export async function generateRecommendations(userId: string): Promise<Recommendation[]> {
   // 1. Get all user ratings to know what to exclude and what to seed from
-  const allRatings = await db.listRatings(apiKey);
+  const allRatings = await db.listRatings(userId);
 
   // Set of all artist mbids the user has interacted with
   const interactedMbids = new Set(allRatings.map((o) => o.artistMbid));
@@ -33,7 +33,7 @@ export async function generateRecommendations(apiKey: string): Promise<Recommend
     .slice(0, RECOMMENDATION_MAX_SEEDS);
 
   if (likedRatings.length === 0) {
-    await db.putRecommendations(apiKey, []);
+    await db.putRecommendations(userId, []);
     return [];
   }
 
@@ -96,7 +96,7 @@ export async function generateRecommendations(apiKey: string): Promise<Recommend
     .sort((a, b) => b[1].totalScore - a[1].totalScore)
     .slice(0, RECOMMENDATION_MAX_RESULTS)
     .map(([artistMbid, data]) => ({
-      apiKey,
+      userId,
       artistMbid,
       artistName: data.artistName,
       score: Math.round(data.totalScore * 100) / 100,
@@ -106,6 +106,6 @@ export async function generateRecommendations(apiKey: string): Promise<Recommend
     }));
 
   // 6. Write and return
-  await db.putRecommendations(apiKey, recommendations);
+  await db.putRecommendations(userId, recommendations);
   return recommendations;
 }

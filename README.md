@@ -13,11 +13,11 @@ Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm
 
 | Table | PK | SK | Purpose |
 |-------|----|----|---------|
-| Users | `apiKey` | — | App users & metadata |
+| Users | `id` (UUID) | — | App users & metadata |
 | Artists | `mbid` | — | Cached Last.fm artist data (7-day TTL) |
 | RelatedArtists | `sourceMbid` | `targetMbid` | Cached artist similarity edges |
-| Ratings | `apiKey` | `artistMbid` | User ratings & todo bookmarks |
-| Recommendations | `apiKey` | `artistMbid` | Per-user recommendations |
+| Ratings | `userId` | `artistMbid` | User ratings & todo bookmarks |
+| Recommendations | `userId` | `artistMbid` | Per-user recommendations |
 
 ### API Endpoints
 
@@ -61,8 +61,7 @@ npm run test
 ## Deploy
 
 ```sh
-cd packages/infra
-npx cdk deploy -c lastFmApiKey=YOUR_LASTFM_API_KEY
+./deploy.sh
 ```
 
 The deploy output will show the API Gateway URL. Set this in the frontend via the `VITE_API_BASE_URL` environment variable.
@@ -74,14 +73,14 @@ After deploying, manually add a user to the Users DynamoDB table:
 ```sh
 aws dynamodb put-item \
   --table-name bandmap-users \
-  --item '{"apiKey": {"S": "your-secret-key"}, "name": {"S": "Your Name"}, "createdAt": {"S": "2026-01-01T00:00:00Z"}}'
+  --item '{"id": {"S": "your-user-uuid"}, "apiKey": {"S": "your-secret-key"}, "name": {"S": "Your Name"}, "createdAt": {"S": "2026-01-01T00:00:00Z"}}'
 ```
 
 ## Run the frontend locally
 
 ```sh
 cd packages/web
-VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.REGION.amazonaws.com npx vite
+VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod npx vite
 ```
 
 Then open http://localhost:5173 in your browser and enter your API key in the settings panel.

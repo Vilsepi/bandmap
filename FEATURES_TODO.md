@@ -1,3 +1,3 @@
 
-- Rework the user schema: generate uuid for each user, and use the uuid as primary key. Username and apikey should not be primary key
 - Add view path to frontend URL, so that URLs can be shared and bookmarked and they take you back to the same screen
+- Add local storage for artists with cache timestamps to lessen queries on backend. Or at the very least add artist name to ratings table. Both recommendations and todo list views currently bombard the backend every time you open the view.
