@@ -32,6 +32,21 @@ function tableName(envVar: string): string {
   return name;
 }
 
+function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
+  return items.sort((a, b) => {
+    if (b.match !== a.match) {
+      return b.match - a.match;
+    }
+
+    const nameOrder = a.targetName.localeCompare(b.targetName);
+    if (nameOrder !== 0) {
+      return nameOrder;
+    }
+
+    return a.targetMbid.localeCompare(b.targetMbid);
+  });
+}
+
 // ── Users ────────────────────────────────────────────────────
 
 export async function getUser(apiKey: string): Promise<User | null> {
@@ -75,7 +90,8 @@ export async function getRelatedArtists(sourceMbid: string): Promise<RelatedArti
       ExpressionAttributeValues: { ':src': sourceMbid },
     }),
   );
-  return (result.Items as RelatedArtist[] | undefined) ?? [];
+  const items = (result.Items as RelatedArtist[] | undefined) ?? [];
+  return sortRelatedArtistsByMatch(items);
 }
 
 export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist[]): Promise<void> {

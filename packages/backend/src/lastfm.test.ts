@@ -142,6 +142,37 @@ describe('lastfm', () => {
       const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
       assert.equal(result.length, 0);
     });
+
+    it('sorts similar artists by match descending', async () => {
+      const responses = new Map<string, unknown>();
+      responses.set('artist.getsimilar', {
+        similarartists: {
+          artist: [
+            { name: 'Third', mbid: 'third-mbid', match: '0.2', url: 'https://last.fm/third' },
+            {
+              name: 'Top',
+              mbid: 'top-mbid',
+              match: '0.95',
+              url: 'https://last.fm/top',
+            },
+            {
+              name: 'Second',
+              mbid: 'second-mbid',
+              match: '0.6',
+              url: 'https://last.fm/second',
+            },
+          ],
+        },
+      });
+      globalThis.fetch = mockFetch(responses);
+
+      const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
+
+      assert.deepEqual(
+        result.map((artist) => artist.targetMbid),
+        ['top-mbid', 'second-mbid', 'third-mbid'],
+      );
+    });
   });
 
   describe('searchArtists', () => {

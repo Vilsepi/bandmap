@@ -67,6 +67,21 @@ export interface SimilarArtistEntry {
   url: string;
 }
 
+function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
+  return items.sort((a, b) => {
+    if (b.match !== a.match) {
+      return b.match - a.match;
+    }
+
+    const nameOrder = a.targetName.localeCompare(b.targetName);
+    if (nameOrder !== 0) {
+      return nameOrder;
+    }
+
+    return a.targetMbid.localeCompare(b.targetMbid);
+  });
+}
+
 export class LastFmApiError extends Error {
   constructor(
     message: string,
@@ -134,15 +149,17 @@ export async function fetchSimilarArtists(
   const data = (await lastfmRequest(params)) as LastFmSimilarArtistsResponse;
   const now = new Date().toISOString();
 
-  return (data.similarartists?.artist ?? [])
-    .filter((a) => a.mbid && a.mbid.length > 0)
-    .map((a) => ({
-      sourceMbid: mbid,
-      targetMbid: a.mbid,
-      targetName: a.name,
-      match: Number.parseFloat(a.match),
-      fetchedAt: now,
-    }));
+  return sortRelatedArtistsByMatch(
+    (data.similarartists?.artist ?? [])
+      .filter((a) => a.mbid && a.mbid.length > 0)
+      .map((a) => ({
+        sourceMbid: mbid,
+        targetMbid: a.mbid,
+        targetName: a.name,
+        match: Number.parseFloat(a.match),
+        fetchedAt: now,
+      })),
+  );
 }
 
 /**
