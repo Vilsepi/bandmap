@@ -4,11 +4,9 @@ import { BandmapStack } from './stack.js';
 
 const app = new cdk.App();
 
-const lastFmApiKey = app.node.tryGetContext('lastFmApiKey') as string | undefined;
+const lastFmApiKey = process.env['LASTFM_API_KEY'];
 if (!lastFmApiKey) {
-  throw new Error(
-    'Missing context: lastFmApiKey. Pass it with: cdk deploy -c lastFmApiKey=YOUR_KEY',
-  );
+  throw new Error('Missing env variable: LASTFM_API_KEY. Set it before running cdk deploy.');
 }
 
 const _stack = new BandmapStack(app, 'BandmapStack', {

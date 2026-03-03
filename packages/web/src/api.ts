@@ -8,7 +8,7 @@ import type {
   PutOpinionBody,
 } from '@bandmap/shared';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 
 function getApiKey(): string {
   return localStorage.getItem('bandmap-api-key') ?? '';
@@ -22,7 +22,17 @@ export function hasApiKey(): boolean {
   return getApiKey().length > 0;
 }
 
+export function isApiConfigured(): boolean {
+  return API_BASE.length > 0;
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!API_BASE) {
+    throw new Error(
+      'API base URL is not configured. Set the VITE_API_BASE_URL environment variable.',
+    );
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(init?.headers as Record<string, string> | undefined),
@@ -45,6 +55,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (response.status === 204) {
     return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      `Expected JSON response but received: ${contentType || 'unknown content type'}`,
+    );
   }
 
   return (await response.json()) as T;

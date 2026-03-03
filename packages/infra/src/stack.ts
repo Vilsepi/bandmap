@@ -58,14 +58,14 @@ export class BandmapStack extends cdk.Stack {
 
     // ── Lambda function ────────────────────────────────────
 
-    const backendEntry = resolve(__dirname, '../../backend/src/handler.ts');
+    const backendEntry = resolve(import.meta.dirname, '../../backend/src/handler.ts');
 
     const fn = new lambdaNode.NodejsFunction(this, 'ApiHandler', {
       functionName: 'bandmap-api',
       runtime: lambda.Runtime.NODEJS_22_X,
       entry: backendEntry,
       handler: 'handler',
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(60),
       memorySize: 512,
       environment: {
         USERS_TABLE: usersTable.tableName,
