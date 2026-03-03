@@ -104,6 +104,7 @@ export class BandmapStack extends cdk.Stack {
 
     const httpApi = new apigatewayv2.HttpApi(this, 'BandmapApi', {
       apiName: 'bandmap-api',
+      createDefaultStage: false,
       corsPreflight: {
         allowOrigins: ['*'],
         allowMethods: [
@@ -118,9 +119,15 @@ export class BandmapStack extends cdk.Stack {
       },
     });
 
-    // Configure default stage throttling
-    const defaultStage = httpApi.defaultStage?.node.defaultChild as apigatewayv2.CfnStage;
-    defaultStage.defaultRouteSettings = {
+    const prodStage = new apigatewayv2.HttpStage(this, 'ProdStage', {
+      httpApi,
+      stageName: 'prod',
+      autoDeploy: true,
+    });
+
+    // Configure prod stage throttling
+    const cfnStage = prodStage.node.defaultChild as apigatewayv2.CfnStage;
+    cfnStage.defaultRouteSettings = {
       throttlingBurstLimit: 20,
       throttlingRateLimit: 10,
     };
@@ -137,7 +144,7 @@ export class BandmapStack extends cdk.Stack {
     // ── Outputs ────────────────────────────────────────────
 
     new cdk.CfnOutput(this, 'ApiUrl', {
-      value: httpApi.url ?? '',
+      value: prodStage.url,
       description: 'Bandmap API base URL',
     });
   }
