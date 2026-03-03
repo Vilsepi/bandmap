@@ -8,4 +8,4 @@ export const RECOMMENDATION_MIN_SCORE = 4;
 export const RECOMMENDATION_MAX_SEEDS = 20;
 
 /** Maximum number of recommendations to generate per user */
-export const RECOMMENDATION_MAX_RESULTS = 50;
+export const RECOMMENDATION_MAX_RESULTS = 30;

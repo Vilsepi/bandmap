@@ -10,6 +10,7 @@ import {
   generateRecommendations,
   setApiKey,
   hasApiKey,
+  isApiConfigured,
 } from './api.js';
 import { createGraph, type GraphManager, type GraphData } from './graph.js';
 
@@ -85,7 +86,7 @@ searchInput.addEventListener('input', () => {
 
   searchTimeout = setTimeout(() => {
     void performSearch(query);
-  }, 300);
+  }, 1000);
 });
 
 async function performSearch(query: string): Promise<void> {
@@ -515,5 +516,10 @@ function escapeHtml(text: string): string {
 }
 
 // ── Initialize ───────────────────────────────────────────────
+
+if (!isApiConfigured()) {
+  const warning = document.getElementById('api-url-warning');
+  if (warning) warning.classList.remove('hidden');
+}
 
 showView('search');

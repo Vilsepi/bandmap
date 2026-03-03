@@ -12,3 +12,6 @@ packages/web/public/*.json
 .venv
 __pycache__/
 *.pyc
+
+.cdk.staging
+cdk.out

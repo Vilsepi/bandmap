@@ -76,7 +76,27 @@ function matchRoute(method: string, path: string): RouteMatch | null {
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   try {
     const method = event.requestContext.http.method;
-    const route = matchRoute(method, event.rawPath);
+    const path = event.rawPath;
+
+    console.log(`${method} ${path}`, {
+      queryStringParameters: event.queryStringParameters,
+    });
+
+    // Handle CORS preflight requests
+    if (method === 'OPTIONS') {
+      return {
+        statusCode: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+          'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
+          'Access-Control-Max-Age': '86400',
+        },
+        body: '',
+      };
+    }
+
+    const route = matchRoute(method, path);
 
     if (!route) {
       return jsonResponse<ErrorResponse>(404, { error: 'Not found' });
