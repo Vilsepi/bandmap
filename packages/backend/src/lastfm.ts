@@ -79,6 +79,7 @@ export class LastFmApiError extends Error {
 }
 
 const LASTFM_BASE_URL = 'https://ws.audioscrobbler.com/2.0/';
+const LASTFM_USER_AGENT = 'bandmap';
 
 /**
  * Fetch artist info by mbid from Last.fm.
@@ -246,7 +247,11 @@ function sleep(ms: number): Promise<void> {
 async function lastfmFetch(params: URLSearchParams): Promise<unknown> {
   const url = `${LASTFM_BASE_URL}?${params.toString()}`;
   console.log(`Calling Last.fm API: ${url}`);
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': LASTFM_USER_AGENT,
+    },
+  });
 
   if (!response.ok) {
     const retryable = response.status === 429 || response.status >= 500;
