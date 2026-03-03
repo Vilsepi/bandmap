@@ -1,11 +1,10 @@
 
 # Backend code
 
-- Strongly type all data, do not use `any`
+## Testing code changes
+
 - Do NOT call the remote API. Read the sample responses and API documentation under `doc/` directory.
 - Utilize the sample response files in unit testing the API client.
-
-# Testing code changes
 
 Whenever you make changes to the code, run the auto-formatter for typescript changes:
 
