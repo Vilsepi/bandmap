@@ -8,12 +8,12 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_" },
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {
-    ignores: ["dist/", "node_modules/", "packages/web/vite.config.ts"],
+    ignores: ["dist/", "node_modules/", "packages/web/vite.config.ts", "packages/infra/cdk.json"],
   },
 );

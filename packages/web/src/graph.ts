@@ -1,7 +1,21 @@
 import Graph from 'graphology';
 import Sigma from 'sigma';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
-import type { GraphExport } from '@bandmap/shared';
+
+/** Graph input data — built from API responses */
+export interface GraphData {
+  artists: {
+    id: string;
+    name: string;
+    url: string;
+    tags: string[];
+  }[];
+  edges: {
+    source: string;
+    target: string;
+    weight: number;
+  }[];
+}
 
 // Stable palette of distinct hues for tag coloring
 const TAG_COLORS = [
@@ -39,9 +53,9 @@ export interface GraphManager {
 }
 
 /**
- * Build a graphology graph from graph export data and render it with Sigma.js.
+ * Build a graphology graph from graph data and render it with Sigma.js.
  */
-export function createGraph(container: HTMLElement, data: GraphExport): GraphManager {
+export function createGraph(container: HTMLElement, data: GraphData): GraphManager {
   const graph = new Graph();
 
   // Count edges per artist to size nodes

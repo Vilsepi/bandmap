@@ -1,11 +1,44 @@
 # Bandmap
 
-Crawls artists from [Last.fm](https://www.last.fm) and builds a graph of similar artists. Used to find new interesting artists you haven't listened to yet, based on similarity to music you like.
+Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm) data with a serverless AWS backend that acts as a pull-through cache.
+
+## Architecture
+
+- **Frontend** (`packages/web`): Vite SPA with search, ratings, todo list, recommendations, and an artist similarity graph
+- **Backend** (`packages/backend`): Single AWS Lambda behind API Gateway — pull-through cache for Last.fm data + user opinions & recommendations
+- **Infrastructure** (`packages/infra`): AWS CDK stack — API Gateway HTTP API, Lambda, 5 DynamoDB tables
+- **Shared** (`packages/shared`): TypeScript types and constants shared between frontend and backend
+
+### DynamoDB Tables
+
+| Table | PK | SK | Purpose |
+|-------|----|----|---------|
+| Users | `apiKey` | — | App users & metadata |
+| Artists | `mbid` | — | Cached Last.fm artist data (7-day TTL) |
+| RelatedArtists | `sourceMbid` | `targetMbid` | Cached artist similarity edges |
+| Opinions | `apiKey` | `artistMbid` | User ratings & todo bookmarks |
+| Recommendations | `apiKey` | `artistMbid` | Per-user recommendations |
+
+### API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/search?q=...` | No | Search Last.fm for artists |
+| GET | `/artists/{mbid}` | Yes | Get artist (pull-through cache) |
+| GET | `/artists/{mbid}/related` | Yes | Get related artists (pull-through cache) |
+| GET | `/opinions?status=...` | Yes | List user's ratings/todos |
+| PUT | `/opinions/{mbid}` | Yes | Rate or bookmark an artist |
+| DELETE | `/opinions/{mbid}` | Yes | Remove a rating/bookmark |
+| GET | `/recommendations` | Yes | Get current recommendations |
+| POST | `/recommendations/generate` | Yes | Regenerate recommendations |
+
+Auth is via `x-api-key` header matching a record in the Users table.
 
 ## Prerequisites
 
-- Node.js ≥ 24
+- Node.js >= 24
 - A [Last.fm API key](https://www.last.fm/api/account/create)
+- AWS account + credentials (for deployment)
 
 ## Install dependencies
 
@@ -22,77 +55,33 @@ npm run build
 ## Run tests
 
 ```sh
-cd packages/crawler
-npm test
+npm run test
 ```
 
-## Crawl
-
-Set the environment variable `LASTFM_API_KEY`.
-
-Seed the crawler with one or more artist MBIDs (MusicBrainz IDs). Find MBIDs on [MusicBrainz](https://musicbrainz.org) or from Last.fm API responses.
+## Deploy
 
 ```sh
-# Single seed
-node packages/crawler/dist/index.js crawl \
-  --seed-mbid 79489e1b-5658-4e5f-8841-3e313946dc4d \
-  --max-depth 3 --max-artists 500
-
-# Multiple seeds
-node packages/crawler/dist/index.js crawl \
-  --seed-mbid 79489e1b-5658-4e5f-8841-3e313946dc4d \
-  --seed-mbid c14b4180-dc87-481e-b17a-64e4150f90f6 \
-  --max-depth 5 --max-artists 10000
-
-# Seeds from file (one MBID per line)
-node packages/crawler/dist/index.js crawl \
-  --seed-file ./data/seeds.txt \
-  --max-depth 5 --max-artists 10000
-
-# Check progress
-node packages/crawler/dist/index.js status
+cd packages/infra
+npx cdk deploy -c lastFmApiKey=YOUR_LASTFM_API_KEY
 ```
 
-Data is stored in `./data/artists.db` (SQLite) by default. Use `--db <path>` to change.
+The deploy output will show the API Gateway URL. Set this in the frontend via the `VITE_API_BASE_URL` environment variable.
 
-The crawl is resumable — rerun the same command to continue where it left off.
+## Create a user
 
-## Export data for the frontend
+After deploying, manually add a user to the Users DynamoDB table:
 
 ```sh
-node packages/crawler/dist/index.js export \
-  --db ./data/artists.db \
-  --out ./packages/web/public/graph.json
+aws dynamodb put-item \
+  --table-name bandmap-users \
+  --item '{"apiKey": {"S": "your-secret-key"}, "name": {"S": "Your Name"}, "createdAt": {"S": "2026-01-01T00:00:00Z"}}'
 ```
 
-## Run the frontend
+## Run the frontend locally
 
 ```sh
 cd packages/web
-npx vite
+VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.REGION.amazonaws.com npx vite
 ```
 
-Then open http://localhost:5173 in your browser.
-
-## Browsing the database
-
-You can use e.g. `sqlite3` to view the data:
-
-```sql
-SELECT * from artists limit 10000;
-
--- Number of artists
-SELECT COUNT(*) AS artist_count FROM artists;
-
--- Last fetched artists
-SELECT * FROM artists ORDER BY fetched_at DESC LIMIT 3;
-
--- Latest additions to the crawl queue
-SELECT * FROM crawl_queue ORDER BY added_at DESC LIMIT 3;
-
--- Find artists with duplicate names
-SELECT mbid, name, COUNT(*) AS duplicate_count
-FROM artists
-GROUP BY name
-HAVING COUNT(*) > 1;
-```
+Then open http://localhost:5173 in your browser and enter your API key in the settings panel.

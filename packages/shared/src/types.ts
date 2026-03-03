@@ -8,68 +8,75 @@ export interface Tag {
   url: string;
 }
 
-/** Core artist record persisted from artist.getInfo */
+/** A user of the bandmap application */
+export interface User {
+  /** PRIMARY KEY — API key for authentication */
+  apiKey: string;
+  /** Display name */
+  name: string;
+  /** ISO 8601 timestamp */
+  createdAt: string;
+}
+
+/** Core artist record — pull-through cache of Last.fm artist.getInfo */
 export interface Artist {
   /** PRIMARY KEY — MusicBrainz ID */
   mbid: string;
   name: string;
   /** last.fm artist page */
   url: string;
-  /** tag names, e.g. ["post-metal", "sludge"] — FK → Tag.name */
+  /** tag names, e.g. ["post-metal", "sludge"] */
   tags: string[];
-  /** ISO 8601 timestamp of last crawl */
+  /** ISO 8601 timestamp of last fetch from Last.fm */
   fetchedAt: string;
 }
 
 /**
- * Directed similarity edge from artist.getSimilar.
+ * A related-artist record — pull-through cache of artist.getSimilar.
  * "source is similar to target with score match."
  * Note: Last.fm similarity is NOT symmetric — A→B may differ from B→A.
  */
-export interface ArtistRelation {
-  /** FK → Artist.mbid (the artist we queried) */
+export interface RelatedArtist {
+  /** PK — FK → Artist.mbid (the artist we queried) */
   sourceMbid: string;
-  /** FK → Artist.mbid (a similar artist) */
+  /** SK — FK → Artist.mbid (a similar artist) */
   targetMbid: string;
-  /** denormalized — target may not be crawled yet */
+  /** denormalized — target may not be in the artists table yet */
   targetName: string;
-  /** denormalized — last.fm url of target */
-  targetUrl: string;
   /** 0.0–1.0 similarity score. 1.0 is very similar. */
   match: number;
-  /** ISO 8601 timestamp */
+  /** ISO 8601 timestamp of last fetch */
   fetchedAt: string;
 }
 
-/** Crawl queue entry */
-export interface QueueEntry {
-  mbid: string;
-  name: string;
-  /** BFS hops from seed */
-  depth: number;
-  status: 'pending' | 'done' | 'error';
-  errorCount: number;
-  lastError: string | null;
-  addedAt: string;
-  completedAt: string | null;
+/** A user's opinion on an artist — rating or bookmarked for later */
+export interface Opinion {
+  /** PK — FK → User.apiKey */
+  apiKey: string;
+  /** SK — FK → Artist.mbid */
+  artistMbid: string;
+  /** 1–5 star rating (only set when status is "rated") */
+  score: number | null;
+  /** Status: "rated" means user has scored it, "todo" means bookmarked for later */
+  status: 'rated' | 'todo';
+  /** ISO 8601 timestamp */
+  updatedAt: string;
 }
 
-/** Export format for the web frontend */
-export interface GraphExport {
-  tags: {
-    id: string;
-    name: string;
-    url: string;
-  }[];
-  artists: {
-    id: string;
-    name: string;
-    url: string;
-    tags: string[];
-  }[];
-  edges: {
-    source: string;
-    target: string;
-    weight: number;
-  }[];
+/** A recommended artist for a user */
+export interface Recommendation {
+  /** PK — FK → User.apiKey */
+  apiKey: string;
+  /** SK — FK → Artist.mbid */
+  artistMbid: string;
+  /** denormalized artist name for display */
+  artistName: string;
+  /** computed relevance score (higher = more relevant) */
+  score: number;
+  /** the liked artist that led to this recommendation */
+  sourceArtistMbid: string;
+  /** denormalized source artist name */
+  sourceArtistName: string;
+  /** ISO 8601 timestamp */
+  generatedAt: string;
 }
