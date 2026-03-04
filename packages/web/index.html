@@ -12,11 +12,13 @@
     <nav id="sidebar">
       <h1>Bandmap</h1>
       <ul class="nav-list">
-        <li><a href="#" data-view="search" class="nav-link active">Search</a></li>
-        <li><a href="#" data-view="recommendations" class="nav-link">Recommendations</a></li>
-        <li><a href="#" data-view="todo" class="nav-link">Todo List</a></li>
-        <li><a href="#" data-view="ratings" class="nav-link">My Ratings</a></li>
-        <li><a href="#" data-view="graph" class="nav-link">Graph</a></li>
+        <li><a href="#/" data-view="search" class="nav-link active">Search</a></li>
+        <li><a href="#/recommendations" data-view="recommendations" class="nav-link">Recommendations</a></li>
+        <li><a href="#/todo" data-view="todo" class="nav-link">Todo List</a></li>
+        <li><a href="#/ratings" data-view="ratings" class="nav-link">My Ratings</a></li>
+
+        <!-- Disable Graph view until reworked -->
+        <!--<li><a href="#/graph" data-view="graph" class="nav-link">Graph</a></li>-->
       </ul>
       <div id="settings">
         <label>
@@ -91,7 +93,7 @@
         <div id="graph-container"></div>
         <div id="graph-detail" class="hidden">
           <button id="close-graph-detail">&times;</button>
-          <h3 id="graph-detail-name" aria-label="Artist name"></h3>
+          <h3 id="graph-detail-name">Selected artist</h3>
           <div id="graph-detail-tags"></div>
           <ul id="graph-detail-similar"></ul>
         </div>
