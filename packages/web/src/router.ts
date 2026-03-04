@@ -1,4 +1,4 @@
-export type ViewName = 'search' | 'ratings' | 'todo' | 'recommendations' | 'graph';
+export type ViewName = 'search' | 'ratings' | 'todo' | 'recommendations';
 
 export interface AppRoute {
   view: ViewName;
@@ -32,8 +32,6 @@ function parseRoute(hash: string): AppRoute {
       return { view: 'todo' };
     case '/recommendations':
       return { view: 'recommendations' };
-    case '/graph':
-      return { view: 'graph' };
     default:
       return { view: 'search' };
   }
@@ -51,8 +49,6 @@ function routeToHash(route: AppRoute): string {
       return '#/todo';
     case 'recommendations':
       return '#/recommendations';
-    case 'graph':
-      return '#/graph';
   }
 }
 

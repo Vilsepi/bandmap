@@ -9,10 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bandmap/shared": "*",
-    "graphology": "^0.26.0",
-    "graphology-layout-forceatlas2": "^0.10.0",
-    "sigma": "^3.0.2"
+    "@bandmap/shared": "*"
   },
   "devDependencies": {
     "vite": "^7.3.1"

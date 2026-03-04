@@ -1,6 +1,5 @@
 import { initGlobalConfig } from './config.js';
 import { createRouter, type AppRoute, type ViewName } from './router.js';
-import { initGraphView } from './views/graph.js';
 import { loadRatings } from './views/ratings.js';
 import { initRecommendationsView, loadRecommendations } from './views/recommendations.js';
 import { initSearchView, showArtistDetail, showSearchResults } from './views/search.js';
@@ -110,9 +109,6 @@ async function handleRoute(route: AppRoute): Promise<void> {
       break;
     case 'recommendations':
       await loadRecommendations(navigateToArtist);
-      break;
-    case 'graph':
-      await initGraphView();
       break;
   }
 }

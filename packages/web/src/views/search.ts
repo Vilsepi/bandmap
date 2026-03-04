@@ -1,6 +1,5 @@
 import type { Artist, RelatedArtist } from '@bandmap/shared';
 import { getArtist, getRelatedArtists, putRating, searchArtists } from '../api.js';
-import { addToGraphData } from '../graph-data.js';
 import type { AppRoute } from '../router.js';
 import { escapeHtml } from '../utils.js';
 
@@ -51,8 +50,6 @@ export async function showArtistDetail(
 
   try {
     const [{ artist }, { related }] = await Promise.all([getArtist(mbid), getRelatedArtists(mbid)]);
-
-    addToGraphData(artist, related);
 
     detailContentEl.innerHTML = renderArtistDetail(artist, related);
     attachDetailActions(artist, navigateToRoute);
