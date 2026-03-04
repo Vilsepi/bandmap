@@ -333,8 +333,10 @@ function renderRecommendations(container: HTMLElement, recommendations: Recommen
     return;
   }
 
+  const sortedRecommendations = [...recommendations].sort((a, b) => b.score - a.score);
+
   container.innerHTML = '';
-  for (const rec of recommendations) {
+  for (const rec of sortedRecommendations) {
     const card = document.createElement('div');
     card.className = 'card clickable';
     card.innerHTML = `

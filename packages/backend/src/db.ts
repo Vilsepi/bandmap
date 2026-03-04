@@ -206,7 +206,7 @@ export async function listRecommendations(userId: string): Promise<Recommendatio
       ExpressionAttributeValues: { ':id': userId },
     }),
   );
-  return (result.Items as Recommendation[] | undefined) ?? [];
+  return ((result.Items as Recommendation[] | undefined) ?? []).sort((a, b) => b.score - a.score);
 }
 
 export async function putRecommendations(userId: string, items: Recommendation[]): Promise<void> {
