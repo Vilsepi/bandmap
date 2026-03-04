@@ -13,9 +13,9 @@
       <h1>Bandmap</h1>
       <ul class="nav-list">
         <li><a href="#" data-view="search" class="nav-link active">Search</a></li>
-        <li><a href="#" data-view="ratings" class="nav-link">My Ratings</a></li>
-        <li><a href="#" data-view="todo" class="nav-link">Todo List</a></li>
         <li><a href="#" data-view="recommendations" class="nav-link">Recommendations</a></li>
+        <li><a href="#" data-view="todo" class="nav-link">Todo List</a></li>
+        <li><a href="#" data-view="ratings" class="nav-link">My Ratings</a></li>
         <li><a href="#" data-view="graph" class="nav-link">Graph</a></li>
       </ul>
       <div id="settings">
@@ -30,7 +30,7 @@
     <!-- Main content area -->
     <main id="content">
       <div id="api-url-warning" class="warning-banner hidden">
-        <strong>API not configured.</strong> Set the <code>VITE_API_BASE_URL</code> environment variable and restart the dev server.
+        <strong>Backend API endpoint not configured.</strong> Set the <code>VITE_API_BASE_URL</code> environment variable and restart the server.
       </div>
       <!-- Search view -->
       <div id="view-search" class="view active">
@@ -45,10 +45,13 @@
         </div>
       </div>
 
-      <!-- Ratings view -->
-      <div id="view-ratings" class="view">
-        <h2>My Ratings</h2>
-        <div id="ratings-list" class="card-list">
+      <!-- Recommendations view -->
+      <div id="view-recommendations" class="view">
+        <div class="view-header">
+          <h2>Recommendations</h2>
+          <button id="refresh-recommendations" class="btn-primary">Refresh</button>
+        </div>
+        <div id="recommendations-list" class="card-list">
           <p class="empty-state">Loading...</p>
         </div>
       </div>
@@ -61,13 +64,10 @@
         </div>
       </div>
 
-      <!-- Recommendations view -->
-      <div id="view-recommendations" class="view">
-        <div class="view-header">
-          <h2>Recommendations</h2>
-          <button id="refresh-recommendations" class="btn-primary">Refresh</button>
-        </div>
-        <div id="recommendations-list" class="card-list">
+      <!-- Ratings view -->
+      <div id="view-ratings" class="view">
+        <h2>My Ratings</h2>
+        <div id="ratings-list" class="card-list">
           <p class="empty-state">Loading...</p>
         </div>
       </div>
