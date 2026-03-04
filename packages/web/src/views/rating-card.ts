@@ -1,0 +1,47 @@
+import type { Rating } from '@bandmap/shared';
+import { deleteRating, getArtist } from '../api.js';
+import { escapeHtml } from '../utils.js';
+
+export function renderRatingCard(
+  rating: Rating,
+  navigateToArtist: (artistMbid: string) => Promise<void>,
+): HTMLElement {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const scoreDisplay =
+    rating.status === 'rated' && rating.score !== null
+      ? '&#9733;'.repeat(rating.score) + '&#9734;'.repeat(5 - rating.score)
+      : '<span class="badge">Todo</span>';
+
+  card.innerHTML = `
+    <div class="card-row">
+      <div class="card-title clickable-text" data-mbid="${escapeHtml(rating.artistMbid)}">
+        ${escapeHtml(rating.artistMbid)}
+      </div>
+      <div class="card-score">${scoreDisplay}</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn-small btn-danger" data-action="delete" data-mbid="${escapeHtml(rating.artistMbid)}">Remove</button>
+    </div>
+  `;
+
+  void getArtist(rating.artistMbid).then(({ artist }) => {
+    const titleEl = card.querySelector('.card-title');
+    if (titleEl) {
+      titleEl.textContent = artist.name;
+    }
+  });
+
+  card.querySelector('.card-title')?.addEventListener('click', () => {
+    void navigateToArtist(rating.artistMbid);
+  });
+
+  card.querySelector('[data-action="delete"]')?.addEventListener('click', async (event) => {
+    event.stopPropagation();
+    await deleteRating(rating.artistMbid);
+    card.remove();
+  });
+
+  return card;
+}
