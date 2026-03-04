@@ -19,7 +19,7 @@ export async function loadTodo(
 
     container.innerHTML = '';
     for (const rating of ratings) {
-      const card = renderRatingCard(rating, navigateToArtist);
+      const card = renderRatingCard(rating, navigateToArtist, true);
       container.appendChild(card);
     }
   } catch (err) {

@@ -215,6 +215,25 @@ body {
   gap: 8px;
 }
 
+.card-meta {
+  margin-top: 6px;
+}
+
+.card-link {
+  color: #6c8cff;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.card-link:hover {
+  text-decoration: underline;
+}
+
+.card-tags {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
 .clickable-text {
   cursor: pointer;
 }
