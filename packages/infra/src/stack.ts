@@ -80,7 +80,7 @@ export class BandmapStack extends cdk.Stack {
       handler: 'handler',
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
-      reservedConcurrentExecutions: 10,
+      reservedConcurrentExecutions: 30,
       environment: {
         USERS_TABLE: usersTable.tableName,
         USERS_API_KEY_INDEX_NAME: 'apiKey-index',
@@ -135,8 +135,8 @@ export class BandmapStack extends cdk.Stack {
     // Configure prod stage throttling
     const cfnStage = prodStage.node.defaultChild as apigatewayv2.CfnStage;
     cfnStage.defaultRouteSettings = {
-      throttlingBurstLimit: 20,
-      throttlingRateLimit: 10,
+      throttlingBurstLimit: 10,
+      throttlingRateLimit: 8,
     };
 
     const integration = new apigatewayv2Integrations.HttpLambdaIntegration('LambdaIntegration', fn);
