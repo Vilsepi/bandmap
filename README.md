@@ -1,6 +1,10 @@
 # Bandmap
 
-Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm) data with a serverless AWS backend that acts as a pull-through cache.
+http://music.heap.fi
+
+Discover new music through similar artists you already like.
+
+Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
 
 ## Architecture
 
@@ -34,6 +38,7 @@ Discover new music through artist similarity. Uses [Last.fm](https://www.last.fm
 
 Auth is via `x-api-key` header matching a record in the Users table.
 
+
 ## Prerequisites
 
 - Node.js >= 24
@@ -62,11 +67,17 @@ npm run format
 
 ## Deploy to AWS
 
+To deploy the AWS infra resources and the backend Lambda code:
+
 ```sh
-npm run deploy
+npm run deploy:backend
 ```
 
-The deploy output will show the API Gateway URL. Set this in the frontend via the `VITE_API_BASE_URL` environment variable.
+To deploy the frontend assets to the assets bucket:
+
+```sh
+npm run deploy:frontend
+```
 
 ## Create a user
 
@@ -79,6 +90,8 @@ aws dynamodb put-item \
 ```
 
 ## Run the frontend locally
+
+You can directly serve the frontend without building it first:
 
 ```sh
 npm run serve
