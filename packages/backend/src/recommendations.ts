@@ -7,6 +7,20 @@ import {
 import * as db from './db.js';
 import { getOrFetchRelatedArtists } from './cache.js';
 
+interface RecommendationDeps {
+  listRatings: typeof db.listRatings;
+  getArtist: typeof db.getArtist;
+  putRecommendations: typeof db.putRecommendations;
+  getOrFetchRelatedArtists: typeof getOrFetchRelatedArtists;
+}
+
+const defaultDeps: RecommendationDeps = {
+  listRatings: db.listRatings,
+  getArtist: db.getArtist,
+  putRecommendations: db.putRecommendations,
+  getOrFetchRelatedArtists,
+};
+
 /**
  * Generate recommendations for a user based on their highly-rated artists.
  *
@@ -20,8 +34,15 @@ import { getOrFetchRelatedArtists } from './cache.js';
  * 6. Write to the recommendations table and return.
  */
 export async function generateRecommendations(userId: string): Promise<Recommendation[]> {
+  return generateRecommendationsWithDeps(userId, defaultDeps);
+}
+
+export async function generateRecommendationsWithDeps(
+  userId: string,
+  deps: RecommendationDeps,
+): Promise<Recommendation[]> {
   // 1. Get all user ratings to know what to exclude and what to seed from
-  const allRatings = await db.listRatings(userId);
+  const allRatings = await deps.listRatings(userId);
 
   // Set of all artist mbids the user has interacted with
   const interactedMbids = new Set(allRatings.map((o) => o.artistMbid));
@@ -33,7 +54,7 @@ export async function generateRecommendations(userId: string): Promise<Recommend
     .slice(0, RECOMMENDATION_MAX_SEEDS);
 
   if (likedRatings.length === 0) {
-    await db.putRecommendations(userId, []);
+    await deps.putRecommendations(userId, []);
     return [];
   }
 
@@ -54,8 +75,8 @@ export async function generateRecommendations(userId: string): Promise<Recommend
   const seedArtists = await Promise.all(
     likedRatings.map(async (rating) => {
       const [related, artist] = await Promise.all([
-        getOrFetchRelatedArtists(rating.artistMbid),
-        db.getArtist(rating.artistMbid),
+        deps.getOrFetchRelatedArtists(rating.artistMbid),
+        deps.getArtist(rating.artistMbid),
       ]);
       return { rating, related, artistName: artist?.name ?? 'Unknown' };
     }),
@@ -106,6 +127,6 @@ export async function generateRecommendations(userId: string): Promise<Recommend
     }));
 
   // 6. Write and return
-  await db.putRecommendations(userId, recommendations);
+  await deps.putRecommendations(userId, recommendations);
   return recommendations;
 }
