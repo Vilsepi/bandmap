@@ -52,16 +52,18 @@ npm install
 npm run build
 ```
 
-## Run tests
+## Run unit tests, linter and autoformatter
 
 ```sh
 npm run test
+npm run lint
+npm run format
 ```
 
-## Deploy
+## Deploy to AWS
 
 ```sh
-./deploy.sh
+npm run deploy
 ```
 
 The deploy output will show the API Gateway URL. Set this in the frontend via the `VITE_API_BASE_URL` environment variable.
@@ -79,8 +81,7 @@ aws dynamodb put-item \
 ## Run the frontend locally
 
 ```sh
-cd packages/web
-VITE_API_BASE_URL=https://YOUR_API_ID.execute-api.REGION.amazonaws.com/prod npx vite
+npm run serve
 ```
 
 Then open http://localhost:5173 in your browser and enter your API key in the settings panel.
