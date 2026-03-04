@@ -238,11 +238,23 @@ body {
 }
 
 .card {
+  position: relative;
   background: #1a1a1a;
   border: 1px solid #2a2a2a;
   border-radius: 8px;
   padding: 12px 16px;
   transition: background 0.15s;
+}
+
+.card-main-row {
+  padding-right: 28px;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .card.clickable {
@@ -275,6 +287,27 @@ body {
 .card-score {
   font-size: 14px;
   color: #f5a623;
+  white-space: nowrap;
+}
+
+.card-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #ff5f5f;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.card-remove-btn:hover {
+  background: #2a1515;
+  color: #ff7a7a;
 }
 
 .card-actions {

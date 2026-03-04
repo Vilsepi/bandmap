@@ -19,10 +19,10 @@ const topbarMenuToggle = document.getElementById('topbar-menu-toggle') as HTMLBu
 const topbarMenuDropdown = document.getElementById('topbar-menu-dropdown');
 
 const VIEW_TITLES: Record<ViewName, string> = {
-  search: 'Search Artists',
-  recommendations: 'Recommendations',
-  todo: 'Todo List',
-  ratings: 'My Ratings',
+  search: 'Search artist',
+  recommendations: 'Recommended',
+  todo: 'To listen',
+  ratings: 'Rated artists',
 };
 
 let routerNavigate: ((route: AppRoute) => Promise<void>) | null = null;

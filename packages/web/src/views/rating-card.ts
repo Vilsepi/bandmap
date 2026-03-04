@@ -13,20 +13,28 @@ export function renderRatingCard(
   const scoreDisplay =
     rating.status === 'rated' && rating.score !== null
       ? '&#9733;'.repeat(rating.score) + '&#9734;'.repeat(5 - rating.score)
-      : '<span class="badge">Todo</span>';
+      : '';
 
   card.innerHTML = `
-    <div class="card-row">
-      <div class="card-title clickable-text" data-mbid="${escapeHtml(rating.artistMbid)}">
-        ${escapeHtml(rating.artistMbid)}
+    <button
+      class="card-remove-btn"
+      data-action="delete"
+      data-mbid="${escapeHtml(rating.artistMbid)}"
+      aria-label="Remove artist"
+      title="Remove"
+    >
+      &times;
+    </button>
+    <div class="card-row card-main-row">
+      <div class="card-title-row">
+        <div class="card-title clickable-text" data-mbid="${escapeHtml(rating.artistMbid)}">
+          ${escapeHtml(rating.artistMbid)}
+        </div>
+        <div class="card-score">${scoreDisplay}</div>
       </div>
-      <div class="card-score">${scoreDisplay}</div>
     </div>
     <div class="card-meta ${showLastFmLink ? '' : 'hidden'}">
       <a class="card-link hidden" data-role="lastfm-link" href="#" target="_blank" rel="noopener">Last.fm profile &rarr;</a>
-    </div>
-    <div class="card-actions">
-      <button class="btn-small btn-danger" data-action="delete" data-mbid="${escapeHtml(rating.artistMbid)}">Remove</button>
     </div>
   `;
 
