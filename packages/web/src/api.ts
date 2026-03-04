@@ -9,6 +9,13 @@ import type {
 } from '@bandmap/shared';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+const CACHE_PREFIX = 'bandmap:v1';
+const ARTIST_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+type CacheRecord<T> = {
+  cachedAt: number;
+  data: T;
+};
 
 function getApiKey(): string {
   return localStorage.getItem('bandmap-api-key') ?? '';
@@ -24,6 +31,51 @@ export function hasApiKey(): boolean {
 
 export function isApiConfigured(): boolean {
   return API_BASE.length > 0;
+}
+
+function createCacheKey(collection: 'artist' | 'related', mbid: string): string {
+  return `${CACHE_PREFIX}:${collection}:${mbid}`;
+}
+
+function readCache<T>(key: string, ttlMs: number): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as CacheRecord<T>;
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      typeof parsed.cachedAt !== 'number' ||
+      !Number.isFinite(parsed.cachedAt)
+    ) {
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    if (Date.now() - parsed.cachedAt > ttlMs) {
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache<T>(key: string, data: T): void {
+  try {
+    const record: CacheRecord<T> = {
+      cachedAt: Date.now(),
+      data,
+    };
+    localStorage.setItem(key, JSON.stringify(record));
+  } catch {
+    return;
+  }
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -74,11 +126,27 @@ export async function searchArtists(query: string): Promise<SearchResponse> {
 }
 
 export async function getArtist(mbid: string): Promise<ArtistResponse> {
-  return apiFetch<ArtistResponse>(`/artists/${mbid}`);
+  const key = createCacheKey('artist', mbid);
+  const cached = readCache<ArtistResponse>(key, ARTIST_CACHE_TTL_MS);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await apiFetch<ArtistResponse>(`/artists/${mbid}`);
+  writeCache(key, response);
+  return response;
 }
 
 export async function getRelatedArtists(mbid: string): Promise<RelatedArtistsResponse> {
-  return apiFetch<RelatedArtistsResponse>(`/artists/${mbid}/related`);
+  const key = createCacheKey('related', mbid);
+  const cached = readCache<RelatedArtistsResponse>(key, ARTIST_CACHE_TTL_MS);
+  if (cached) {
+    return cached;
+  }
+
+  const response = await apiFetch<RelatedArtistsResponse>(`/artists/${mbid}/related`);
+  writeCache(key, response);
+  return response;
 }
 
 export async function listRatings(status?: 'rated' | 'todo'): Promise<RatingsListResponse> {
