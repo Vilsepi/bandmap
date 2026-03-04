@@ -7,11 +7,12 @@ interface SearchViewOptions {
   navigateToRoute: (route: AppRoute) => Promise<void>;
 }
 
+const DELAY_BEFORE_SEARCHING_IN_MS = 1000;
+
 const searchInput = document.getElementById('search') as HTMLInputElement;
 const searchResultsEl = document.getElementById('search-results')!;
 const artistDetailEl = document.getElementById('artist-detail')!;
 const detailContentEl = document.getElementById('detail-content')!;
-const backToResultsBtn = document.getElementById('back-to-results')!;
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -27,11 +28,7 @@ export function initSearchView({ navigateToRoute }: SearchViewOptions): void {
 
     searchTimeout = setTimeout(() => {
       void performSearch(query, navigateToRoute);
-    }, 2000);
-  });
-
-  backToResultsBtn.addEventListener('click', () => {
-    void navigateToRoute({ view: 'search' });
+    }, DELAY_BEFORE_SEARCHING_IN_MS);
   });
 }
 
@@ -77,7 +74,6 @@ async function performSearch(
       card.className = 'card clickable';
       card.innerHTML = `
         <div class="card-title">${escapeHtml(result.name)}</div>
-        <div class="card-subtitle">${escapeHtml(result.mbid)}</div>
       `;
       card.addEventListener('click', () => {
         void navigateToRoute({ view: 'search', artistMbid: result.mbid });

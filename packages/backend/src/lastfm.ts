@@ -172,7 +172,7 @@ export async function fetchSimilarArtists(
 export async function searchArtists(
   query: string,
   apiKey: string,
-  limit = 20,
+  limit = 10,
 ): Promise<{ mbid: string; name: string; url: string }[]> {
   const params = new URLSearchParams({
     method: 'artist.search',
