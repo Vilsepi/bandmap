@@ -22,6 +22,6 @@ const _stack = new BandmapStack(app, 'BandmapStack', {
   frontendCertificateArn,
   env: {
     account: process.env['AWS_ACCOUNT_ID'],
-    region: process.env['AWS_REGION']
+    region: process.env['AWS_REGION'],
   },
 });

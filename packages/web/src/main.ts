@@ -10,6 +10,7 @@ const navLinks = document.querySelectorAll<HTMLAnchorElement>('.nav-link');
 const views = document.querySelectorAll<HTMLElement>('.view');
 
 let routerNavigate: ((route: AppRoute) => Promise<void>) | null = null;
+let appInitialized = false;
 
 function showView(name: ViewName): void {
   views.forEach((view) => view.classList.remove('active'));
@@ -57,20 +58,29 @@ async function handleRoute(route: AppRoute): Promise<void> {
   }
 }
 
-initGlobalConfig();
+async function initializeApp(): Promise<void> {
+  if (appInitialized) return;
+  appInitialized = true;
 
-const router = createRouter(handleRoute);
-routerNavigate = async (route: AppRoute) => {
-  await router.navigateToRoute(route);
-};
+  const router = createRouter(handleRoute);
+  routerNavigate = async (route: AppRoute) => {
+    await router.navigateToRoute(route);
+  };
 
-initSearchView({
-  navigateToRoute: async (route) => {
-    if (!routerNavigate) return;
-    await routerNavigate(route);
+  initSearchView({
+    navigateToRoute: async (route) => {
+      if (!routerNavigate) return;
+      await routerNavigate(route);
+    },
+  });
+
+  initRecommendationsView(navigateToArtist);
+
+  await router.navigateToRoute(router.getInitialRoute(), { updateUrl: 'replace' });
+}
+
+initGlobalConfig({
+  onAuthenticated: () => {
+    void initializeApp();
   },
 });
-
-initRecommendationsView(navigateToArtist);
-
-await router.navigateToRoute(router.getInitialRoute(), { updateUrl: 'replace' });

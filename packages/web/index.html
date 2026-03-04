@@ -4,101 +4,120 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bandmap</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <div id="app">
-    <!-- Sidebar navigation -->
-    <nav id="sidebar">
+  <div id="api-key-gate" class="api-key-gate">
+    <form id="api-key-form" class="api-key-card">
       <h1>Bandmap</h1>
-      <ul class="nav-list">
-        <li><a href="#/" data-view="search" class="nav-link active">Search</a></li>
-        <li><a href="#/recommendations" data-view="recommendations" class="nav-link">Recommendations</a></li>
-        <li><a href="#/todo" data-view="todo" class="nav-link">Todo List</a></li>
-        <li><a href="#/ratings" data-view="ratings" class="nav-link">My Ratings</a></li>
+      <p>Enter your API key to continue</p>
+      <input type="password" id="api-key-input" placeholder="API key" autocomplete="off" required />
+      <button type="submit" class="btn-primary">Continue</button>
+    </form>
+  </div>
 
-        <!-- Disable Graph view until reworked -->
-        <!--<li><a href="#/graph" data-view="graph" class="nav-link">Graph</a></li>-->
-      </ul>
-      <div id="settings">
-        <label>
-          <span>API Key:</span>
-          <input type="password" id="api-key-input" placeholder="Enter your API key" />
-        </label>
-        <button id="save-api-key">Save</button>
-      </div>
-    </nav>
+  <div id="app-shell" class="hidden">
+    <div id="app">
+      <main id="content">
+        <header id="app-topbar">
+          <h1>Bandmap</h1>
+          <button id="logout-button" class="btn-secondary btn-small" type="button">Logout</button>
+        </header>
+        <div id="api-url-warning" class="warning-banner hidden">
+          <strong>Backend API endpoint not configured.</strong> Set the <code>VITE_API_BASE_URL</code> environment variable and restart the server.
+        </div>
+        <!-- Search view -->
+        <div id="view-search" class="view active">
+          <h2>Search Artists</h2>
+          <div class="search-box">
+            <input type="text" id="search" placeholder="Search for an artist..." autocomplete="off" />
+          </div>
+          <div id="search-results" class="card-list"></div>
+          <div id="artist-detail" class="hidden">
+            <button id="back-to-results" class="btn-secondary">&larr; Back</button>
+            <div id="detail-content"></div>
+          </div>
+        </div>
 
-    <!-- Main content area -->
-    <main id="content">
-      <div id="api-url-warning" class="warning-banner hidden">
-        <strong>Backend API endpoint not configured.</strong> Set the <code>VITE_API_BASE_URL</code> environment variable and restart the server.
-      </div>
-      <!-- Search view -->
-      <div id="view-search" class="view active">
-        <h2>Search Artists</h2>
-        <div class="search-box">
-          <input type="text" id="search" placeholder="Search for an artist..." autocomplete="off" />
+        <!-- Recommendations view -->
+        <div id="view-recommendations" class="view">
+          <div class="view-header">
+            <h2>Recommendations</h2>
+            <button id="refresh-recommendations" class="btn-primary">Refresh</button>
+          </div>
+          <div id="recommendations-list" class="card-list">
+            <p class="empty-state">Loading...</p>
+          </div>
         </div>
-        <div id="search-results" class="card-list"></div>
-        <div id="artist-detail" class="hidden">
-          <button id="back-to-results" class="btn-secondary">&larr; Back</button>
-          <div id="detail-content"></div>
-        </div>
-      </div>
 
-      <!-- Recommendations view -->
-      <div id="view-recommendations" class="view">
-        <div class="view-header">
-          <h2>Recommendations</h2>
-          <button id="refresh-recommendations" class="btn-primary">Refresh</button>
+        <!-- Bookmark view -->
+        <div id="view-todo" class="view">
+          <h2>Todo List</h2>
+          <div id="todo-list" class="card-list">
+            <p class="empty-state">Loading...</p>
+          </div>
         </div>
-        <div id="recommendations-list" class="card-list">
-          <p class="empty-state">Loading...</p>
-        </div>
-      </div>
 
-      <!-- Bookmark view -->
-      <div id="view-todo" class="view">
-        <h2>Todo List</h2>
-        <div id="todo-list" class="card-list">
-          <p class="empty-state">Loading...</p>
+        <!-- Ratings view -->
+        <div id="view-ratings" class="view">
+          <h2>My Ratings</h2>
+          <div id="ratings-list" class="card-list">
+            <p class="empty-state">Loading...</p>
+          </div>
         </div>
-      </div>
 
-      <!-- Ratings view -->
-      <div id="view-ratings" class="view">
-        <h2>My Ratings</h2>
-        <div id="ratings-list" class="card-list">
-          <p class="empty-state">Loading...</p>
+        <!-- Graph view -->
+        <div id="view-graph" class="view">
+          <h2>Artist Graph</h2>
+          <div class="graph-controls">
+            <label>
+              <span>Filter by tag:</span>
+              <select id="tag-filter">
+                <option value="">All tags</option>
+              </select>
+            </label>
+            <label>
+              <span>Min similarity:</span>
+              <input type="range" id="min-weight" min="0" max="1" step="0.05" value="0" />
+              <span id="min-weight-value">0</span>
+            </label>
+          </div>
+          <div id="graph-container"></div>
+          <div id="graph-detail" class="hidden">
+            <button id="close-graph-detail">&times;</button>
+            <h3 id="graph-detail-name">Selected artist</h3>
+            <div id="graph-detail-tags"></div>
+            <ul id="graph-detail-similar"></ul>
+          </div>
         </div>
-      </div>
+      </main>
 
-      <!-- Graph view -->
-      <div id="view-graph" class="view">
-        <h2>Artist Graph</h2>
-        <div class="graph-controls">
-          <label>
-            <span>Filter by tag:</span>
-            <select id="tag-filter">
-              <option value="">All tags</option>
-            </select>
-          </label>
-          <label>
-            <span>Min similarity:</span>
-            <input type="range" id="min-weight" min="0" max="1" step="0.05" value="0" />
-            <span id="min-weight-value">0</span>
-          </label>
-        </div>
-        <div id="graph-container"></div>
-        <div id="graph-detail" class="hidden">
-          <button id="close-graph-detail">&times;</button>
-          <h3 id="graph-detail-name">Selected artist</h3>
-          <div id="graph-detail-tags"></div>
-          <ul id="graph-detail-similar"></ul>
-        </div>
-      </div>
-    </main>
+      <nav id="toolbar" aria-label="Main tools">
+        <a href="#/" data-view="search" class="nav-link active" aria-label="Search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <span>Search</span>
+        </a>
+        <a href="#/recommendations" data-view="recommendations" class="nav-link" aria-label="Recommendations">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+          <span>For you</span>
+        </a>
+        <a href="#/todo" data-view="todo" class="nav-link" aria-label="Todo list">
+          <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+          <span>Todo</span>
+        </a>
+        <a href="#/ratings" data-view="ratings" class="nav-link" aria-label="My ratings">
+          <i class="fa-solid fa-star" aria-hidden="true"></i>
+          <span>History</span>
+        </a>
+      </nav>
+    </div>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>

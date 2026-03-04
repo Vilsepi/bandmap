@@ -27,6 +27,10 @@ export function setApiKey(key: string): void {
   localStorage.setItem('bandmap-api-key', key);
 }
 
+export function clearApiKey(): void {
+  localStorage.removeItem('bandmap-api-key');
+}
+
 export function hasApiKey(): boolean {
   return getApiKey().length > 0;
 }
