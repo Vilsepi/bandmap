@@ -5,6 +5,7 @@ import { escapeHtml } from '../utils.js';
 export function renderRatingCard(
   rating: Rating,
   navigateToArtist: (artistMbid: string) => Promise<void>,
+  showLastFmLink = false,
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'card';
@@ -21,6 +22,9 @@ export function renderRatingCard(
       </div>
       <div class="card-score">${scoreDisplay}</div>
     </div>
+    <div class="card-meta ${showLastFmLink ? '' : 'hidden'}">
+      <a class="card-link hidden" data-role="lastfm-link" href="#" target="_blank" rel="noopener">Last.fm profile &rarr;</a>
+    </div>
     <div class="card-actions">
       <button class="btn-small btn-danger" data-action="delete" data-mbid="${escapeHtml(rating.artistMbid)}">Remove</button>
     </div>
@@ -30,6 +34,12 @@ export function renderRatingCard(
     const titleEl = card.querySelector('.card-title');
     if (titleEl) {
       titleEl.textContent = artist.name;
+    }
+
+    const lastFmLinkEl = card.querySelector<HTMLAnchorElement>('[data-role="lastfm-link"]');
+    if (lastFmLinkEl && showLastFmLink) {
+      lastFmLinkEl.href = artist.url;
+      lastFmLinkEl.classList.remove('hidden');
     }
   });
 
