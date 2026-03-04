@@ -420,6 +420,11 @@ body {
   background: #5a7ae8;
 }
 
+#refresh-recommendations {
+  display: block;
+  margin: 16px auto 0;
+}
+
 .btn-secondary {
   padding: 8px 16px;
   border: 1px solid #444;
