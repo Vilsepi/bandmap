@@ -18,6 +18,11 @@ import { createGraph, type GraphManager, type GraphData } from './graph.js';
 
 type ViewName = 'search' | 'ratings' | 'todo' | 'recommendations' | 'graph';
 
+interface AppRoute {
+  view: ViewName;
+  artistMbid?: string;
+}
+
 const navLinks = document.querySelectorAll<HTMLAnchorElement>('.nav-link');
 const views = document.querySelectorAll<HTMLElement>('.view');
 
@@ -39,12 +44,95 @@ function showView(name: ViewName): void {
   if (name === 'graph') void initGraph();
 }
 
+function parseRoute(hash: string): AppRoute {
+  const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+  const withLeadingSlash = raw.startsWith('/') ? raw : `/${raw}`;
+  const normalized = withLeadingSlash.replace(/\/+$/, '') || '/';
+  const artistMatch = /^\/artists\/([^/]+)$/.exec(normalized);
+  if (artistMatch?.[1]) {
+    try {
+      return { view: 'search', artistMbid: decodeURIComponent(artistMatch[1]) };
+    } catch {
+      return { view: 'search' };
+    }
+  }
+
+  switch (normalized) {
+    case '/':
+    case '/search':
+      return { view: 'search' };
+    case '/ratings':
+      return { view: 'ratings' };
+    case '/todo':
+      return { view: 'todo' };
+    case '/recommendations':
+      return { view: 'recommendations' };
+    case '/graph':
+      return { view: 'graph' };
+    default:
+      return { view: 'search' };
+  }
+}
+
+function routeToHash(route: AppRoute): string {
+  if (route.artistMbid) return `#/artists/${encodeURIComponent(route.artistMbid)}`;
+
+  switch (route.view) {
+    case 'search':
+      return '#/';
+    case 'ratings':
+      return '#/ratings';
+    case 'todo':
+      return '#/todo';
+    case 'recommendations':
+      return '#/recommendations';
+    case 'graph':
+      return '#/graph';
+  }
+}
+
+function setUrlForRoute(route: AppRoute, mode: 'push' | 'replace'): void {
+  const nextHash = routeToHash(route);
+  if (globalThis.location.hash === nextHash) return;
+
+  if (mode === 'replace') {
+    const url = `${globalThis.location.pathname}${globalThis.location.search}${nextHash}`;
+    history.replaceState(route, '', url);
+  } else {
+    globalThis.location.hash = nextHash;
+  }
+}
+
+async function navigateToRoute(
+  route: AppRoute,
+  options: { updateUrl?: 'push' | 'replace' | 'none' } = {},
+): Promise<void> {
+  const updateUrl = options.updateUrl ?? 'push';
+
+  if (route.artistMbid) {
+    showView('search');
+    if (updateUrl !== 'none') setUrlForRoute(route, updateUrl);
+    await showArtistDetail(route.artistMbid);
+    return;
+  }
+
+  showView(route.view);
+  artistDetailEl.classList.add('hidden');
+  searchResultsEl.style.display = '';
+  if (updateUrl !== 'none') setUrlForRoute(route, updateUrl);
+}
+
 navLinks.forEach((link) => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
     const viewName = link.dataset['view'] as ViewName | undefined;
-    if (viewName) showView(viewName);
+    if (viewName) void navigateToRoute({ view: viewName });
   });
+});
+
+globalThis.addEventListener('hashchange', () => {
+  const route = parseRoute(globalThis.location.hash);
+  void navigateToRoute(route, { updateUrl: 'none' });
 });
 
 // ── API Key settings ─────────────────────────────────────────
@@ -107,7 +195,10 @@ async function performSearch(query: string): Promise<void> {
         <div class="card-title">${escapeHtml(result.name)}</div>
         <div class="card-subtitle">${escapeHtml(result.mbid)}</div>
       `;
-      card.addEventListener('click', () => void showArtistDetail(result.mbid));
+      card.addEventListener(
+        'click',
+        () => void navigateToRoute({ view: 'search', artistMbid: result.mbid }),
+      );
       searchResultsEl.appendChild(card);
     }
   } catch (err) {
@@ -116,8 +207,7 @@ async function performSearch(query: string): Promise<void> {
 }
 
 backToResultsBtn.addEventListener('click', () => {
-  artistDetailEl.classList.add('hidden');
-  searchResultsEl.style.display = '';
+  void navigateToRoute({ view: 'search' });
 });
 
 async function showArtistDetail(mbid: string): Promise<void> {
@@ -200,7 +290,7 @@ function attachDetailActions(artist: Artist, _related: RelatedArtist[]): void {
   relatedItems.forEach((item) => {
     item.addEventListener('click', () => {
       const mbid = item.dataset['mbid'];
-      if (mbid) void showArtistDetail(mbid);
+      if (mbid) void navigateToRoute({ view: 'search', artistMbid: mbid });
     });
   });
 }
@@ -281,8 +371,7 @@ function renderRatingCard(rating: Rating): HTMLElement {
 
   // Click to view detail
   card.querySelector('.card-title')?.addEventListener('click', () => {
-    showView('search');
-    void showArtistDetail(rating.artistMbid);
+    void navigateToRoute({ view: 'search', artistMbid: rating.artistMbid });
   });
 
   // Delete button
@@ -347,8 +436,7 @@ function renderRecommendations(container: HTMLElement, recommendations: Recommen
       </div>
     `;
     card.addEventListener('click', () => {
-      showView('search');
-      void showArtistDetail(rec.artistMbid);
+      void navigateToRoute({ view: 'search', artistMbid: rec.artistMbid });
     });
     container.appendChild(card);
   }
@@ -524,4 +612,5 @@ if (!isApiConfigured()) {
   if (warning) warning.classList.remove('hidden');
 }
 
-showView('search');
+const initialRoute = parseRoute(globalThis.location.hash);
+await navigateToRoute(initialRoute, { updateUrl: 'replace' });
