@@ -167,7 +167,7 @@ export class BandmapStack extends cdk.Stack {
       bucketName: 'bandmap-frontend-assets',
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
-      versioned: true,
+      versioned: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
