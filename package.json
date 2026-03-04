@@ -14,7 +14,9 @@
     "clean": "tsc --build --clean",
     "lint": "eslint packages/*/src/**/*.ts",
     "format": "prettier --write 'packages/*/src/**/*.ts'",
-    "test": "npm test --workspaces --if-present"
+    "test": "npm test --workspaces --if-present",
+    "deploy": "bash deploy.sh",
+    "serve": "cd packages/web && npx vite"
   },
   "devDependencies": {
     "@types/node": "^25.3.3",
