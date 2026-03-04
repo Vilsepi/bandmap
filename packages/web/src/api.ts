@@ -11,6 +11,8 @@ import type {
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 const CACHE_PREFIX = 'bandmap:v1';
 const ARTIST_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
+const MAX_API_RETRIES = 3;
 
 type CacheRecord<T> = {
   cachedAt: number;
@@ -78,6 +80,48 @@ function writeCache<T>(key: string, data: T): void {
   }
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+}
+
+function getRetryDelayMs(attempt: number): number {
+  const exponentialDelay = 200 * 2 ** (attempt - 1);
+  const jitter = Math.floor(Math.random() * 100);
+  return exponentialDelay + jitter;
+}
+
+async function executeApiRequest(
+  path: string,
+  headers: Record<string, string>,
+  init?: RequestInit,
+): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers,
+  });
+}
+
+function shouldRetryStatus(statusCode: number): boolean {
+  return RETRYABLE_STATUS_CODES.has(statusCode);
+}
+
+async function parseApiResponse<T>(response: Response): Promise<T> {
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      `Expected JSON response but received: ${contentType || 'unknown content type'}`,
+    );
+  }
+
+  return (await response.json()) as T;
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (!API_BASE) {
     throw new Error(
@@ -95,28 +139,36 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     headers['x-api-key'] = apiKey;
   }
 
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers,
-  });
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= MAX_API_RETRIES; attempt += 1) {
+    let response: Response;
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`API error ${response.status}: ${errorBody}`);
+    try {
+      response = await executeApiRequest(path, headers, init);
+    } catch (error) {
+      if (attempt === MAX_API_RETRIES) {
+        throw error;
+      }
+      await sleep(getRetryDelayMs(attempt));
+      continue;
+    }
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      lastError = new Error(`API error ${response.status}: ${errorBody}`);
+
+      if (attempt === MAX_API_RETRIES || !shouldRetryStatus(response.status)) {
+        throw lastError;
+      }
+
+      await sleep(getRetryDelayMs(attempt));
+      continue;
+    }
+
+    return parseApiResponse<T>(response);
   }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) {
-    throw new Error(
-      `Expected JSON response but received: ${contentType || 'unknown content type'}`,
-    );
-  }
-
-  return (await response.json()) as T;
+  throw lastError ?? new Error('Request failed after retries');
 }
 
 // ── API functions ────────────────────────────────────────────

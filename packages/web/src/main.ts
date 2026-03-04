@@ -484,25 +484,44 @@ function buildGraphData(): GraphData {
   };
 }
 
+async function mapWithConcurrency<T>(
+  values: T[],
+  limit: number,
+  mapper: (value: T) => Promise<void>,
+): Promise<void> {
+  if (values.length === 0) return;
+
+  let nextIndex = 0;
+  const workerCount = Math.max(1, Math.min(limit, values.length));
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < values.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        await mapper(values[currentIndex]);
+      }
+    }),
+  );
+}
+
 async function initGraph(): Promise<void> {
   const container = document.getElementById('graph-container')!;
 
   // Also load user's rated artists into the graph
   try {
     const { ratings } = await listRatings('rated');
-    await Promise.all(
-      ratings.slice(0, 20).map(async (op) => {
-        try {
-          const [{ artist }, { related }] = await Promise.all([
-            getArtist(op.artistMbid),
-            getRelatedArtists(op.artistMbid),
-          ]);
-          addToGraphData(artist, related);
-        } catch {
-          // Skip artists that fail to load
-        }
-      }),
-    );
+    await mapWithConcurrency(ratings.slice(0, 20), 4, async (op) => {
+      try {
+        const [{ artist }, { related }] = await Promise.all([
+          getArtist(op.artistMbid),
+          getRelatedArtists(op.artistMbid),
+        ]);
+        addToGraphData(artist, related);
+      } catch {
+        // Skip artists that fail to load
+      }
+    });
   } catch {
     // If ratings fail, just use what we have
   }
