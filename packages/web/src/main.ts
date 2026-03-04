@@ -12,10 +12,18 @@ interface BuildInfo {
 
 const navLinks = document.querySelectorAll<HTMLAnchorElement>('.nav-link');
 const views = document.querySelectorAll<HTMLElement>('.view');
+const topbarTitle = document.querySelector<HTMLElement>('#app-topbar h1');
 const buildInfoText = document.getElementById('build-info-text');
 const topbarMenuContainer = document.getElementById('topbar-menu-container');
 const topbarMenuToggle = document.getElementById('topbar-menu-toggle') as HTMLButtonElement | null;
 const topbarMenuDropdown = document.getElementById('topbar-menu-dropdown');
+
+const VIEW_TITLES: Record<ViewName, string> = {
+  search: 'Search Artists',
+  recommendations: 'Recommendations',
+  todo: 'Todo List',
+  ratings: 'My Ratings',
+};
 
 let routerNavigate: ((route: AppRoute) => Promise<void>) | null = null;
 let appInitialized = false;
@@ -73,6 +81,10 @@ async function loadBuildInfo(): Promise<void> {
 function showView(name: ViewName): void {
   views.forEach((view) => view.classList.remove('active'));
   navLinks.forEach((link) => link.classList.remove('active'));
+
+  if (topbarTitle) {
+    topbarTitle.textContent = VIEW_TITLES[name];
+  }
 
   const view = document.getElementById(`view-${name}`);
   const link = document.querySelector(`[data-view="${name}"]`);
