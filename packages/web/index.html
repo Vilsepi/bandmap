@@ -16,7 +16,7 @@
 <body>
   <div id="api-key-gate" class="api-key-gate">
     <form id="api-key-form" class="api-key-card">
-      <h1>Bandmap</h1>
+      <h1>Music search</h1>
       <p>Enter your API key to continue</p>
       <input type="password" id="api-key-input" placeholder="API key" autocomplete="off" required />
       <button type="submit" class="btn-primary">Continue</button>
@@ -26,13 +26,32 @@
   <div id="app-shell" class="hidden">
     <div id="app">
       <main id="content">
+
         <header id="app-topbar">
           <h1>Bandmap</h1>
-          <button id="logout-button" class="btn-secondary btn-small" type="button">Logout</button>
+          <div id="topbar-menu-container">
+            <button
+              id="topbar-menu-toggle"
+              class="topbar-menu-toggle"
+              type="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="topbar-menu-dropdown"
+              aria-label="Open menu"
+            >
+              <i class="fa-solid fa-bars" aria-hidden="true"></i>
+            </button>
+            <div id="topbar-menu-dropdown" class="topbar-menu-dropdown hidden" role="menu">
+              <span id="build-info-text" class="menu-build-info" role="note">Loading build info...</span>
+              <button id="logout-button" class="menu-action-link" type="button" role="menuitem">Logout</button>
+            </div>
+          </div>
         </header>
+
         <div id="api-url-warning" class="warning-banner hidden">
           <strong>Backend API endpoint not configured.</strong> Set the <code>VITE_API_BASE_URL</code> environment variable and restart the server.
         </div>
+
         <!-- Search view -->
         <div id="view-search" class="view active">
           <h2>Search Artists</h2>
@@ -50,11 +69,11 @@
         <div id="view-recommendations" class="view">
           <div class="view-header">
             <h2>Recommendations</h2>
-            <button id="refresh-recommendations" class="btn-primary">Refresh</button>
           </div>
           <div id="recommendations-list" class="card-list">
             <p class="empty-state">Loading...</p>
           </div>
+          <button id="refresh-recommendations" class="btn-primary">Refresh</button>
         </div>
 
         <!-- Bookmark view -->
@@ -99,6 +118,7 @@
         </div>
       </main>
 
+      <!-- Main navigation -->
       <nav id="toolbar" aria-label="Main tools">
         <a href="#/" data-view="search" class="nav-link active" aria-label="Search">
           <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
