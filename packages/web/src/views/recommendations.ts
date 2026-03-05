@@ -94,7 +94,13 @@ async function renderRecommendations(
     card.innerHTML = `
       <div class="card-row">
         <div class="card-title">${escapeHtml(recommendation.artistName)}</div>
-        <button class="btn-small btn-secondary" type="button" data-action="add-todo">Add to Todo</button>
+        <button
+          class="btn-icon btn-bookmark"
+          type="button"
+          data-action="add-todo"
+          aria-label="Add to todo"
+          title="Add to todo"
+        ><i class="fa-regular fa-bookmark" aria-hidden="true"></i></button>
       </div>
       <div class="card-subtitle">
         Score: ${recommendation.score.toFixed(1)} &middot;
@@ -108,7 +114,9 @@ async function renderRecommendations(
       event.stopPropagation();
       await putRating(recommendation.artistMbid, { score: null, status: 'todo' });
       if (addToTodoButton) {
-        addToTodoButton.textContent = 'Added!';
+        addToTodoButton.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
+        addToTodoButton.setAttribute('aria-label', 'Added to todo');
+        addToTodoButton.setAttribute('title', 'Added to todo');
         addToTodoButton.disabled = true;
       }
     });

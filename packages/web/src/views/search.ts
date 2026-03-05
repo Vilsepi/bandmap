@@ -124,7 +124,9 @@ function renderArtistDetail(artist: Artist, related: RelatedArtist[]): string {
           )
           .join('')}
       </div>
-      <button class="btn-secondary" id="btn-todo">Add to Todo</button>
+      <button class="btn-icon btn-bookmark" id="btn-todo" aria-label="Add to todo" title="Add to todo">
+        <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
+      </button>
     </div>
     <h4>Related Artists</h4>
     <ul class="related-list">${relatedList}</ul>
@@ -150,7 +152,9 @@ function attachDetailActions(
   todoBtn?.addEventListener('click', () => {
     void putRating(artist.mbid, { score: null, status: 'todo' });
     if (todoBtn instanceof HTMLButtonElement) {
-      todoBtn.textContent = 'Added!';
+      todoBtn.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
+      todoBtn.setAttribute('aria-label', 'Added to todo');
+      todoBtn.setAttribute('title', 'Added to todo');
       todoBtn.disabled = true;
     }
   });
