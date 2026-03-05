@@ -68,10 +68,11 @@ body {
 
 .api-key-gate {
   min-height: 100vh;
+  min-height: 100dvh;
   width: min(100vw, var(--app-max-width));
   display: grid;
-  place-items: center;
-  padding: 20px;
+  place-items: start center;
+  padding: clamp(20px, 12vh, 96px) 20px 20px;
   margin: 0 auto;
 }
 

@@ -34,7 +34,7 @@ export function renderRatingCard(
       </div>
     </div>
     <div class="card-meta ${showLastFmLink ? '' : 'hidden'}">
-      <a class="card-link hidden" data-role="lastfm-link" href="#" target="_blank" rel="noopener">Last.fm &rarr;</a>
+      <a class="card-link hidden" data-role="lastfm-link" href="#" target="_blank" rel="noopener noreferrer">Last.fm &rarr;</a>
     </div>
   `;
 
