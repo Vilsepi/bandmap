@@ -12,14 +12,22 @@ export async function loadRatings(
 
   try {
     const { ratings } = await listRatings('rated');
-    if (ratings.length === 0) {
+    const sortedRatings = [...ratings].sort((a, b) => {
+      const scoreOrder = (b.score ?? 0) - (a.score ?? 0);
+      if (scoreOrder !== 0) {
+        return scoreOrder;
+      }
+
+      return b.updatedAt.localeCompare(a.updatedAt);
+    });
+    if (sortedRatings.length === 0) {
       container.innerHTML =
         '<p class="empty-state">No ratings yet. Search and rate some artists!</p>';
       return;
     }
 
     container.innerHTML = '';
-    for (const rating of ratings) {
+    for (const rating of sortedRatings) {
       const card = renderRatingCard(rating, navigateToArtist);
       container.appendChild(card);
     }
