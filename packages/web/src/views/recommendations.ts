@@ -2,7 +2,7 @@ import type { Recommendation } from '@bandmap/shared';
 import { generateRecommendations, getArtist, getRecommendations, putRating } from '../api.js';
 import { escapeHtml } from '../utils.js';
 
-const MAX_RECOMMENDATIONS = 10;
+const MAX_RECOMMENDATIONS = 15;
 const MAX_TAGS_PER_RECOMMENDATION = 8;
 
 let isInitialized = false;

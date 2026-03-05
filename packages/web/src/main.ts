@@ -44,7 +44,7 @@ function setTopbarMenuOpen(isOpen: boolean): void {
   topbarMenuToggle.setAttribute('aria-expanded', String(isOpen));
   topbarMenuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
   if (topbarMenuIcon) {
-    topbarMenuIcon.classList.toggle('fa-bars', !isOpen);
+    topbarMenuIcon.classList.toggle('fa-gear', !isOpen);
     topbarMenuIcon.classList.toggle('fa-xmark', isOpen);
   }
 

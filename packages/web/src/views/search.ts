@@ -103,14 +103,26 @@ function renderArtistDetail(artist: Artist, related: RelatedArtist[]): string {
     .join('');
 
   return `
-    <h3>${escapeHtml(artist.name)}</h3>
+    <div class="detail-title-row">
+      <h3>${escapeHtml(artist.name)}</h3>
+      <a
+        href="${escapeHtml(artist.url)}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="external-link detail-title-link"
+        aria-label="Open artist on Last.fm"
+        title="Open artist on Last.fm"
+      ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
+    </div>
     <div class="tag-list">${tagBadges}</div>
-    <a href="${escapeHtml(artist.url)}" target="_blank" rel="noopener noreferrer" class="external-link">
-      Last.fm &rarr;
-    </a>
     <div class="action-bar">
       <div class="star-rating" id="star-rating">
-        ${[1, 2, 3, 4, 5].map((score) => `<button class="star" data-score="${score}">&#9733;</button>`).join('')}
+        ${[1, 2, 3, 4, 5]
+          .map(
+            (score) =>
+              `<button class="star" data-score="${score}"><i class="fa-solid fa-star" aria-hidden="true"></i></button>`,
+          )
+          .join('')}
       </div>
       <button class="btn-secondary" id="btn-todo">Add to Todo</button>
     </div>

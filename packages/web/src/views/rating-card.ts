@@ -30,11 +30,19 @@ export function renderRatingCard(
         <div class="card-title clickable-text" data-mbid="${escapeHtml(rating.artistMbid)}">
           ${escapeHtml(rating.artistMbid)}
         </div>
-        <div class="card-score">${scoreDisplay}</div>
+        <div class="card-title-actions">
+          <a
+            class="card-link card-title-link hidden"
+            data-role="lastfm-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open artist on Last.fm"
+            title="Open artist on Last.fm"
+          ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
+          <div class="card-score">${scoreDisplay}</div>
+        </div>
       </div>
-    </div>
-    <div class="card-meta ${showLastFmLink ? '' : 'hidden'}">
-      <a class="card-link hidden" data-role="lastfm-link" href="#" target="_blank" rel="noopener noreferrer">Last.fm &rarr;</a>
     </div>
   `;
 
