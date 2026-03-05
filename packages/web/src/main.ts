@@ -111,7 +111,7 @@ async function loadBuildInfo(): Promise<void> {
       throw new TypeError('buildinfo.json has invalid shape');
     }
 
-    buildInfoText.innerHTML = `Frontend version: ${buildInfo.buildIdentifier}<br>${buildInfo.timestamp}`;
+    buildInfoText.innerHTML = `Frontend version: <a href="https://github.com/Vilsepi/bandmap/commit/${buildInfo.buildIdentifier}" target="_blank" rel="noopener noreferrer">${buildInfo.buildIdentifier}</a><br>${buildInfo.timestamp}`;
   } catch {
     buildInfoText.innerHTML = 'No build info<br>Local development?';
   }
