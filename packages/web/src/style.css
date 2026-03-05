@@ -14,33 +14,16 @@
 
   --brand-bg-app: #0a0a0a;
   --brand-bg-surface: #141414;
-  --brand-bg-elevated: #1a1a1a;
   --brand-bg-muted: #1e1e1e;
-  --brand-bg-hover: #222;
-  --brand-bg-danger-hover: #2a1515;
-  --brand-bg-tag: #2a2a3a;
   --brand-border-default: #333;
   --brand-border-strong: #444;
-  --brand-border-soft: #2a2a2a;
-  --brand-text-primary: #e0e0e0;
   --brand-text-strong: #fff;
+  --brand-text-primary: #e0e0e0;
   --brand-text-secondary: #aaa;
   --brand-text-muted: #888;
-  --brand-text-subtle: #666;
-  --brand-text-tag: #ccc;
-  --brand-text-badge: #aac;
   --brand-accent: #6c8cff;
   --brand-rating: #f5a623;
   --brand-danger: #ff5f5f;
-  --brand-danger-hover: #ff7a7a;
-  --brand-danger-soft: #e66;
-  --brand-danger-border: #a33;
-  --brand-primary: #4a6ee0;
-  --brand-primary-hover: #5a7ae8;
-  --brand-warning-bg: #fff3cd;
-  --brand-warning-text: #856404;
-  --brand-warning-border: #ffc107;
-  --brand-overlay-code-bg: rgba(0, 0, 0, 0.08);
 }
 
 body {
@@ -314,8 +297,8 @@ body.topbar-menu-open {
 
 .card {
   position: relative;
-  background: var(--brand-bg-elevated);
-  border: 1px solid var(--brand-border-soft);
+  background: var(--brand-bg-surface);
+  border: 1px solid var(--brand-border-default);
   border-radius: 8px;
   padding: 12px 16px;
   transition: background 0.15s;
@@ -337,7 +320,7 @@ body.topbar-menu-open {
 }
 
 .card.clickable:hover {
-  background: var(--brand-bg-hover);
+  background: var(--brand-bg-muted);
   border-color: var(--brand-border-strong);
 }
 
@@ -381,8 +364,8 @@ body.topbar-menu-open {
 }
 
 .card-remove-btn:hover {
-  background: var(--brand-bg-danger-hover);
-  color: var(--brand-danger-hover);
+  background: var(--brand-bg-muted);
+  color: var(--brand-danger);
 }
 
 .card-actions {
@@ -444,10 +427,10 @@ body.topbar-menu-open {
 .tag-badge {
   display: inline-block;
   padding: 5px 6px;
-  background: var(--brand-bg-tag);
+  background: var(--brand-bg-muted);
   border-radius: 6px;
   font-size: var(--font-size-small);
-  color: var(--brand-text-tag);
+  color: var(--brand-text-secondary);
 }
 
 .external-link {
@@ -499,7 +482,7 @@ body.topbar-menu-open {
   cursor: pointer;
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid var(--brand-bg-muted);
+  border-bottom: 1px solid var(--brand-border-default);
 }
 
 .related-item:hover {
@@ -507,7 +490,7 @@ body.topbar-menu-open {
 }
 
 .match-score {
-  color: var(--brand-text-subtle);
+  color: var(--brand-text-muted);
   font-size: var(--font-size-small);
 }
 
@@ -517,7 +500,7 @@ body.topbar-menu-open {
   padding: 8px 16px;
   border: none;
   border-radius: 6px;
-  background: var(--brand-primary);
+  background: var(--brand-accent);
   color: var(--brand-text-strong);
   font-size: var(--font-size-small);
   cursor: pointer;
@@ -525,7 +508,7 @@ body.topbar-menu-open {
 }
 
 .btn-primary:hover {
-  background: var(--brand-primary-hover);
+  background: var(--brand-accent);
 }
 
 #refresh-recommendations {
@@ -544,7 +527,7 @@ body.topbar-menu-open {
 }
 
 .btn-secondary:hover {
-  background: var(--brand-border-soft);
+  background: var(--brand-bg-muted);
 }
 
 .btn-small {
@@ -554,37 +537,37 @@ body.topbar-menu-open {
 }
 
 .btn-danger {
-  border: 1px solid var(--brand-danger-border);
+  border: 1px solid var(--brand-danger);
   background: transparent;
-  color: var(--brand-danger-soft);
+  color: var(--brand-danger);
   cursor: pointer;
 }
 
 .btn-danger:hover {
-  background: var(--brand-bg-danger-hover);
+  background: var(--brand-bg-muted);
 }
 
 .badge {
   display: inline-block;
   padding: 2px 8px;
-  background: var(--brand-bg-tag);
+  background: var(--brand-bg-muted);
   border-radius: 10px;
   font-size: var(--font-size-small);
-  color: var(--brand-text-badge);
+  color: var(--brand-text-secondary);
 }
 
 /* ── Misc ───────────────────────────────────────────────── */
 
 .empty-state {
-  color: var(--brand-text-subtle);
+  color: var(--brand-text-muted);
   font-size: var(--font-size-small);
   padding: 24px 0;
 }
 
 .warning-banner {
-  background: var(--brand-warning-bg);
-  color: var(--brand-warning-text);
-  border: 1px solid var(--brand-warning-border);
+  background: var(--brand-bg-muted);
+  color: var(--brand-danger);
+  border: 1px solid var(--brand-danger);
   border-radius: 6px;
   padding: 12px 16px;
   margin-bottom: 16px;
@@ -592,7 +575,6 @@ body.topbar-menu-open {
 }
 
 .warning-banner code {
-  background: var(--brand-overlay-code-bg);
   padding: 2px 4px;
   border-radius: 3px;
 }
