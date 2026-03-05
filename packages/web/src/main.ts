@@ -17,6 +17,11 @@ const buildInfoText = document.getElementById('build-info-text');
 const topbarMenuContainer = document.getElementById('topbar-menu-container');
 const topbarMenuToggle = document.getElementById('topbar-menu-toggle') as HTMLButtonElement | null;
 const topbarMenuDropdown = document.getElementById('topbar-menu-dropdown');
+const topbarMenuIcon = topbarMenuToggle?.querySelector<HTMLElement>('i') ?? null;
+const topbarMenuPanel = document.querySelector<HTMLElement>(
+  '#topbar-menu-dropdown .topbar-menu-panel',
+);
+let topbarMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
 const VIEW_TITLES: Record<ViewName, string> = {
   search: 'Search artist',
@@ -31,8 +36,32 @@ let appInitialized = false;
 function setTopbarMenuOpen(isOpen: boolean): void {
   if (!topbarMenuToggle || !topbarMenuDropdown) return;
 
+  if (topbarMenuCloseTimer) {
+    clearTimeout(topbarMenuCloseTimer);
+    topbarMenuCloseTimer = null;
+  }
+
   topbarMenuToggle.setAttribute('aria-expanded', String(isOpen));
-  topbarMenuDropdown.classList.toggle('hidden', !isOpen);
+  topbarMenuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+  if (topbarMenuIcon) {
+    topbarMenuIcon.classList.toggle('fa-bars', !isOpen);
+    topbarMenuIcon.classList.toggle('fa-xmark', isOpen);
+  }
+
+  if (isOpen) {
+    topbarMenuDropdown.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      topbarMenuDropdown.classList.add('is-open');
+    });
+  } else {
+    topbarMenuDropdown.classList.remove('is-open');
+    topbarMenuCloseTimer = setTimeout(() => {
+      topbarMenuDropdown.classList.add('hidden');
+      topbarMenuCloseTimer = null;
+    }, 240);
+  }
+
+  document.body.classList.toggle('topbar-menu-open', isOpen);
 }
 
 function initializeTopbarMenu(): void {
@@ -56,6 +85,16 @@ function initializeTopbarMenu(): void {
       setTopbarMenuOpen(false);
     }
   });
+
+  topbarMenuDropdown.addEventListener('click', (event) => {
+    if (event.target === topbarMenuDropdown) {
+      setTopbarMenuOpen(false);
+    }
+  });
+
+  topbarMenuPanel?.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
 }
 
 async function loadBuildInfo(): Promise<void> {
@@ -72,9 +111,9 @@ async function loadBuildInfo(): Promise<void> {
       throw new TypeError('buildinfo.json has invalid shape');
     }
 
-    buildInfoText.textContent = `${buildInfo.buildIdentifier} • ${buildInfo.timestamp}`;
+    buildInfoText.innerHTML = `Frontend version: ${buildInfo.buildIdentifier}<br>${buildInfo.timestamp}`;
   } catch {
-    buildInfoText.textContent = 'No build info, local development?';
+    buildInfoText.innerHTML = 'No build info<br>Local development?';
   }
 }
 
