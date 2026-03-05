@@ -106,7 +106,7 @@ function renderArtistDetail(artist: Artist, related: RelatedArtist[]): string {
     <h3>${escapeHtml(artist.name)}</h3>
     <div class="tag-list">${tagBadges}</div>
     <a href="${escapeHtml(artist.url)}" target="_blank" rel="noopener" class="external-link">
-      View on Last.fm &rarr;
+      Last.fm &rarr;
     </a>
     <div class="action-bar">
       <div class="star-rating" id="star-rating">
