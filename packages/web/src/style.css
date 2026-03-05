@@ -152,7 +152,7 @@ body.topbar-menu-open {
   background: var(--brand-bg-surface);
   border: none;
   border-radius: 0;
-  padding: 16px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -174,19 +174,20 @@ body.topbar-menu-open {
 
 .menu-build-info {
   font-size: var(--font-size-small);
-  margin: 20px 0;
+  margin: 20px 0 40px 0;
   color: var(--brand-text-muted);
   line-height: 1.35;
 }
 
 .menu-action-link {
-  border: none;
+  border: 1px solid var(--brand-danger);
+  border-radius: 6px;
   background: none;
-  color: var(--brand-accent);
+  color: var(--brand-danger);
   text-align: left;
-  margin-top: 20px;
-  padding: 0;
-  font-size: var(--font-size-small);
+  margin: 10px 40px;
+  padding: 10px;
+  font-size: var(--font-size-regular);
   cursor: pointer;
 }
 

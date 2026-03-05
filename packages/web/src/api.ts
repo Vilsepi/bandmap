@@ -31,6 +31,22 @@ export function clearApiKey(): void {
   localStorage.removeItem('bandmap-api-key');
 }
 
+export function clearCachedData(): void {
+  const prefix = `${CACHE_PREFIX}:`;
+  const keysToRemove: string[] = [];
+
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(prefix)) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => {
+    localStorage.removeItem(key);
+  });
+}
+
 export function hasApiKey(): boolean {
   return getApiKey().length > 0;
 }

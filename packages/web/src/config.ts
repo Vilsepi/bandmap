@@ -1,4 +1,4 @@
-import { clearApiKey, hasApiKey, isApiConfigured, setApiKey } from './api.js';
+import { clearApiKey, clearCachedData, hasApiKey, isApiConfigured, setApiKey } from './api.js';
 
 interface GlobalConfigOptions {
   onAuthenticated: () => void;
@@ -10,6 +10,7 @@ export function initGlobalConfig({ onAuthenticated }: GlobalConfigOptions): void
   const apiKeyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
   const appShell = document.getElementById('app-shell');
   const logoutButton = document.getElementById('logout-button');
+  const clearCacheButton = document.getElementById('clear-cache-button');
   const warning = document.getElementById('api-url-warning');
 
   const showAppShell = (): void => {
@@ -39,6 +40,10 @@ export function initGlobalConfig({ onAuthenticated }: GlobalConfigOptions): void
   logoutButton?.addEventListener('click', () => {
     clearApiKey();
     showApiKeyGate();
+  });
+
+  clearCacheButton?.addEventListener('click', () => {
+    clearCachedData();
   });
 
   if (!isApiConfigured()) {
