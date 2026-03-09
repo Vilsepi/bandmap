@@ -78,9 +78,19 @@ export async function generateRecommendationsWithDeps(
       // Source artist names are only used for explanation copy, so keep
       // recommendation generation best-effort if that lookup fails.
       const sourceArtistPromise = deps.getArtist(rating.artistMbid).catch((error: unknown) => {
+        const errorName = error instanceof Error ? error.name : typeof error;
+        const errorStatusCode =
+          typeof error === 'object' &&
+          error !== null &&
+          'statusCode' in error &&
+          typeof error.statusCode === 'number'
+            ? error.statusCode
+            : undefined;
         console.warn('Recommendation source artist lookup failed', {
           userId,
           sourceArtistMbid: rating.artistMbid,
+          errorName,
+          errorStatusCode,
           error: error instanceof Error ? error.message : String(error),
         });
         return null;
@@ -89,22 +99,22 @@ export async function generateRecommendationsWithDeps(
         deps.getOrFetchRelatedArtists(rating.artistMbid),
         sourceArtistPromise,
       ]);
-      const artistName = normalizeRecommendationSourceArtistName(artist?.name);
-      if (!artistName) {
-        if (artist === null) {
-          console.warn('Recommendation source artist missing after lookup', {
-            userId,
-            sourceArtistMbid: rating.artistMbid,
-            relatedCount: related.length,
-          });
-        } else {
-          console.warn('Recommendation source artist had invalid name', {
-            userId,
-            sourceArtistMbid: rating.artistMbid,
-            sourceArtistName: artist.name,
-            relatedCount: related.length,
-          });
-        }
+      if (artist === null) {
+        console.warn('Recommendation source artist missing after lookup', {
+          userId,
+          sourceArtistMbid: rating.artistMbid,
+          relatedCount: related.length,
+        });
+        return { rating, related, artistName: '' };
+      }
+      const artistName = normalizeRecommendationSourceArtistName(artist.name);
+      if (artistName.length === 0) {
+        console.warn('Recommendation source artist had invalid name', {
+          userId,
+          sourceArtistMbid: rating.artistMbid,
+          sourceArtistName: artist.name,
+          relatedCount: related.length,
+        });
       }
       return { rating, related, artistName };
     }),

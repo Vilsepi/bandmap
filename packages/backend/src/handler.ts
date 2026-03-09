@@ -261,23 +261,20 @@ async function handleDeleteRating(
   return jsonResponse(204, null);
 }
 
-function hasInvalidSourceArtistName(sourceArtistName: string): boolean {
-  return normalizeRecommendationSourceArtistName(sourceArtistName).length === 0;
-}
-
 function logRecommendationsWithInvalidSourceNames(
-  eventName: string,
+  logMessage: string,
   userId: string,
   recommendations: RecommendationsResponse['recommendations'],
 ): void {
-  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) =>
-    hasInvalidSourceArtistName(recommendation.sourceArtistName),
+  const recommendationsWithMissingSourceName = recommendations.filter(
+    (recommendation) =>
+      normalizeRecommendationSourceArtistName(recommendation.sourceArtistName).length === 0,
   );
   if (recommendationsWithMissingSourceName.length === 0) {
     return;
   }
 
-  console.warn(eventName, {
+  console.warn(logMessage, {
     userId,
     count: recommendationsWithMissingSourceName.length,
     recommendationArtistMbids: recommendationsWithMissingSourceName.map(
