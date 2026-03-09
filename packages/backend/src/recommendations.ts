@@ -82,6 +82,8 @@ export async function generateRecommendationsWithDeps(
   // We also need artist names for the sources — fetch them in parallel
   const seedArtists = await Promise.all(
     likedRatings.map(async (rating) => {
+      // Source artist names are only used for explanation copy, so keep
+      // recommendation generation best-effort if that lookup fails.
       const sourceArtistPromise = deps.getArtist(rating.artistMbid).catch((error: unknown) => {
         console.warn('Recommendation source artist lookup failed', {
           userId,
