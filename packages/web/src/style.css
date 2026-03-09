@@ -568,8 +568,8 @@ body.topbar-menu-open {
   border: none;
   border-radius: 6px;
   background: var(--brand-accent);
-  color: var(--brand-text-strong);
-  font-size: var(--font-size-small);
+  color: var(--brand-bg-app);
+  font-size: var(--font-size-regular);
   cursor: pointer;
   font-weight: 500;
 }
