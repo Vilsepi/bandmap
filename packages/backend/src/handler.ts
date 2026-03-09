@@ -260,15 +260,22 @@ async function handleDeleteRating(
   return jsonResponse(204, null);
 }
 
+function hasInvalidSourceArtistName(sourceArtistName: string): boolean {
+  const normalizedSourceArtistName = sourceArtistName.trim();
+  return (
+    normalizedSourceArtistName.length === 0 ||
+    normalizedSourceArtistName.toLowerCase() === 'unknown'
+  );
+}
+
 async function handleGetRecommendations(
   _event: APIGatewayProxyEventV2,
   userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const recommendations = await db.listRecommendations(userId);
-  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) => {
-    const sourceArtistName = recommendation.sourceArtistName.trim();
-    return sourceArtistName.length === 0 || sourceArtistName.toLowerCase() === 'unknown';
-  });
+  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) =>
+    hasInvalidSourceArtistName(recommendation.sourceArtistName),
+  );
   if (recommendationsWithMissingSourceName.length > 0) {
     console.warn('Recommendations with missing source artist names loaded', {
       userId,
@@ -289,10 +296,9 @@ async function handleGenerateRecommendations(
   userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const recommendations = await generateRecommendations(userId);
-  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) => {
-    const sourceArtistName = recommendation.sourceArtistName.trim();
-    return sourceArtistName.length === 0 || sourceArtistName.toLowerCase() === 'unknown';
-  });
+  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) =>
+    hasInvalidSourceArtistName(recommendation.sourceArtistName),
+  );
   if (recommendationsWithMissingSourceName.length > 0) {
     console.warn('Generated recommendations with missing source artist names', {
       userId,
