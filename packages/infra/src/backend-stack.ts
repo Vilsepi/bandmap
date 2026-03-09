@@ -94,10 +94,10 @@ export class BandmapBackendStack extends cdk.Stack {
         }),
       },
       passwordPolicy: {
-        minLength: 12,
-        requireDigits: true,
-        requireLowercase: true,
-        requireUppercase: true,
+        minLength: 8,
+        requireDigits: false,
+        requireLowercase: false,
+        requireUppercase: false,
         requireSymbols: false,
       },
       removalPolicy: cdk.RemovalPolicy.RETAIN,
@@ -115,6 +115,12 @@ export class BandmapBackendStack extends cdk.Stack {
       refreshTokenValidity: cdk.Duration.days(30),
       accessTokenValidity: cdk.Duration.hours(1),
       idTokenValidity: cdk.Duration.hours(1),
+    });
+
+    new cognito.CfnUserPoolGroup(this, 'BandmapAdminGroup', {
+      userPoolId: userPool.userPoolId,
+      groupName: 'admin',
+      description: 'Bandmap administrators allowed to create invite links',
     });
 
     // ── Lambda function ────────────────────────────────────
