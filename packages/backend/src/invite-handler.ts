@@ -212,7 +212,7 @@ function buildInviteUrl(code: string): string {
 }
 
 function generateInviteCode(): string {
-  return randomBytes(9).toString('base64url').toUpperCase();
+  return randomBytes(30).toString('base64url').toUpperCase();
 }
 
 function toInviteValidation(invite: Invite | null): ValidateInviteResponse['invite'] {
