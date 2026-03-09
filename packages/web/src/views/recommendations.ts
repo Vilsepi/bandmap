@@ -31,6 +31,7 @@ export async function loadRecommendations(
     const { recommendations } = await getRecommendations();
     await renderRecommendations(container, recommendations, navigateToArtist);
   } catch (err) {
+    console.error('Failed to load recommendations', err);
     container.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
   }
 }
@@ -47,8 +48,24 @@ async function refreshRecommendations(
     const { recommendations } = await generateRecommendations();
     await renderRecommendations(container, recommendations, navigateToArtist);
   } catch (err) {
+    console.error('Failed to generate recommendations', err);
     container.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
   }
+}
+
+function getRecommendationReason(recommendation: Recommendation): string {
+  const sourceArtistName = recommendation.sourceArtistName.trim();
+  if (sourceArtistName.length > 0 && sourceArtistName.toLowerCase() !== 'unknown') {
+    return `Because you like ${escapeHtml(sourceArtistName)}`;
+  }
+
+  console.warn('Recommendation missing source artist name', {
+    artistMbid: recommendation.artistMbid,
+    artistName: recommendation.artistName,
+    sourceArtistMbid: recommendation.sourceArtistMbid,
+    sourceArtistName: recommendation.sourceArtistName,
+  });
+  return 'Based on one of your highly rated artists';
 }
 
 async function renderRecommendations(
@@ -104,7 +121,7 @@ async function renderRecommendations(
       </div>
       <div class="card-subtitle">
         Score: ${recommendation.score.toFixed(1)} &middot;
-        Because you like ${escapeHtml(recommendation.sourceArtistName)}
+        ${getRecommendationReason(recommendation)}
       </div>
       <div class="tag-list card-tags">${tagBadges}</div>
     `;
