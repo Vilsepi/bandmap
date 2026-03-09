@@ -34,4 +34,5 @@ export {
   RECOMMENDATION_MAX_SEEDS,
   RECOMMENDATION_MAX_RESULTS,
 } from './constants.js';
+export { normalizeRecommendationSourceArtistName } from './recommendations.js';
 export { normalizeTagName, tagId } from './tag.js';

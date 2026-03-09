@@ -12,6 +12,7 @@ import type {
   PutRatingBody,
   RefreshSessionRequest,
 } from '@bandmap/shared';
+import { normalizeRecommendationSourceArtistName } from '@bandmap/shared/recommendations';
 import { authenticate } from './auth.js';
 import { getOrFetchArtist, getOrFetchRelatedArtists, getOrFetchSearchResults } from './cache.js';
 import { loginWithUsernamePassword, refreshLoginSession } from './cognito.js';
@@ -261,11 +262,31 @@ async function handleDeleteRating(
 }
 
 function hasInvalidSourceArtistName(sourceArtistName: string): boolean {
-  const normalizedSourceArtistName = sourceArtistName.trim();
-  return (
-    normalizedSourceArtistName.length === 0 ||
-    normalizedSourceArtistName.toLowerCase() === 'unknown'
+  return normalizeRecommendationSourceArtistName(sourceArtistName).length === 0;
+}
+
+function logRecommendationsWithInvalidSourceNames(
+  eventName: string,
+  userId: string,
+  recommendations: RecommendationsResponse['recommendations'],
+): void {
+  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) =>
+    hasInvalidSourceArtistName(recommendation.sourceArtistName),
   );
+  if (recommendationsWithMissingSourceName.length === 0) {
+    return;
+  }
+
+  console.warn(eventName, {
+    userId,
+    count: recommendationsWithMissingSourceName.length,
+    recommendationArtistMbids: recommendationsWithMissingSourceName.map(
+      (recommendation) => recommendation.artistMbid,
+    ),
+    sourceArtistMbids: recommendationsWithMissingSourceName.map(
+      (recommendation) => recommendation.sourceArtistMbid,
+    ),
+  });
 }
 
 async function handleGetRecommendations(
@@ -273,21 +294,11 @@ async function handleGetRecommendations(
   userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const recommendations = await db.listRecommendations(userId);
-  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) =>
-    hasInvalidSourceArtistName(recommendation.sourceArtistName),
+  logRecommendationsWithInvalidSourceNames(
+    'Recommendations with missing source artist names loaded',
+    userId,
+    recommendations,
   );
-  if (recommendationsWithMissingSourceName.length > 0) {
-    console.warn('Recommendations with missing source artist names loaded', {
-      userId,
-      count: recommendationsWithMissingSourceName.length,
-      recommendationArtistMbids: recommendationsWithMissingSourceName.map(
-        (recommendation) => recommendation.artistMbid,
-      ),
-      sourceArtistMbids: recommendationsWithMissingSourceName.map(
-        (recommendation) => recommendation.sourceArtistMbid,
-      ),
-    });
-  }
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 
@@ -296,21 +307,11 @@ async function handleGenerateRecommendations(
   userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const recommendations = await generateRecommendations(userId);
-  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) =>
-    hasInvalidSourceArtistName(recommendation.sourceArtistName),
+  logRecommendationsWithInvalidSourceNames(
+    'Generated recommendations with missing source artist names',
+    userId,
+    recommendations,
   );
-  if (recommendationsWithMissingSourceName.length > 0) {
-    console.warn('Generated recommendations with missing source artist names', {
-      userId,
-      count: recommendationsWithMissingSourceName.length,
-      recommendationArtistMbids: recommendationsWithMissingSourceName.map(
-        (recommendation) => recommendation.artistMbid,
-      ),
-      sourceArtistMbids: recommendationsWithMissingSourceName.map(
-        (recommendation) => recommendation.sourceArtistMbid,
-      ),
-    });
-  }
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 

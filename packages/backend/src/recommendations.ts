@@ -4,6 +4,7 @@ import {
   RECOMMENDATION_MAX_SEEDS,
   RECOMMENDATION_MAX_RESULTS,
 } from '@bandmap/shared';
+import { normalizeRecommendationSourceArtistName } from '@bandmap/shared/recommendations';
 import * as db from './db.js';
 import { getOrFetchArtist, getOrFetchRelatedArtists } from './cache.js';
 
@@ -20,14 +21,6 @@ const defaultDeps: RecommendationDeps = {
   putRecommendations: db.putRecommendations,
   getOrFetchRelatedArtists,
 };
-
-function normalizeSourceArtistName(name: string | null | undefined): string {
-  const normalized = name?.trim() ?? '';
-  if (normalized.length === 0 || normalized.toLowerCase() === 'unknown') {
-    return '';
-  }
-  return normalized;
-}
 
 /**
  * Generate recommendations for a user based on their highly-rated artists.
@@ -96,14 +89,22 @@ export async function generateRecommendationsWithDeps(
         deps.getOrFetchRelatedArtists(rating.artistMbid),
         sourceArtistPromise,
       ]);
-      const artistName = normalizeSourceArtistName(artist?.name);
+      const artistName = normalizeRecommendationSourceArtistName(artist?.name);
       if (!artistName) {
-        console.warn('Recommendation source artist name missing', {
-          userId,
-          sourceArtistMbid: rating.artistMbid,
-          sourceArtistName: artist?.name ?? null,
-          relatedCount: related.length,
-        });
+        if (artist === null) {
+          console.warn('Recommendation source artist missing after lookup', {
+            userId,
+            sourceArtistMbid: rating.artistMbid,
+            relatedCount: related.length,
+          });
+        } else {
+          console.warn('Recommendation source artist had invalid name', {
+            userId,
+            sourceArtistMbid: rating.artistMbid,
+            sourceArtistName: artist.name,
+            relatedCount: related.length,
+          });
+        }
       }
       return { rating, related, artistName };
     }),
