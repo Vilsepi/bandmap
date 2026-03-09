@@ -58,7 +58,11 @@ async function handleCreateInvites(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
   const authContext = await authenticate(normalizeHeaders(event.headers));
-  if (!authContext || !isAdmin(authContext)) {
+  if (!authContext) {
+    return jsonResponse<ErrorResponse>(401, { error: 'Invalid or missing session token' });
+  }
+
+  if (!isAdmin(authContext)) {
     return jsonResponse<ErrorResponse>(403, { error: 'Admin access is required' });
   }
 
