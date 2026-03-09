@@ -1,8 +1,8 @@
-# Bandmap
+# [music.heap.fi](https://music.heap.fi)
 
-http://music.heap.fi
+Discover new music through similar artists you already like. Currently invite-only.
 
-Discover new music through similar artists you already like.
+![screenshot](doc/screenshot.jpg)
 
 Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
 
@@ -15,6 +15,8 @@ Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
 
 ### DynamoDB Tables
 
+TODO: update, missing at least invites
+
 | Table | PK | SK | Purpose |
 |-------|----|----|---------|
 | Users | `id` (UUID) | — | App users & metadata |
@@ -24,6 +26,8 @@ Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
 | Recommendations | `userId` | `artistMbid` | Per-user recommendations |
 
 ### API Endpoints
+
+TODO: Update, missing at least invite path
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -36,8 +40,7 @@ Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
 | GET | `/recommendations` | Yes | Get current recommendations |
 | POST | `/recommendations/generate` | Yes | Regenerate recommendations |
 
-Auth is via `x-api-key` header matching a record in the Users table.
-
+Uses Cognito authentication.
 
 ## Prerequisites
 
