@@ -1,4 +1,5 @@
 import type { Recommendation } from '@bandmap/shared';
+import { normalizeRecommendationSourceArtistName } from '@bandmap/shared/recommendations';
 import { generateRecommendations, getArtist, getRecommendations, putRating } from '../api.js';
 import { escapeHtml } from '../utils.js';
 
@@ -54,8 +55,8 @@ async function refreshRecommendations(
 }
 
 function getRecommendationReason(recommendation: Recommendation): string {
-  const sourceArtistName = recommendation.sourceArtistName.trim();
-  if (sourceArtistName.length > 0 && sourceArtistName.toLowerCase() !== 'unknown') {
+  const sourceArtistName = normalizeRecommendationSourceArtistName(recommendation.sourceArtistName);
+  if (sourceArtistName.length > 0) {
     return `Because you like ${escapeHtml(sourceArtistName)}`;
   }
 
