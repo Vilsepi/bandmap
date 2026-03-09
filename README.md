@@ -10,7 +10,7 @@ Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
 
 - **Frontend** (`packages/web`): Vite SPA with search, ratings, todo list, recommendations, and an artist similarity graph
 - **Backend** (`packages/backend`): Single AWS Lambda behind API Gateway — pull-through cache for Last.fm data + user ratings & recommendations
-- **Infrastructure** (`packages/infra`): AWS CDK stack — API Gateway HTTP API, Lambda, 5 DynamoDB tables
+- **Infrastructure** (`packages/infra`): AWS CDK stacks — backend API/data/auth resources and a separate frontend hosting stack
 - **Shared** (`packages/shared`): TypeScript types and constants shared between frontend and backend
 
 ### DynamoDB Tables
@@ -67,26 +67,22 @@ npm run format
 
 ## Deploy to AWS
 
-To deploy the AWS infra resources and the backend Lambda code:
+To deploy the backend AWS infra resources and the backend Lambda code:
 
 ```sh
 npm run deploy:backend
 ```
 
-To deploy the frontend assets to the assets bucket:
+To deploy the frontend hosting infra:
 
 ```sh
 npm run deploy:frontend
 ```
 
-## Create a user
-
-After deploying, manually add a user to the Users DynamoDB table:
+To upload the static frontend assets to the CDN:
 
 ```sh
-aws dynamodb put-item \
-  --table-name bandmap-users \
-  --item '{"id": {"S": "your-user-uuid"}, "apiKey": {"S": "your-secret-key"}, "name": {"S": "Your Name"}, "createdAt": {"S": "2026-01-01T00:00:00Z"}}'
+npm run deploy:assets
 ```
 
 ## Run the frontend locally

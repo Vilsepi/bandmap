@@ -7,8 +7,5 @@ source .env
 set +a
 
 cd packages/infra
-
-# During the first run
-# npx cdk bootstrap
-
-npx cdk deploy BandmapBackendStack
+npx cdk deploy BandmapFrontendStack
+cd ../..
