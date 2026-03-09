@@ -1,34 +1,81 @@
 import type {
+  AuthSessionResponse,
   SearchResponse,
   ArtistResponse,
+  CreateInvitesRequest,
+  CreateInvitesResponse,
   RelatedArtistsResponse,
+  RedeemInviteRequest,
+  RedeemInviteResponse,
   RatingResponse,
   RatingsListResponse,
   RecommendationsResponse,
+  LoginRequest,
   PutRatingBody,
+  RefreshSessionRequest,
+  ValidateInviteResponse,
 } from '@bandmap/shared';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
 const CACHE_PREFIX = 'bandmap:v1';
+const SESSION_STORAGE_KEY = 'bandmap-session';
 const ARTIST_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const MAX_API_RETRIES = 3;
+
+type StoredSession = {
+  sessionToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  user: AuthSessionResponse['user'];
+};
 
 type CacheRecord<T> = {
   cachedAt: number;
   data: T;
 };
 
-function getApiKey(): string {
-  return localStorage.getItem('bandmap-api-key') ?? '';
+function readStoredSession(): StoredSession | null {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<StoredSession>;
+    if (
+      typeof parsed.sessionToken !== 'string' ||
+      typeof parsed.refreshToken !== 'string' ||
+      typeof parsed.expiresAt !== 'number' ||
+      typeof parsed.user !== 'object' ||
+      parsed.user === null
+    ) {
+      clearSession();
+      return null;
+    }
+
+    return parsed as StoredSession;
+  } catch {
+    clearSession();
+    return null;
+  }
 }
 
-export function setApiKey(key: string): void {
-  localStorage.setItem('bandmap-api-key', key);
+function writeStoredSession(session: StoredSession): void {
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
 }
 
-export function clearApiKey(): void {
-  localStorage.removeItem('bandmap-api-key');
+export function setSession(authSession: AuthSessionResponse): void {
+  writeStoredSession({
+    sessionToken: authSession.session.sessionToken,
+    refreshToken: authSession.session.refreshToken,
+    expiresAt: Date.now() + authSession.session.expiresIn * 1000,
+    user: authSession.user,
+  });
+}
+
+export function clearSession(): void {
+  localStorage.removeItem(SESSION_STORAGE_KEY);
 }
 
 export function clearCachedData(): void {
@@ -47,8 +94,13 @@ export function clearCachedData(): void {
   });
 }
 
-export function hasApiKey(): boolean {
-  return getApiKey().length > 0;
+export function hasSession(): boolean {
+  const session = readStoredSession();
+  return !!session?.sessionToken;
+}
+
+export function getCurrentUser(): AuthSessionResponse['user'] | null {
+  return readStoredSession()?.user ?? null;
 }
 
 export function isApiConfigured(): boolean {
@@ -142,7 +194,11 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function sendRequest<T>(
+  path: string,
+  init: RequestInit | undefined,
+  options: { includeSession?: boolean; allowRefresh?: boolean } = {},
+): Promise<T> {
   if (!API_BASE) {
     throw new Error(
       'API base URL is not configured. Set the VITE_API_BASE_URL environment variable.',
@@ -154,9 +210,9 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.headers as Record<string, string> | undefined),
   };
 
-  const apiKey = getApiKey();
-  if (apiKey) {
-    headers['x-api-key'] = apiKey;
+  const session = readStoredSession();
+  if (options.includeSession !== false && session?.sessionToken) {
+    headers['Authorization'] = `Bearer ${session.sessionToken}`;
   }
 
   let lastError: Error | null = null;
@@ -174,6 +230,16 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
 
     if (!response.ok) {
+      if (
+        response.status === 401 &&
+        options.allowRefresh !== false &&
+        options.includeSession !== false &&
+        session?.refreshToken
+      ) {
+        await refreshSession();
+        return sendRequest<T>(path, init, { ...options, allowRefresh: false });
+      }
+
       const errorBody = await response.text();
       lastError = new Error(`API error ${response.status}: ${errorBody}`);
 
@@ -191,10 +257,74 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   throw lastError ?? new Error('Request failed after retries');
 }
 
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return sendRequest<T>(path, init, { includeSession: true, allowRefresh: true });
+}
+
 // ── API functions ────────────────────────────────────────────
 
+export async function login(username: string, password: string): Promise<AuthSessionResponse> {
+  const response = await sendRequest<AuthSessionResponse>(
+    '/auth/login',
+    {
+      method: 'POST',
+      body: JSON.stringify({ username, password } satisfies LoginRequest),
+    },
+    { includeSession: false, allowRefresh: false },
+  );
+  setSession(response);
+  return response;
+}
+
+export async function refreshSession(): Promise<AuthSessionResponse> {
+  const refreshToken = readStoredSession()?.refreshToken;
+  if (!refreshToken) {
+    throw new Error('Missing refresh token');
+  }
+
+  const response = await sendRequest<AuthSessionResponse>(
+    '/auth/refresh',
+    {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken } satisfies RefreshSessionRequest),
+    },
+    { includeSession: false, allowRefresh: false },
+  );
+  setSession(response);
+  return response;
+}
+
+export async function validateInvite(code: string): Promise<ValidateInviteResponse> {
+  return sendRequest<ValidateInviteResponse>(
+    `/invites/validate?code=${encodeURIComponent(code)}`,
+    undefined,
+    { includeSession: false, allowRefresh: false },
+  );
+}
+
+export async function redeemInvite(request: RedeemInviteRequest): Promise<RedeemInviteResponse> {
+  return sendRequest<RedeemInviteResponse>(
+    '/invites/redeem',
+    {
+      method: 'POST',
+      body: JSON.stringify(request),
+    },
+    { includeSession: false, allowRefresh: false },
+  );
+}
+
+export async function createInvites(request: CreateInvitesRequest): Promise<CreateInvitesResponse> {
+  return apiFetch<CreateInvitesResponse>('/invites', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
 export async function searchArtists(query: string): Promise<SearchResponse> {
-  return apiFetch<SearchResponse>(`/search?q=${encodeURIComponent(query)}`);
+  return sendRequest<SearchResponse>(`/search?q=${encodeURIComponent(query)}`, undefined, {
+    includeSession: true,
+    allowRefresh: true,
+  });
 }
 
 export async function getArtist(mbid: string): Promise<ArtistResponse> {

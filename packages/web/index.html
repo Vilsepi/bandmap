@@ -14,13 +14,38 @@
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <div id="api-key-gate" class="api-key-gate">
-    <form id="api-key-form" class="api-key-card">
-      <h1>Music search</h1>
-      <p>Enter your API key to continue</p>
-      <input type="password" id="api-key-input" placeholder="API key" autocomplete="off" required />
-      <button type="submit" class="btn-primary">Continue</button>
-    </form>
+  <div id="auth-gate" class="auth-gate">
+    <div class="auth-card-shell">
+      <section id="login-panel" class="auth-card">
+        <p class="auth-eyebrow">Private music map</p>
+        <h1>Bandmap</h1>
+        <p class="auth-copy">Sign in with your username and password.</p>
+        <form id="login-form" class="auth-form">
+          <label class="auth-label" for="login-username">Username</label>
+          <input id="login-username" class="auth-input" type="text" autocomplete="username" required />
+          <label class="auth-label" for="login-password">Password</label>
+          <input id="login-password" class="auth-input" type="password" autocomplete="current-password" required />
+          <button type="submit" class="btn-primary">Sign in</button>
+        </form>
+        <p id="auth-message" class="auth-message hidden"></p>
+      </section>
+
+      <section id="invite-panel" class="auth-card hidden">
+        <p class="auth-eyebrow">Invitation signup</p>
+        <h1>Create account</h1>
+        <p class="auth-copy">Invite code: <strong id="invite-code-text"></strong></p>
+        <p id="invite-status" class="auth-message hidden"></p>
+        <form id="invite-form" class="auth-form">
+          <label class="auth-label" for="invite-username">Choose a username</label>
+          <input id="invite-username" class="auth-input" type="text" autocomplete="username" required />
+          <label class="auth-label" for="invite-password">Choose a password</label>
+          <input id="invite-password" class="auth-input" type="password" autocomplete="new-password" required />
+          <button type="submit" class="btn-primary">Create account</button>
+          <button id="invite-back-button" type="button" class="btn-secondary">Back to sign in</button>
+        </form>
+        <p id="invite-message" class="auth-message hidden"></p>
+      </section>
+    </div>
   </div>
 
   <div id="app-shell" class="hidden">

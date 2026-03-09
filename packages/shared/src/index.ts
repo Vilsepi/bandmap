@@ -1,8 +1,13 @@
-export type { Tag, Artist, RelatedArtist, User, Rating, Recommendation } from './types.js';
+export type { Tag, Artist, RelatedArtist, User, Invite, Rating, Recommendation } from './types.js';
 export type {
   SearchQuery,
   PutRatingBody,
   ListRatingsQuery,
+  LoginRequest,
+  RefreshSessionRequest,
+  CreateInvitesRequest,
+  RedeemInviteRequest,
+  ValidateInviteQuery,
   SearchResult,
   SearchResponse,
   ArtistResponse,
@@ -10,6 +15,13 @@ export type {
   RatingResponse,
   RatingsListResponse,
   RecommendationsResponse,
+  AuthSession,
+  AuthSessionResponse,
+  InviteSummary,
+  CreateInvitesResponse,
+  ValidateInviteResponse,
+  RedeemInviteResponse,
+  InviteResponse,
   ErrorResponse,
 } from './api.js';
 export {

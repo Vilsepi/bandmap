@@ -73,13 +73,13 @@ describe('handler', () => {
 
     it('makeEvent produces valid API Gateway v2 event shape', () => {
       const event = makeEvent('PUT', '/ratings/test-mbid', {
-        headers: { 'x-api-key': 'test-key' },
+        headers: { authorization: 'Bearer test-session-token' },
         body: JSON.stringify({ score: 5, status: 'rated' }),
       });
 
       assert.equal(event.requestContext.http.method, 'PUT');
       assert.equal(event.rawPath, '/ratings/test-mbid');
-      assert.equal(event.headers['x-api-key'], 'test-key');
+      assert.equal(event.headers['authorization'], 'Bearer test-session-token');
       assert.ok(event.body);
     });
   });
@@ -150,13 +150,13 @@ describe('handler', () => {
     it('User type has required fields', () => {
       const user: User = {
         id: 'user-uuid',
-        apiKey: 'test-key',
-        name: 'Test User',
+        username: 'test-user',
+        cognitoSub: 'cognito-sub-123',
         createdAt: new Date().toISOString(),
       };
       assert.ok(user.id);
-      assert.ok(user.apiKey);
-      assert.ok(user.name);
+      assert.ok(user.username);
+      assert.ok(user.cognitoSub);
     });
 
     it('Recommendation type has required fields', () => {

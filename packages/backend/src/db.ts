@@ -4,11 +4,14 @@ import {
   GetCommand,
   PutCommand,
   QueryCommand,
+  ScanCommand,
   DeleteCommand,
   BatchWriteCommand,
+  TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import type {
   Artist,
+  Invite,
   User,
   RelatedArtist,
   Rating,
@@ -23,7 +26,6 @@ const docClient = DynamoDBDocumentClient.from(rawClient, {
   marshallOptions: { removeUndefinedValues: true },
 });
 
-// Table names from environment variables
 function tableName(envVar: string): string {
   const name = process.env[envVar];
   if (!name) {
@@ -49,17 +51,110 @@ function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
 
 // ── Users ────────────────────────────────────────────────────
 
-export async function getUser(apiKey: string): Promise<User | null> {
+export async function getUserById(id: string): Promise<User | null> {
   const result = await docClient.send(
-    new QueryCommand({
+    new GetCommand({
       TableName: tableName('USERS_TABLE'),
-      IndexName: tableName('USERS_API_KEY_INDEX_NAME'),
-      KeyConditionExpression: 'apiKey = :key',
-      ExpressionAttributeValues: { ':key': apiKey },
-      Limit: 1,
+      Key: { id },
     }),
   );
-  return ((result.Items as User[] | undefined) ?? [])[0] ?? null;
+  return (result.Item as User | undefined) ?? null;
+}
+
+async function findUserBy(predicate: (user: User) => boolean): Promise<User | null> {
+  let exclusiveStartKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: tableName('USERS_TABLE'),
+        ExclusiveStartKey: exclusiveStartKey,
+      }),
+    );
+
+    const users = (result.Items as User[] | undefined) ?? [];
+    const match = users.find(predicate);
+    if (match) {
+      return match;
+    }
+
+    exclusiveStartKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (exclusiveStartKey);
+
+  return null;
+}
+
+export async function getUserByCognitoSub(cognitoSub: string): Promise<User | null> {
+  return findUserBy((user) => user.cognitoSub === cognitoSub);
+}
+
+export async function getUserByUsername(username: string): Promise<User | null> {
+  return findUserBy((user) => user.username === username);
+}
+
+export async function putUser(user: User): Promise<void> {
+  await docClient.send(
+    new PutCommand({
+      TableName: tableName('USERS_TABLE'),
+      Item: user,
+      ConditionExpression: 'attribute_not_exists(id)',
+    }),
+  );
+}
+
+// ── Invites ──────────────────────────────────────────────────
+
+export async function getInvite(code: string): Promise<Invite | null> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: tableName('INVITES_TABLE'),
+      Key: { code },
+    }),
+  );
+  return (result.Item as Invite | undefined) ?? null;
+}
+
+export async function putInvite(invite: Invite): Promise<void> {
+  await docClient.send(
+    new PutCommand({
+      TableName: tableName('INVITES_TABLE'),
+      Item: invite,
+      ConditionExpression: 'attribute_not_exists(code)',
+    }),
+  );
+}
+
+export async function redeemInvite(
+  inviteCode: string,
+  user: User,
+  nowEpoch: number,
+): Promise<void> {
+  await docClient.send(
+    new TransactWriteCommand({
+      TransactItems: [
+        {
+          Put: {
+            TableName: tableName('USERS_TABLE'),
+            Item: user,
+            ConditionExpression: 'attribute_not_exists(id)',
+          },
+        },
+        {
+          Update: {
+            TableName: tableName('INVITES_TABLE'),
+            Key: { code: inviteCode },
+            UpdateExpression: 'SET usedCount = usedCount + :one',
+            ConditionExpression:
+              'attribute_exists(code) AND expiresAtEpoch > :nowEpoch AND usedCount < maxUses',
+            ExpressionAttributeValues: {
+              ':one': 1,
+              ':nowEpoch': nowEpoch,
+            },
+          },
+        },
+      ],
+    }),
+  );
 }
 
 // ── Artists ──────────────────────────────────────────────────

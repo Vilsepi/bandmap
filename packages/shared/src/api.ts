@@ -1,4 +1,4 @@
-import type { Artist, Rating, Recommendation, RelatedArtist } from './types.js';
+import type { Artist, Invite, Rating, Recommendation, RelatedArtist, User } from './types.js';
 
 // ── Request types ────────────────────────────────────────────
 
@@ -13,6 +13,29 @@ export interface PutRatingBody {
 
 export interface ListRatingsQuery {
   status?: 'rated' | 'todo';
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RefreshSessionRequest {
+  refreshToken: string;
+}
+
+export interface CreateInvitesRequest {
+  count?: number;
+}
+
+export interface RedeemInviteRequest {
+  code: string;
+  username: string;
+  password: string;
+}
+
+export interface ValidateInviteQuery {
+  code: string;
 }
 
 // ── Response types ───────────────────────────────────────────
@@ -46,6 +69,45 @@ export interface RatingsListResponse {
 
 export interface RecommendationsResponse {
   recommendations: Recommendation[];
+}
+
+export interface AuthSession {
+  sessionToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+export interface AuthSessionResponse {
+  user: User;
+  session: AuthSession;
+}
+
+export interface InviteSummary {
+  code: string;
+  inviteUrl: string;
+  expiresAt: string;
+  remainingUses: number;
+}
+
+export interface CreateInvitesResponse {
+  invites: InviteSummary[];
+}
+
+export interface ValidateInviteResponse {
+  invite: {
+    code: string;
+    expiresAt: string;
+    remainingUses: number;
+    isValid: boolean;
+  };
+}
+
+export interface RedeemInviteResponse {
+  user: User;
+}
+
+export interface InviteResponse {
+  invite: Invite;
 }
 
 export interface ErrorResponse {
