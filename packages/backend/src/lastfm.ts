@@ -251,6 +251,15 @@ async function lastfmRequestWithRetry(params: URLSearchParams): Promise<unknown>
       if (err instanceof LastFmApiError && err.retryable && attempt < LASTFM_MAX_RETRIES) {
         lastError = err;
         const delay = LASTFM_RETRY_BASE_MS * Math.pow(4, attempt);
+        if (!isTestRuntime()) {
+          console.warn('Retrying Last.fm API request after retryable error', {
+            statusCode: err.statusCode,
+            attempt: attempt + 1,
+            maxRetries: LASTFM_MAX_RETRIES,
+            delayMs: delay,
+            params: params.toString(),
+          });
+        }
         await sleep(delay);
         continue;
       }

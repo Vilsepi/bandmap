@@ -235,8 +235,8 @@ export class BandmapBackendStack extends cdk.Stack {
     // Configure prod stage throttling
     const cfnStage = prodStage.node.defaultChild as apigatewayv2.CfnStage;
     cfnStage.defaultRouteSettings = {
-      throttlingBurstLimit: 10,
-      throttlingRateLimit: 8,
+      throttlingBurstLimit: 20,
+      throttlingRateLimit: 16,
     };
 
     const integration = new apigatewayv2Integrations.HttpLambdaIntegration('LambdaIntegration', fn);

@@ -265,6 +265,22 @@ async function handleGetRecommendations(
   userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const recommendations = await db.listRecommendations(userId);
+  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) => {
+    const sourceArtistName = recommendation.sourceArtistName.trim();
+    return sourceArtistName.length === 0 || sourceArtistName.toLowerCase() === 'unknown';
+  });
+  if (recommendationsWithMissingSourceName.length > 0) {
+    console.warn('Recommendations with missing source artist names loaded', {
+      userId,
+      count: recommendationsWithMissingSourceName.length,
+      recommendationArtistMbids: recommendationsWithMissingSourceName.map(
+        (recommendation) => recommendation.artistMbid,
+      ),
+      sourceArtistMbids: recommendationsWithMissingSourceName.map(
+        (recommendation) => recommendation.sourceArtistMbid,
+      ),
+    });
+  }
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 
@@ -273,6 +289,22 @@ async function handleGenerateRecommendations(
   userId: string,
 ): Promise<APIGatewayProxyResultV2> {
   const recommendations = await generateRecommendations(userId);
+  const recommendationsWithMissingSourceName = recommendations.filter((recommendation) => {
+    const sourceArtistName = recommendation.sourceArtistName.trim();
+    return sourceArtistName.length === 0 || sourceArtistName.toLowerCase() === 'unknown';
+  });
+  if (recommendationsWithMissingSourceName.length > 0) {
+    console.warn('Generated recommendations with missing source artist names', {
+      userId,
+      count: recommendationsWithMissingSourceName.length,
+      recommendationArtistMbids: recommendationsWithMissingSourceName.map(
+        (recommendation) => recommendation.artistMbid,
+      ),
+      sourceArtistMbids: recommendationsWithMissingSourceName.map(
+        (recommendation) => recommendation.sourceArtistMbid,
+      ),
+    });
+  }
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 

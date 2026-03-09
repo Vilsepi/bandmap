@@ -1,25 +1,33 @@
-import type { Recommendation } from '@bandmap/shared';
+import type { Artist, Recommendation } from '@bandmap/shared';
 import {
   RECOMMENDATION_MIN_SCORE,
   RECOMMENDATION_MAX_SEEDS,
   RECOMMENDATION_MAX_RESULTS,
 } from '@bandmap/shared';
 import * as db from './db.js';
-import { getOrFetchRelatedArtists } from './cache.js';
+import { getOrFetchArtist, getOrFetchRelatedArtists } from './cache.js';
 
 interface RecommendationDeps {
   listRatings: typeof db.listRatings;
-  getArtist: typeof db.getArtist;
+  getArtist: (mbid: string) => Promise<Artist | null>;
   putRecommendations: typeof db.putRecommendations;
   getOrFetchRelatedArtists: typeof getOrFetchRelatedArtists;
 }
 
 const defaultDeps: RecommendationDeps = {
   listRatings: db.listRatings,
-  getArtist: db.getArtist,
+  getArtist: getOrFetchArtist,
   putRecommendations: db.putRecommendations,
   getOrFetchRelatedArtists,
 };
+
+function normalizeSourceArtistName(name: string | null | undefined): string {
+  const normalized = name?.trim() ?? '';
+  if (normalized.length === 0 || normalized.toLowerCase() === 'unknown') {
+    return '';
+  }
+  return normalized;
+}
 
 /**
  * Generate recommendations for a user based on their highly-rated artists.
@@ -74,11 +82,28 @@ export async function generateRecommendationsWithDeps(
   // We also need artist names for the sources — fetch them in parallel
   const seedArtists = await Promise.all(
     likedRatings.map(async (rating) => {
+      const sourceArtistPromise = deps.getArtist(rating.artistMbid).catch((error: unknown) => {
+        console.warn('Recommendation source artist lookup failed', {
+          userId,
+          sourceArtistMbid: rating.artistMbid,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return null;
+      });
       const [related, artist] = await Promise.all([
         deps.getOrFetchRelatedArtists(rating.artistMbid),
-        deps.getArtist(rating.artistMbid),
+        sourceArtistPromise,
       ]);
-      return { rating, related, artistName: artist?.name ?? 'Unknown' };
+      const artistName = normalizeSourceArtistName(artist?.name);
+      if (!artistName) {
+        console.warn('Recommendation source artist name missing', {
+          userId,
+          sourceArtistMbid: rating.artistMbid,
+          sourceArtistName: artist?.name ?? null,
+          relatedCount: related.length,
+        });
+      }
+      return { rating, related, artistName };
     }),
   );
 

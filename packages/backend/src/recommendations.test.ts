@@ -88,4 +88,18 @@ describe('generateRecommendations scoring', () => {
     assert.equal(result[1]?.artistMbid, 'target-low');
     assert.equal(result[1]?.score, 1);
   });
+
+  it('does not persist Unknown when the source artist name is missing', async () => {
+    const seedA = 'seed-a';
+
+    const result = await generateRecommendationsWithDeps(USER_ID, {
+      listRatings: async () => [makeRating(seedA, 5)],
+      getArtist: async () => null,
+      getOrFetchRelatedArtists: async () => [makeRelated(seedA, 'target-a', 'Target A', 0.8)],
+      putRecommendations: async () => {},
+    });
+
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.sourceArtistName, '');
+  });
 });
