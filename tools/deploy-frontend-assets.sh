@@ -6,6 +6,20 @@ set -a
 source .env
 set +a
 
+API_URL=$(aws cloudformation describe-stacks \
+  --stack-name BandmapBackendStack \
+  --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue | [0]" \
+  --output text)
+
+if [ -z "${API_URL}" ] || [ "${API_URL}" = "None" ]; then
+  echo "Failed to resolve ApiUrl output from BandmapBackendStack" >&2
+  exit 1
+fi
+
+export VITE_API_BASE_URL="${API_URL%/}"
+
+echo "Using backend API URL: ${VITE_API_BASE_URL}"
+
 echo "Building frontend..."
 npm run build:frontend
 
