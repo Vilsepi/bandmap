@@ -4,31 +4,20 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
-import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 import { resolve } from 'node:path';
 
-export interface BandmapStackProps extends cdk.StackProps {
+export interface BandmapBackendStackProps extends cdk.StackProps {
   /** Last.fm API key — will be set as a Lambda environment variable */
   lastFmApiKey: string;
   /** Frontend FQDN, e.g. app.example.com */
   frontendFqdn: string;
-  /** Existing Route53 hosted zone id */
-  hostedZoneId: string;
-  /** Existing Route53 hosted zone name, e.g. example.com */
-  hostedZoneName: string;
-  /** ACM certificate ARN in us-east-1 for the frontend CloudFront CDN */
-  frontendCertificateArn: string;
 }
 
-export class BandmapStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props: BandmapStackProps) {
+export class BandmapBackendStack extends cdk.Stack {
+  constructor(scope: Construct, id: string, props: BandmapBackendStackProps) {
     super(scope, id, props);
 
     // ── DynamoDB tables ────────────────────────────────────
@@ -275,51 +264,6 @@ export class BandmapStack extends cdk.Stack {
       integration,
     });
 
-    // ── Frontend static hosting (S3 + CloudFront) ────────
-
-    const frontendBucket = new s3.Bucket(this, 'FrontendAssetsBucket', {
-      bucketName: 'bandmap-frontend-assets',
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      enforceSSL: true,
-      versioned: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
-
-    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
-      hostedZoneId: props.hostedZoneId,
-      zoneName: props.hostedZoneName,
-    });
-
-    const frontendCertificate = acm.Certificate.fromCertificateArn(
-      this,
-      'FrontendCertificate',
-      props.frontendCertificateArn,
-    );
-
-    const frontendDistribution = new cloudfront.Distribution(this, 'FrontendDistribution', {
-      defaultRootObject: 'index.html',
-      defaultBehavior: {
-        origin: origins.S3BucketOrigin.withOriginAccessControl(frontendBucket),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        compress: true,
-      },
-      domainNames: [props.frontendFqdn],
-      certificate: frontendCertificate,
-      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
-    });
-
-    const recordName = props.frontendFqdn.endsWith(`.${props.hostedZoneName}`)
-      ? props.frontendFqdn.slice(0, -(props.hostedZoneName.length + 1))
-      : props.frontendFqdn;
-
-    new route53.CnameRecord(this, 'FrontendCnameRecord', {
-      zone: hostedZone,
-      recordName,
-      domainName: frontendDistribution.distributionDomainName,
-      ttl: cdk.Duration.minutes(5),
-    });
-
     // ── Outputs ────────────────────────────────────────────
 
     new cdk.CfnOutput(this, 'ApiUrl', {
@@ -335,16 +279,6 @@ export class BandmapStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CognitoUserPoolClientId', {
       value: userPoolClient.userPoolClientId,
       description: 'Cognito user pool client id',
-    });
-
-    new cdk.CfnOutput(this, 'FrontendBucketName', {
-      value: frontendBucket.bucketName,
-      description: 'S3 bucket for frontend static assets',
-    });
-
-    new cdk.CfnOutput(this, 'FrontendDistributionDomainName', {
-      value: frontendDistribution.distributionDomainName,
-      description: 'CloudFront distribution domain name for frontend',
     });
   }
 }

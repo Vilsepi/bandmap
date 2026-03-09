@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from 'aws-cdk-lib';
-import { BandmapStack } from './stack.js';
+import { BandmapFrontendStack } from './frontend-stack.js';
+import { BandmapBackendStack } from './backend-stack.js';
 
 const app = new cdk.App();
 
@@ -14,8 +15,16 @@ const hostedZoneId = process.env['HOSTED_ZONE_ID'] ?? '';
 const hostedZoneName = process.env['HOSTED_ZONE_NAME'] ?? '';
 const frontendCertificateArn = process.env['FRONTEND_CERTIFICATE_ARN'] ?? '';
 
-const _stack = new BandmapStack(app, 'BandmapStack', {
+new BandmapBackendStack(app, 'BandmapBackendStack', {
   lastFmApiKey,
+  frontendFqdn,
+  env: {
+    account: process.env['AWS_ACCOUNT_ID'],
+    region: process.env['AWS_REGION'],
+  },
+});
+
+new BandmapFrontendStack(app, 'BandmapFrontendStack', {
   frontendFqdn,
   hostedZoneId,
   hostedZoneName,

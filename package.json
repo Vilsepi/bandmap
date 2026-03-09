@@ -17,7 +17,8 @@
     "format": "prettier --write 'packages/*/src/**/*.ts'",
     "test": "npm run build && npm test --workspaces --if-present",
     "deploy:backend": "bash tools/deploy-backend.sh",
-    "deploy:frontend": "bash tools/deploy-frontend.sh",
+    "deploy:frontend": "bash tools/deploy-frontend-infra.sh",
+    "deploy:assets": "bash tools/deploy-frontend-assets.sh",
     "serve": "cd packages/web && npx vite"
   },
   "devDependencies": {
