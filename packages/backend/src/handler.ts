@@ -1,17 +1,28 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 import type {
   ArtistResponse,
+  AuthSessionResponse,
   RelatedArtistsResponse,
   RatingResponse,
   RatingsListResponse,
   RecommendationsResponse,
   SearchResponse,
   ErrorResponse,
+  LoginRequest,
   PutRatingBody,
+  RefreshSessionRequest,
 } from '@bandmap/shared';
 import { authenticate } from './auth.js';
 import { getOrFetchArtist, getOrFetchRelatedArtists, getOrFetchSearchResults } from './cache.js';
+import { loginWithUsernamePassword, refreshLoginSession } from './cognito.js';
 import * as db from './db.js';
+import {
+  corsResponse,
+  jsonResponse,
+  normalizeHeaders,
+  normalizeIncomingPath,
+  parseBody,
+} from './http.js';
 import { generateRecommendations } from './recommendations.js';
 
 // ── Route definitions ────────────────────────────────────────
@@ -42,6 +53,14 @@ function matchRoute(method: string, path: string): RouteMatch | null {
 function matchStaticRoute(method: string, path: string): RouteMatch | null {
   if (method === 'GET' && path === '/search') {
     return { params: [], requiresAuth: false, handle: handleSearch };
+  }
+
+  if (method === 'POST' && path === '/auth/login') {
+    return { params: [], requiresAuth: false, handle: handleLogin };
+  }
+
+  if (method === 'POST' && path === '/auth/refresh') {
+    return { params: [], requiresAuth: false, handle: handleRefresh };
   }
 
   if (method === 'GET' && path === '/ratings') {
@@ -98,16 +117,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
 
     // Handle CORS preflight requests
     if (method === 'OPTIONS') {
-      return {
-        statusCode: 204,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
-          'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-          'Access-Control-Max-Age': '86400',
-        },
-        body: '',
-      };
+      return corsResponse();
     }
 
     const route = matchRoute(method, path);
@@ -119,11 +129,11 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     let userId = '';
     if (route.requiresAuth) {
       const headers = normalizeHeaders(event.headers);
-      const user = await authenticate(headers);
-      if (!user) {
-        return jsonResponse<ErrorResponse>(401, { error: 'Invalid or missing API key' });
+      const authContext = await authenticate(headers);
+      if (!authContext) {
+        return jsonResponse<ErrorResponse>(401, { error: 'Invalid or missing session token' });
       }
-      userId = user.id;
+      userId = authContext.userId;
     }
 
     return await route.handle(event, userId, route.params);
@@ -145,6 +155,36 @@ async function handleSearch(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
   const results = await getOrFetchSearchResults(q, apiKey);
 
   return jsonResponse<SearchResponse>(200, { results });
+}
+
+async function handleLogin(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+  const body = parseBody<LoginRequest>(event.body);
+  if (!body?.username || !body.password) {
+    return jsonResponse<ErrorResponse>(400, { error: 'Username and password are required' });
+  }
+
+  try {
+    const session = await loginWithUsernamePassword(body.username.trim(), body.password);
+    return jsonResponse<AuthSessionResponse>(200, session);
+  } catch (error) {
+    console.error('Login failed', error);
+    return jsonResponse<ErrorResponse>(401, { error: 'Invalid username or password' });
+  }
+}
+
+async function handleRefresh(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+  const body = parseBody<RefreshSessionRequest>(event.body);
+  if (!body?.refreshToken) {
+    return jsonResponse<ErrorResponse>(400, { error: 'Refresh token is required' });
+  }
+
+  try {
+    const session = await refreshLoginSession(body.refreshToken);
+    return jsonResponse<AuthSessionResponse>(200, session);
+  } catch (error) {
+    console.error('Session refresh failed', error);
+    return jsonResponse<ErrorResponse>(401, { error: 'Invalid refresh token' });
+  }
 }
 
 async function handleGetArtist(
@@ -236,64 +276,10 @@ async function handleGenerateRecommendations(
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
 }
 
-// ── Helpers ──────────────────────────────────────────────────
-
-function jsonResponse<T>(statusCode: number, body: T): APIGatewayProxyResultV2 {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
-      'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-    },
-    body: body === null ? '' : JSON.stringify(body),
-  };
-}
-
-function normalizeHeaders(
-  headers: Record<string, string | undefined>,
-): Record<string, string | undefined> {
-  const normalized: Record<string, string | undefined> = {};
-  for (const [key, value] of Object.entries(headers)) {
-    normalized[key.toLowerCase()] = value;
-  }
-  return normalized;
-}
-
-function parseBody<T>(body: string | undefined): T | null {
-  if (!body) return null;
-  try {
-    return JSON.parse(body) as T;
-  } catch {
-    return null;
-  }
-}
-
 function getLastFmApiKey(): string {
   const key = process.env['LASTFM_API_KEY'];
   if (!key) {
     throw new Error('Missing environment variable: LASTFM_API_KEY');
   }
   return key;
-}
-
-function normalizeIncomingPath(event: APIGatewayProxyEventV2): string {
-  const rawPath = event.rawPath || '/';
-  const stage = event.requestContext.stage;
-
-  if (!stage || stage === '$default') {
-    return rawPath;
-  }
-
-  const stagePrefix = `/${stage}`;
-  if (rawPath === stagePrefix) {
-    return '/';
-  }
-
-  if (rawPath.startsWith(`${stagePrefix}/`)) {
-    return rawPath.slice(stagePrefix.length);
-  }
-
-  return rawPath;
 }
