@@ -14,12 +14,20 @@ import type {
   PutRatingBody,
   RefreshSessionRequest,
   ValidateInviteResponse,
+  Rating,
 } from '@bandmap/shared';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '');
+const API_BASE = (
+  (
+    (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+      ?.VITE_API_BASE_URL ?? globalThis.process?.env?.VITE_API_BASE_URL
+  ) ?? ''
+).replace(/\/+$/, '');
 const CACHE_PREFIX = 'bandmap:v1';
 const SESSION_STORAGE_KEY = 'bandmap-session';
 const ARTIST_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const RATINGS_CACHE_TTL_MS = 60 * 1000;
+const RECOMMENDATIONS_CACHE_TTL_MS = 60 * 1000;
 const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
 const MAX_API_RETRIES = 3;
 
@@ -35,30 +43,42 @@ type CacheRecord<T> = {
   data: T;
 };
 
-function readStoredSession(): StoredSession | null {
+function parseStoredSession(raw: string): StoredSession | null {
+  const parsed = JSON.parse(raw) as Partial<StoredSession>;
+  if (
+    typeof parsed.sessionToken !== 'string' ||
+    typeof parsed.refreshToken !== 'string' ||
+    typeof parsed.expiresAt !== 'number' ||
+    typeof parsed.user !== 'object' ||
+    parsed.user === null
+  ) {
+    return null;
+  }
+
+  return parsed as StoredSession;
+}
+
+function readStoredSessionRaw(): StoredSession | null {
   try {
     const raw = localStorage.getItem(SESSION_STORAGE_KEY);
     if (!raw) {
       return null;
     }
 
-    const parsed = JSON.parse(raw) as Partial<StoredSession>;
-    if (
-      typeof parsed.sessionToken !== 'string' ||
-      typeof parsed.refreshToken !== 'string' ||
-      typeof parsed.expiresAt !== 'number' ||
-      typeof parsed.user !== 'object' ||
-      parsed.user === null
-    ) {
-      clearSession();
-      return null;
-    }
-
-    return parsed as StoredSession;
+    return parseStoredSession(raw);
   } catch {
+    return null;
+  }
+}
+
+function readStoredSession(): StoredSession | null {
+  const session = readStoredSessionRaw();
+  if (!session) {
     clearSession();
     return null;
   }
+
+  return session;
 }
 
 function writeStoredSession(session: StoredSession): void {
@@ -74,12 +94,7 @@ export function setSession(authSession: AuthSessionResponse): void {
   });
 }
 
-export function clearSession(): void {
-  localStorage.removeItem(SESSION_STORAGE_KEY);
-}
-
-export function clearCachedData(): void {
-  const prefix = `${CACHE_PREFIX}:`;
+function clearCacheByPrefix(prefix: string): void {
   const keysToRemove: string[] = [];
 
   for (let index = 0; index < localStorage.length; index += 1) {
@@ -92,6 +107,18 @@ export function clearCachedData(): void {
   keysToRemove.forEach((key) => {
     localStorage.removeItem(key);
   });
+}
+
+export function clearSession(): void {
+  const userId = readStoredSessionRaw()?.user.id;
+  localStorage.removeItem(SESSION_STORAGE_KEY);
+  if (userId) {
+    clearCacheByPrefix(`${CACHE_PREFIX}:user:${userId}:`);
+  }
+}
+
+export function clearCachedData(): void {
+  clearCacheByPrefix(`${CACHE_PREFIX}:`);
 }
 
 export function hasSession(): boolean {
@@ -109,6 +136,23 @@ export function isApiConfigured(): boolean {
 
 function createCacheKey(collection: 'artist' | 'related', mbid: string): string {
   return `${CACHE_PREFIX}:${collection}:${mbid}`;
+}
+
+function createUserCacheKey(collection: 'ratings' | 'recommendations', scope: string): string | null {
+  const userId = readStoredSession()?.user.id;
+  if (!userId) {
+    return null;
+  }
+
+  return `${CACHE_PREFIX}:user:${userId}:${collection}:${scope}`;
+}
+
+function createRatingsCacheKey(status?: 'rated' | 'todo'): string | null {
+  return createUserCacheKey('ratings', status ?? 'all');
+}
+
+function createRecommendationsCacheKey(): string | null {
+  return createUserCacheKey('recommendations', 'all');
 }
 
 function readCache<T>(key: string, ttlMs: number): T | null {
@@ -150,6 +194,72 @@ function writeCache<T>(key: string, data: T): void {
   } catch {
     return;
   }
+}
+
+function updateCachedRecord<T>(
+  key: string | null,
+  ttlMs: number,
+  updater: (current: T) => T,
+): void {
+  if (!key) {
+    return;
+  }
+
+  const current = readCache<T>(key, ttlMs);
+  if (!current) {
+    return;
+  }
+
+  writeCache(key, updater(current));
+}
+
+function upsertRating(ratings: Rating[], nextRating: Rating, expectedStatus?: 'rated' | 'todo'): Rating[] {
+  const remainingRatings = ratings.filter((rating) => rating.artistMbid !== nextRating.artistMbid);
+  if (expectedStatus && nextRating.status !== expectedStatus) {
+    return remainingRatings;
+  }
+
+  return [...remainingRatings, nextRating];
+}
+
+function removeRating(ratings: Rating[], artistMbid: string): Rating[] {
+  return ratings.filter((rating) => rating.artistMbid !== artistMbid);
+}
+
+function updateCachedRatings(nextRating: Rating): void {
+  updateCachedRecord<RatingsListResponse>(
+    createRatingsCacheKey(),
+    RATINGS_CACHE_TTL_MS,
+    ({ ratings }) => ({ ratings: upsertRating(ratings, nextRating) }),
+  );
+  updateCachedRecord<RatingsListResponse>(
+    createRatingsCacheKey('rated'),
+    RATINGS_CACHE_TTL_MS,
+    ({ ratings }) => ({ ratings: upsertRating(ratings, nextRating, 'rated') }),
+  );
+  updateCachedRecord<RatingsListResponse>(
+    createRatingsCacheKey('todo'),
+    RATINGS_CACHE_TTL_MS,
+    ({ ratings }) => ({ ratings: upsertRating(ratings, nextRating, 'todo') }),
+  );
+}
+
+function removeCachedRating(artistMbid: string): void {
+  updateCachedRecord<RatingsListResponse>(
+    createRatingsCacheKey(),
+    RATINGS_CACHE_TTL_MS,
+    ({ ratings }) => ({ ratings: removeRating(ratings, artistMbid) }),
+  );
+  updateCachedRecord<RatingsListResponse>(
+    createRatingsCacheKey('rated'),
+    RATINGS_CACHE_TTL_MS,
+    ({ ratings }) => ({ ratings: removeRating(ratings, artistMbid) }),
+  );
+  updateCachedRecord<RatingsListResponse>(
+    createRatingsCacheKey('todo'),
+    RATINGS_CACHE_TTL_MS,
+    ({ ratings }) => ({ ratings: removeRating(ratings, artistMbid) }),
+  );
 }
 
 function sleep(ms: number): Promise<void> {
@@ -352,27 +462,59 @@ export async function getRelatedArtists(mbid: string): Promise<RelatedArtistsRes
 }
 
 export async function listRatings(status?: 'rated' | 'todo'): Promise<RatingsListResponse> {
+  const key = createRatingsCacheKey(status);
+  if (key) {
+    const cached = readCache<RatingsListResponse>(key, RATINGS_CACHE_TTL_MS);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const params = status ? `?status=${status}` : '';
-  return apiFetch<RatingsListResponse>(`/ratings${params}`);
+  const response = await apiFetch<RatingsListResponse>(`/ratings${params}`);
+  if (key) {
+    writeCache(key, response);
+  }
+  return response;
 }
 
 export async function putRating(artistMbid: string, body: PutRatingBody): Promise<RatingResponse> {
-  return apiFetch<RatingResponse>(`/ratings/${artistMbid}`, {
+  const response = await apiFetch<RatingResponse>(`/ratings/${artistMbid}`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
+  updateCachedRatings(response.rating);
+  return response;
 }
 
 export async function deleteRating(artistMbid: string): Promise<void> {
-  return apiFetch<void>(`/ratings/${artistMbid}`, { method: 'DELETE' });
+  await apiFetch<void>(`/ratings/${artistMbid}`, { method: 'DELETE' });
+  removeCachedRating(artistMbid);
 }
 
 export async function getRecommendations(): Promise<RecommendationsResponse> {
-  return apiFetch<RecommendationsResponse>('/recommendations');
+  const key = createRecommendationsCacheKey();
+  if (key) {
+    const cached = readCache<RecommendationsResponse>(key, RECOMMENDATIONS_CACHE_TTL_MS);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  const response = await apiFetch<RecommendationsResponse>('/recommendations');
+  if (key) {
+    writeCache(key, response);
+  }
+  return response;
 }
 
 export async function generateRecommendations(): Promise<RecommendationsResponse> {
-  return apiFetch<RecommendationsResponse>('/recommendations/generate', {
+  const response = await apiFetch<RecommendationsResponse>('/recommendations/generate', {
     method: 'POST',
   });
+  const key = createRecommendationsCacheKey();
+  if (key) {
+    writeCache(key, response);
+  }
+  return response;
 }
