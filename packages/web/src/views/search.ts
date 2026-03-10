@@ -1,8 +1,9 @@
-import type { Artist, RelatedArtist } from '@bandmap/shared';
-import { getArtist, getRelatedArtists, putRating, searchArtists } from '../api.js';
+import type { Artist } from '@bandmap/shared';
+import { getArtist, getRelatedArtists, listRatings, putRating, searchArtists } from '../api.js';
 import { openPlayUrl } from '../musicbrainz.js';
 import type { AppRoute } from '../router.js';
 import { escapeHtml } from '../utils.js';
+import { findArtistRating, renderArtistDetail } from './artist-detail.js';
 
 interface SearchViewOptions {
   navigateToRoute: (route: AppRoute) => Promise<void>;
@@ -47,9 +48,17 @@ export async function showArtistDetail(
   detailContentEl.innerHTML = '<p class="empty-state">Loading...</p>';
 
   try {
-    const [{ artist }, { related }] = await Promise.all([getArtist(mbid), getRelatedArtists(mbid)]);
+    const [{ artist }, { related }, { ratings }] = await Promise.all([
+      getArtist(mbid),
+      getRelatedArtists(mbid),
+      listRatings(),
+    ]);
 
-    detailContentEl.innerHTML = renderArtistDetail(artist, related);
+    detailContentEl.innerHTML = renderArtistDetail(
+      artist,
+      related,
+      findArtistRating(ratings, mbid),
+    );
     attachDetailActions(artist, navigateToRoute);
   } catch (err) {
     detailContentEl.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
@@ -86,53 +95,6 @@ async function performSearch(
   }
 }
 
-function renderArtistDetail(artist: Artist, related: RelatedArtist[]): string {
-  const tagBadges = artist.tags
-    .map((tag) => `<span class="tag-badge">${escapeHtml(tag)}</span>`)
-    .join('');
-
-  const relatedList = related
-    .slice(0, 30)
-    .map(
-      (relation) => `
-      <li class="related-item" data-mbid="${escapeHtml(relation.targetMbid)}">
-        <span>${escapeHtml(relation.targetName)}</span>
-        <span class="match-score">${(relation.match * 100).toFixed(0)}%</span>
-      </li>
-    `,
-    )
-    .join('');
-
-  return `
-    <div class="detail-title-row">
-      <h3>${escapeHtml(artist.name)}</h3>
-      <a
-        href="#"
-        class="external-link detail-title-link"
-        id="detail-play-link"
-        aria-label="Open artist on Spotify or Last.fm"
-        title="Open artist on Spotify or Last.fm"
-      ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
-    </div>
-    <div class="tag-list">${tagBadges}</div>
-    <div class="action-bar">
-      <div class="star-rating" id="star-rating">
-        ${[1, 2, 3, 4, 5]
-          .map(
-            (score) =>
-              `<button class="star" data-score="${score}"><i class="fa-solid fa-star" aria-hidden="true"></i></button>`,
-          )
-          .join('')}
-      </div>
-      <button class="btn-icon btn-bookmark" id="btn-todo" aria-label="Add to todo" title="Add to todo">
-        <i class="fa-regular fa-bookmark" aria-hidden="true"></i>
-      </button>
-    </div>
-    <h4>Related Artists</h4>
-    <ul class="related-list">${relatedList}</ul>
-  `;
-}
-
 function attachDetailActions(
   artist: Artist,
   navigateToRoute: (route: AppRoute) => Promise<void>,
@@ -144,6 +106,7 @@ function attachDetailActions(
   });
 
   const stars = detailContentEl.querySelectorAll<HTMLButtonElement>('.star');
+  const todoBtn = detailContentEl.querySelector<HTMLButtonElement>('#btn-todo');
   stars.forEach((star) => {
     star.addEventListener('click', () => {
       const score = Number(star.dataset['score']);
@@ -151,18 +114,25 @@ function attachDetailActions(
       stars.forEach((targetStar) => {
         targetStar.classList.toggle('active', Number(targetStar.dataset['score']) <= score);
       });
+
+      if (todoBtn) {
+        todoBtn.innerHTML = '<i class="fa-regular fa-bookmark" aria-hidden="true"></i>';
+        todoBtn.setAttribute('aria-label', 'Add to todo');
+        todoBtn.setAttribute('title', 'Add to todo');
+        todoBtn.disabled = false;
+      }
     });
   });
 
-  const todoBtn = detailContentEl.querySelector('#btn-todo');
   todoBtn?.addEventListener('click', () => {
     void putRating(artist.mbid, { score: null, status: 'todo' });
-    if (todoBtn instanceof HTMLButtonElement) {
-      todoBtn.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
-      todoBtn.setAttribute('aria-label', 'Added to todo');
-      todoBtn.setAttribute('title', 'Added to todo');
-      todoBtn.disabled = true;
-    }
+    stars.forEach((targetStar) => {
+      targetStar.classList.remove('active');
+    });
+    todoBtn.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
+    todoBtn.setAttribute('aria-label', 'Added to todo');
+    todoBtn.setAttribute('title', 'Added to todo');
+    todoBtn.disabled = true;
   });
 
   const relatedItems = detailContentEl.querySelectorAll<HTMLElement>('.related-item');
