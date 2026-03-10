@@ -1,4 +1,6 @@
-# [music.heap.fi](https://music.heap.fi)
+# Bandmap ![Build status](https://github.com/Vilsepi/bandmap/actions/workflows/deploy.yml/badge.svg)
+
+[music.heap.fi](https://music.heap.fi)
 
 Discover new music through similar artists you already like. Currently invite-only.
 
