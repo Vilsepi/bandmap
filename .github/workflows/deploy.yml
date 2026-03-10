@@ -1,40 +1,18 @@
-name: CI/CD
+name: Deploy
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_run:
+    workflows: ['Test']
+    types: [completed]
     branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-
-      - run: npm ci
-
-      - run: npm run clean
-
-      - run: npm run build
-
-      - run: npm run lint
-
-      - run: npm test
-
   deploy:
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     env:
       LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
       AWS_REGION: ${{ secrets.AWS_REGION }}
@@ -46,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - uses: actions/setup-node@v6
         with:
