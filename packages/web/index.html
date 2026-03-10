@@ -21,9 +21,9 @@
         <p class="auth-copy">Sign in with your username and password</p>
         <form id="login-form" class="auth-form">
           <label class="auth-label" for="login-username">Username</label>
-          <input id="login-username" class="auth-input" type="text" autocomplete="username" required />
+          <input id="login-username" class="auth-input" type="text" name="username" autocomplete="username" required />
           <label class="auth-label" for="login-password">Password</label>
-          <input id="login-password" class="auth-input" type="password" autocomplete="current-password" required />
+          <input id="login-password" class="auth-input" type="password" name="password" autocomplete="current-password" required />
           <button type="submit" class="btn-primary">Sign in</button>
         </form>
         <p id="auth-message" class="auth-message hidden"></p>
@@ -36,9 +36,9 @@
         <p id="invite-status" class="auth-message hidden"></p>
         <form id="invite-form" class="auth-form">
           <label class="auth-label" for="invite-username">Choose a username</label>
-          <input id="invite-username" class="auth-input" type="text" autocomplete="username" required />
+          <input id="invite-username" class="auth-input" type="text" name="username" autocomplete="username" required />
           <label class="auth-label" for="invite-password">Choose a password</label>
-          <input id="invite-password" class="auth-input" type="password" autocomplete="new-password" required />
+          <input id="invite-password" class="auth-input" type="password" name="password" autocomplete="new-password" required />
           <button type="submit" class="btn-primary">Create account</button>
           <button id="invite-back-button" type="button" class="btn-secondary">Back to sign in</button>
         </form>
