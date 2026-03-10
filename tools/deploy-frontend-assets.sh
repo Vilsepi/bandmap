@@ -1,10 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Export environment variables from the .env file
-set -a
-source .env
-set +a
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
 
 API_URL=$(aws cloudformation describe-stacks \
   --stack-name BandmapBackendStack \
