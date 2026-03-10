@@ -47,6 +47,7 @@ npm run test     # build all workspaces, then run all workspace tests
 - Keep types in `packages/shared/src/types.ts` for anything shared between frontend and backend.
 - Prefer `const` over `let`; avoid `var`.
 - Do not add `console.log` statements to production code paths; use existing logging patterns.
+- When writing commit messages, follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format (e.g., `feat: add new API endpoint`, `fix: correct typo in README`).
 
 ## API documentation and testing
 
