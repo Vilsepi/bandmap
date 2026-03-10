@@ -22,7 +22,7 @@
     "serve": "cd packages/web && npx vite"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.4.0",
     "typescript": "^5.9.3",
     "eslint": "^10.0.0",
     "@eslint/js": "^10.0.0",
