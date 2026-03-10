@@ -17,12 +17,14 @@ import type {
   Rating,
 } from '@bandmap/shared';
 
-const API_BASE = (
-  (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
-    ?.VITE_API_BASE_URL ??
-  globalThis.process?.env?.VITE_API_BASE_URL ??
-  ''
-).replace(/\/+$/, '');
+function readEnvVar(name: string): string | undefined {
+  return (
+    (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env?.[name] ??
+    globalThis.process?.env?.[name]
+  );
+}
+
+const API_BASE = (readEnvVar('VITE_API_BASE_URL') ?? '').replace(/\/+$/, '');
 const CACHE_PREFIX = 'bandmap:v1';
 const SESSION_STORAGE_KEY = 'bandmap-session';
 const ARTIST_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -43,14 +45,24 @@ type CacheRecord<T> = {
   data: T;
 };
 
+function isStoredUser(user: unknown): user is StoredSession['user'] {
+  return (
+    typeof user === 'object' &&
+    user !== null &&
+    typeof (user as StoredSession['user']).id === 'string' &&
+    typeof (user as StoredSession['user']).username === 'string' &&
+    typeof (user as StoredSession['user']).cognitoSub === 'string' &&
+    typeof (user as StoredSession['user']).createdAt === 'string'
+  );
+}
+
 function parseStoredSession(raw: string): StoredSession | null {
   const parsed = JSON.parse(raw) as Partial<StoredSession>;
   if (
     typeof parsed.sessionToken !== 'string' ||
     typeof parsed.refreshToken !== 'string' ||
     typeof parsed.expiresAt !== 'number' ||
-    typeof parsed.user !== 'object' ||
-    parsed.user === null
+    !isStoredUser(parsed.user)
   ) {
     return null;
   }
