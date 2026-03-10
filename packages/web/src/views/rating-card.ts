@@ -1,11 +1,12 @@
 import type { Rating } from '@bandmap/shared';
 import { deleteRating, getArtist } from '../api.js';
+import { openPlayUrl } from '../musicbrainz.js';
 import { escapeHtml } from '../utils.js';
 
 export function renderRatingCard(
   rating: Rating,
   navigateToArtist: (artistMbid: string) => Promise<void>,
-  showLastFmLink = false,
+  showPlayLink = false,
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'card';
@@ -33,12 +34,12 @@ export function renderRatingCard(
         <div class="card-title-actions">
           <a
             class="card-link card-title-link hidden"
-            data-role="lastfm-link"
+            data-role="play-link"
             href="#"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Open artist on Last.fm"
-            title="Open artist on Last.fm"
+            aria-label="Open artist on Spotify or Last.fm"
+            title="Open artist on Spotify or Last.fm"
           ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
           <div class="card-score">${scoreDisplay}</div>
         </div>
@@ -52,10 +53,13 @@ export function renderRatingCard(
       titleEl.textContent = artist.name;
     }
 
-    const lastFmLinkEl = card.querySelector<HTMLAnchorElement>('[data-role="lastfm-link"]');
-    if (lastFmLinkEl && showLastFmLink) {
-      lastFmLinkEl.href = artist.url;
-      lastFmLinkEl.classList.remove('hidden');
+    const playLinkEl = card.querySelector<HTMLAnchorElement>('[data-role="play-link"]');
+    if (playLinkEl && showPlayLink) {
+      playLinkEl.addEventListener('click', (event) => {
+        event.preventDefault();
+        void openPlayUrl(rating.artistMbid, artist.url);
+      });
+      playLinkEl.classList.remove('hidden');
     }
   });
 

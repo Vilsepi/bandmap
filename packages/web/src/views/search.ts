@@ -1,5 +1,6 @@
 import type { Artist, RelatedArtist } from '@bandmap/shared';
 import { getArtist, getRelatedArtists, putRating, searchArtists } from '../api.js';
+import { openPlayUrl } from '../musicbrainz.js';
 import type { AppRoute } from '../router.js';
 import { escapeHtml } from '../utils.js';
 
@@ -106,12 +107,11 @@ function renderArtistDetail(artist: Artist, related: RelatedArtist[]): string {
     <div class="detail-title-row">
       <h3>${escapeHtml(artist.name)}</h3>
       <a
-        href="${escapeHtml(artist.url)}"
-        target="_blank"
-        rel="noopener noreferrer"
+        href="#"
         class="external-link detail-title-link"
-        aria-label="Open artist on Last.fm"
-        title="Open artist on Last.fm"
+        id="detail-play-link"
+        aria-label="Open artist on Spotify or Last.fm"
+        title="Open artist on Spotify or Last.fm"
       ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
     </div>
     <div class="tag-list">${tagBadges}</div>
@@ -137,6 +137,12 @@ function attachDetailActions(
   artist: Artist,
   navigateToRoute: (route: AppRoute) => Promise<void>,
 ): void {
+  const playLink = detailContentEl.querySelector<HTMLAnchorElement>('#detail-play-link');
+  playLink?.addEventListener('click', (event) => {
+    event.preventDefault();
+    void openPlayUrl(artist.mbid, artist.url);
+  });
+
   const stars = detailContentEl.querySelectorAll<HTMLButtonElement>('.star');
   stars.forEach((star) => {
     star.addEventListener('click', () => {
