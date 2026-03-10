@@ -207,17 +207,13 @@ export function initGlobalConfig({ onAuthenticated }: GlobalConfigOptions): void
   });
 
   if (hasSession()) {
-    void refreshSession()
-      .catch(() => {
-        clearSession();
-        showAuthGate();
-        updateGateForLocation();
-      })
-      .then(() => {
-        if (hasSession()) {
-          showAppShell();
-        }
-      });
+    showAppShell();
+    void refreshSession().catch((error: unknown) => {
+      console.warn('Session refresh failed, signing out', error);
+      clearSession();
+      showAuthGate();
+      updateGateForLocation();
+    });
     return;
   }
 
