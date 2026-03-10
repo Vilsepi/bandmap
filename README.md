@@ -1,4 +1,4 @@
-# Bandmap ![Build status](https://github.com/Vilsepi/bandmap/actions/workflows/deploy.yml/badge.svg)
+# Bandmap [![Build status](https://github.com/Vilsepi/bandmap/actions/workflows/deploy.yml/badge.svg)](https://github.com/Vilsepi/bandmap/deployments/production)
 
 [music.heap.fi](https://music.heap.fi)
 
