@@ -91,7 +91,7 @@ const recommendations: RecommendationsResponse = {
 
 Object.assign(globalThis, { localStorage });
 
-type ApiModule = typeof import('./api.js');
+type ApiModule = typeof import('../api.js');
 
 let api: ApiModule;
 let queuedResponses: Response[] = [];
@@ -101,7 +101,7 @@ const originalDateNow = Date.now;
 
 before(async () => {
   process.env.VITE_API_BASE_URL = 'https://api.example.test';
-  api = await import('./api.js');
+  api = await import('../api.js');
 });
 
 beforeEach(() => {

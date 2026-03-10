@@ -18,10 +18,10 @@ import type {
 } from '@bandmap/shared';
 
 const API_BASE = (
-  (
-    (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
-      ?.VITE_API_BASE_URL ?? globalThis.process?.env?.VITE_API_BASE_URL
-  ) ?? ''
+  (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env
+    ?.VITE_API_BASE_URL ??
+  globalThis.process?.env?.VITE_API_BASE_URL ??
+  ''
 ).replace(/\/+$/, '');
 const CACHE_PREFIX = 'bandmap:v1';
 const SESSION_STORAGE_KEY = 'bandmap-session';
@@ -138,7 +138,10 @@ function createCacheKey(collection: 'artist' | 'related', mbid: string): string 
   return `${CACHE_PREFIX}:${collection}:${mbid}`;
 }
 
-function createUserCacheKey(collection: 'ratings' | 'recommendations', scope: string): string | null {
+function createUserCacheKey(
+  collection: 'ratings' | 'recommendations',
+  scope: string,
+): string | null {
   const userId = readStoredSession()?.user.id;
   if (!userId) {
     return null;
@@ -213,7 +216,11 @@ function updateCachedRecord<T>(
   writeCache(key, updater(current));
 }
 
-function upsertRating(ratings: Rating[], nextRating: Rating, expectedStatus?: 'rated' | 'todo'): Rating[] {
+function upsertRating(
+  ratings: Rating[],
+  nextRating: Rating,
+  expectedStatus?: 'rated' | 'todo',
+): Rating[] {
   const remainingRatings = ratings.filter((rating) => rating.artistMbid !== nextRating.artistMbid);
   if (expectedStatus && nextRating.status !== expectedStatus) {
     return remainingRatings;
