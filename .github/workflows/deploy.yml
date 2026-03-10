@@ -14,13 +14,13 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
-      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_REGION: ${{ env.AWS_REGION }}
+      FRONTEND_FQDN: ${{ env.FRONTEND_FQDN }}
+      HOSTED_ZONE_NAME: ${{ env.HOSTED_ZONE_NAME }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      FRONTEND_FQDN: ${{ secrets.FRONTEND_FQDN }}
-      HOSTED_ZONE_ID: ${{ secrets.HOSTED_ZONE_ID }}
-      HOSTED_ZONE_NAME: ${{ secrets.HOSTED_ZONE_NAME }}
       FRONTEND_CERTIFICATE_ARN: ${{ secrets.FRONTEND_CERTIFICATE_ARN }}
+      HOSTED_ZONE_ID: ${{ secrets.HOSTED_ZONE_ID }}
+      LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
 
     steps:
       - uses: actions/checkout@v6
@@ -35,11 +35,11 @@ jobs:
           node-version: 24
           cache: npm
 
-      - uses: aws-actions/configure-aws-credentials@v5
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - run: npm ci
 
