@@ -11,7 +11,7 @@ import {
 } from './lastfm.js';
 
 // Load sample responses from doc/ directory
-const sampleDir = resolve(import.meta.dirname, '../../../doc');
+const sampleDir = resolve(import.meta.dirname, '../../../../doc');
 const sampleGetInfo = JSON.parse(
   readFileSync(resolve(sampleDir, 'sample.artist.getinfo.json'), 'utf-8'),
 );
@@ -419,7 +419,7 @@ describe('lastfm', () => {
     it('allows up to max concurrent', async () => {
       const sem = new Semaphore(3);
 
-      // Acquire 3 — should all succeed immediately
+      // Acquire 3 - should all succeed immediately
       await sem.acquire();
       await sem.acquire();
       await sem.acquire();
@@ -434,7 +434,7 @@ describe('lastfm', () => {
       await new Promise((resolve) => setTimeout(resolve, 5));
       assert.equal(acquired, false);
 
-      // Release one — the blocked one should now acquire
+      // Release one - the blocked one should now acquire
       sem.release();
       await blocked;
       assert.equal(acquired, true);

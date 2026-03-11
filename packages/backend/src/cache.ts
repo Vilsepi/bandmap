@@ -1,8 +1,12 @@
-import type { Artist, RelatedArtist } from '@bandmap/shared';
-import { CACHE_TTL_MS, SEARCH_CACHE_TTL_MS } from '@bandmap/shared';
-import type { SearchResult } from '@bandmap/shared';
+import {
+  CACHE_TTL_MS,
+  SEARCH_CACHE_TTL_MS,
+  type Artist,
+  type RelatedArtist,
+  type SearchResult,
+} from '@bandmap/shared';
 import * as db from './db.js';
-import { fetchArtistInfo, fetchSimilarArtists, searchArtists } from './lastfm.js';
+import { fetchArtistInfo, fetchSimilarArtists, searchArtists } from './lastfm/lastfm.js';
 
 function isStale(fetchedAt: string, ttlMs: number = CACHE_TTL_MS): boolean {
   const fetchedTime = new Date(fetchedAt).getTime();
