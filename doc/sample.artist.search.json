@@ -1,0 +1,245 @@
+{
+ "results": {
+  "opensearch:itemsPerPage": "10",
+  "opensearch:Query": {
+   "#text": "",
+   "role": "request",
+   "searchTerms": "glasgow coma scale",
+   "startPage": "1"
+  },
+  "opensearch:startIndex": "0",
+  "opensearch:totalResults": "9",
+  "artistmatches": {
+   "artist": [
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "medium"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/174s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "large"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "29213",
+     "mbid": "",
+     "name": "Glasgow Coma scale",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/Glasgow+Coma+scale"
+    },
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "medium"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/174s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "large"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "18",
+     "mbid": "",
+     "name": "the/ glasgow/ coma/ scale.",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/the%2F+glasgow%2F+coma%2F+scale."
+    },
+    {
+     "image": [
+      {
+       "#text": "",
+       "size": "small"
+      },
+      {
+       "#text": "",
+       "size": "medium"
+      },
+      {
+       "#text": "",
+       "size": "large"
+      },
+      {
+       "#text": "",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "17",
+     "mbid": "",
+     "name": "the glasgow coma scale",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/the+glasgow+coma+scale"
+    },
+    {
+     "image": [
+      {
+       "#text": "",
+       "size": "small"
+      },
+      {
+       "#text": "",
+       "size": "medium"
+      },
+      {
+       "#text": "",
+       "size": "large"
+      },
+      {
+       "#text": "",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "3",
+     "mbid": "",
+     "name": "Glasgow Coma Scale 3",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/Glasgow+Coma+Scale+3"
+    },
+    {
+     "image": [
+      {
+       "#text": "",
+       "size": "small"
+      },
+      {
+       "#text": "",
+       "size": "medium"
+      },
+      {
+       "#text": "",
+       "size": "large"
+      },
+      {
+       "#text": "",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "3",
+     "mbid": "",
+     "name": "01. Glasgow Coma Scale",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/01.+Glasgow+Coma+Scale"
+    },
+    {
+     "image": [
+      {
+       "#text": "",
+       "size": "small"
+      },
+      {
+       "#text": "",
+       "size": "medium"
+      },
+      {
+       "#text": "",
+       "size": "large"
+      },
+      {
+       "#text": "",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "4",
+     "mbid": "",
+     "name": "Glasgow Coma Scale • From Smart Shuffle",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/Glasgow+Coma+Scale+%E2%80%A2+From+Smart+Shuffle"
+    },
+    {
+     "image": [
+      {
+       "#text": "",
+       "size": "small"
+      },
+      {
+       "#text": "",
+       "size": "medium"
+      },
+      {
+       "#text": "",
+       "size": "large"
+      },
+      {
+       "#text": "",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "2",
+     "mbid": "",
+     "name": "GCS Glasgow Coma Scale, LOC Level of Consciousness",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/GCS+Glasgow+Coma+Scale,+LOC+Level+of+Consciousness"
+    },
+    {
+     "image": [
+      {
+       "#text": "",
+       "size": "small"
+      },
+      {
+       "#text": "",
+       "size": "medium"
+      },
+      {
+       "#text": "",
+       "size": "large"
+      },
+      {
+       "#text": "",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "7",
+     "mbid": "",
+     "name": "Glascow Coma Scale",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/Glascow+Coma+Scale"
+    },
+    {
+     "image": [
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/34s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "small"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/64s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "medium"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/174s/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "large"
+      },
+      {
+       "#text": "https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png",
+       "size": "extralarge"
+      }
+     ],
+     "listeners": "3",
+     "mbid": "",
+     "name": "Glasgow Coma Score",
+     "streamable": "0",
+     "url": "https://www.last.fm/music/Glasgow+Coma+Score"
+    }
+   ]
+  },
+  "@attr": {
+   "for": "glasgow coma scale"
+  }
+ }
+}

@@ -38,6 +38,26 @@ What we are not interested in the data:
 - `image` urls. Do not download any images.
 - `streamable` number
 
+## artist.search
+
+API Documentation: https://www.last.fm/api/show/artist.search
+Sample response: `doc/sample.artist.search.json`
+
+What we are interested in:
+
+- `results.artistmatches.artist.name`
+- `results.artistmatches.artist.mbid`
+- `results.artistmatches.artist.url`
+
+What we are not interested in:
+
+- `image` urls. Do not download any images.
+
+Known issue: the JSON version of this API does not return the artist MBIDs, but the XML version does. We could already create partial artist records from the search results, but later we would still have to fetch the artist details, since we are lacking for example tags.
+
+# Other potential APIs
+
+We are currently not using the following endpoints but they have potential.
 
 ## tag.getTopArtists
 
