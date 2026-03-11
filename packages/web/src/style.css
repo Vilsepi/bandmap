@@ -11,6 +11,7 @@
   --font-size-regular: 1rem;
   --font-size-small: 0.75rem;
   --font-size-icon: 18px;
+  --font-size-play: 24px;
 
   --brand-bg-app: #0f0f0f;
   --brand-bg-surface: #141414;
@@ -433,7 +434,7 @@ body.topbar-menu-open {
 
 .card-link {
   color: var(--brand-accent);
-  font-size: 24px;
+  font-size: var(--font-size-play);
   text-decoration: none;
   padding: 4px;
   -webkit-tap-highlight-color: transparent;
@@ -506,7 +507,7 @@ body.topbar-menu-open {
   display: inline-flex;
   align-items: center;
   color: var(--brand-accent);
-  font-size: 24px;
+  font-size: var(--font-size-play);
   text-decoration: none;
   margin-bottom: 0;
   padding: 4px;
