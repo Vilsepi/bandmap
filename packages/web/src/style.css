@@ -433,8 +433,10 @@ body.topbar-menu-open {
 
 .card-link {
   color: var(--brand-accent);
-  font-size: var(--font-size-icon);
+  font-size: 24px;
   text-decoration: none;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .card-title-link {
@@ -442,8 +444,9 @@ body.topbar-menu-open {
   align-items: center;
 }
 
-.card-link:hover {
-  text-decoration: underline;
+.card-link:hover,
+.card-link:active {
+  text-decoration: none;
 }
 
 .card-tags {
@@ -503,13 +506,16 @@ body.topbar-menu-open {
   display: inline-flex;
   align-items: center;
   color: var(--brand-accent);
-  font-size: var(--font-size-icon);
+  font-size: 24px;
   text-decoration: none;
   margin-bottom: 0;
+  padding: 4px;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.external-link:hover {
-  text-decoration: underline;
+.external-link:hover,
+.external-link:active {
+  text-decoration: none;
 }
 
 .action-bar {
