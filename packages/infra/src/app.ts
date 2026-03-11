@@ -10,14 +10,18 @@ if (!lastFmApiKey) {
   throw new Error('Missing env variable: LASTFM_API_KEY. Set it before running cdk deploy.');
 }
 
-const frontendFqdn = process.env['FRONTEND_FQDN'] ?? '';
+const fqdn = process.env['FQDN'] ?? process.env['FRONTEND_FQDN'] ?? '';
 const hostedZoneId = process.env['HOSTED_ZONE_ID'] ?? '';
 const hostedZoneName = process.env['HOSTED_ZONE_NAME'] ?? '';
+const backendCertificateArn = process.env['BACKEND_CERTIFICATE_ARN'] ?? '';
 const frontendCertificateArn = process.env['FRONTEND_CERTIFICATE_ARN'] ?? '';
 
 new BandmapBackendStack(app, 'BandmapBackendStack', {
   lastFmApiKey,
-  frontendFqdn,
+  fqdn,
+  hostedZoneId,
+  hostedZoneName,
+  backendCertificateArn,
   env: {
     account: process.env['AWS_ACCOUNT_ID'],
     region: process.env['AWS_REGION'],
@@ -25,7 +29,7 @@ new BandmapBackendStack(app, 'BandmapBackendStack', {
 });
 
 new BandmapFrontendStack(app, 'BandmapFrontendStack', {
-  frontendFqdn,
+  fqdn,
   hostedZoneId,
   hostedZoneName,
   frontendCertificateArn,

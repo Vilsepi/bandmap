@@ -8,7 +8,7 @@ import { Construct } from 'constructs';
 
 export interface BandmapFrontendStackProps extends cdk.StackProps {
   /** Frontend FQDN, e.g. app.example.com */
-  frontendFqdn: string;
+  fqdn: string;
   /** Existing Route53 hosted zone id */
   hostedZoneId: string;
   /** Existing Route53 hosted zone name, e.g. example.com */
@@ -48,14 +48,14 @@ export class BandmapFrontendStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         compress: true,
       },
-      domainNames: [props.frontendFqdn],
+      domainNames: [props.fqdn],
       certificate: frontendCertificate,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     });
 
-    const recordName = props.frontendFqdn.endsWith(`.${props.hostedZoneName}`)
-      ? props.frontendFqdn.slice(0, -(props.hostedZoneName.length + 1))
-      : props.frontendFqdn;
+    const recordName = props.fqdn.endsWith(`.${props.hostedZoneName}`)
+      ? props.fqdn.slice(0, -(props.hostedZoneName.length + 1))
+      : props.fqdn;
 
     new route53.CnameRecord(this, 'FrontendCnameRecord', {
       zone: hostedZone,

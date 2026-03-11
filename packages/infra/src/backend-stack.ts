@@ -2,10 +2,13 @@ import * as cdk from 'aws-cdk-lib';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaNode from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as apigatewayv2 from 'aws-cdk-lib/aws-apigatewayv2';
 import * as apigatewayv2Integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 import { resolve } from 'node:path';
 
@@ -13,7 +16,13 @@ export interface BandmapBackendStackProps extends cdk.StackProps {
   /** Last.fm API key — will be set as a Lambda environment variable */
   lastFmApiKey: string;
   /** Frontend FQDN, e.g. app.example.com */
-  frontendFqdn: string;
+  fqdn: string;
+  /** Existing Route53 hosted zone id */
+  hostedZoneId: string;
+  /** Existing Route53 hosted zone name, e.g. example.com */
+  hostedZoneName: string;
+  /** ACM certificate ARN in the API region for api.<fqdn> */
+  backendCertificateArn: string;
 }
 
 export class BandmapBackendStack extends cdk.Stack {
@@ -168,7 +177,7 @@ export class BandmapBackendStack extends cdk.Stack {
         INVITES_TABLE: invitesTable.tableName,
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
-        FRONTEND_BASE_URL: `https://${props.frontendFqdn}`,
+        FRONTEND_BASE_URL: `https://${props.fqdn}`,
       },
       bundling: {
         format: lambdaNode.OutputFormat.ESM,
@@ -232,6 +241,44 @@ export class BandmapBackendStack extends cdk.Stack {
       autoDeploy: true,
     });
 
+    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+      hostedZoneId: props.hostedZoneId,
+      zoneName: props.hostedZoneName,
+    });
+
+    const apiCertificate = acm.Certificate.fromCertificateArn(
+      this,
+      'ApiCertificate',
+      props.backendCertificateArn,
+    );
+
+    const apiDomainName = `api.${props.fqdn}`;
+    const apiDomain = new apigatewayv2.DomainName(this, 'ApiDomain', {
+      domainName: apiDomainName,
+      certificate: apiCertificate,
+    });
+
+    new apigatewayv2.ApiMapping(this, 'ApiDomainMapping', {
+      api: httpApi,
+      domainName: apiDomain,
+      stage: prodStage,
+    });
+
+    const apiRecordName = apiDomainName.endsWith(`.${props.hostedZoneName}`)
+      ? apiDomainName.slice(0, -(props.hostedZoneName.length + 1))
+      : apiDomainName;
+
+    new route53.ARecord(this, 'ApiAliasRecord', {
+      zone: hostedZone,
+      recordName: apiRecordName,
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.ApiGatewayv2DomainProperties(
+          apiDomain.regionalDomainName,
+          apiDomain.regionalHostedZoneId,
+        ),
+      ),
+    });
+
     // Configure prod stage throttling
     const cfnStage = prodStage.node.defaultChild as apigatewayv2.CfnStage;
     cfnStage.defaultRouteSettings = {
@@ -273,7 +320,7 @@ export class BandmapBackendStack extends cdk.Stack {
     // ── Outputs ────────────────────────────────────────────
 
     new cdk.CfnOutput(this, 'ApiUrl', {
-      value: prodStage.url,
+      value: `https://${apiDomainName}`,
       description: 'Backend API base URL',
     });
 
