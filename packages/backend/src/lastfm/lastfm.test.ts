@@ -11,12 +11,12 @@ import {
 } from './lastfm.js';
 
 // Load sample responses from doc/ directory
-const sampleDir = resolve(import.meta.dirname, '../../../../doc');
+const sampleDir = resolve(import.meta.dirname, '../../../../doc/samples');
 const sampleGetInfo = JSON.parse(
-  readFileSync(resolve(sampleDir, 'sample.artist.getinfo.json'), 'utf-8'),
+  readFileSync(resolve(sampleDir, 'artist_getinfo.json'), 'utf-8'),
 );
 const sampleGetSimilar = JSON.parse(
-  readFileSync(resolve(sampleDir, 'sample.artist.getsimilar.json'), 'utf-8'),
+  readFileSync(resolve(sampleDir, 'artist_getsimilar.json'), 'utf-8'),
 );
 
 type FetchInput = string | URL | Request;

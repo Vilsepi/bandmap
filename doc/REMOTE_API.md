@@ -6,7 +6,7 @@ We crawl artist metadata from the Last.fm API.
 ## artist.getInfo
 
 API documentation: https://www.last.fm/api/show/artist.getInfo
-Sample response: `doc/sample.artist.getinfo.json`
+Sample response: [samples/artist_getinfo.json](samples/artist_getinfo.json)
 
 What we are interested in this response:
 
@@ -24,7 +24,7 @@ What we are not interested in the data:
 ## artist.getSimilar
 
 API documentation: https://www.last.fm/api/show/artist.getSimilar
-Sample response: `doc/sample.artist.getsimilar.json`
+Sample response: [samples/artist_getsimilar.json](samples/artist_getsimilar.json)
 
 What we especially want from this response for each of the similar artists:
 
@@ -41,7 +41,10 @@ What we are not interested in the data:
 ## artist.search
 
 API Documentation: https://www.last.fm/api/show/artist.search
-Sample response: `doc/sample.artist.search.json`
+Sample responses:
+
+- [samples/artist_search_with_mbids.json](samples/artist_search_with_mbids.json)
+- [samples/artist_search_missing_mbids.json](samples/artist_search_missing_mbids.json)
 
 What we are interested in:
 
@@ -53,7 +56,7 @@ What we are not interested in:
 
 - `image` urls. Do not download any images.
 
-Known issue: the JSON version of this API does not return the artist MBIDs, but the XML version does. We could already create partial artist records from the search results, but later we would still have to fetch the artist details, since we are lacking for example tags.
+Known issue: Sometimes the search results are missing the artist MBID.
 
 # Other potential APIs
 
