@@ -135,7 +135,7 @@ export async function fetchSimilarArtists(
 export async function searchArtists(
   query: string,
   apiKey: string,
-  limit = 10,
+  limit = 5,
 ): Promise<{ mbid: string; name: string; url: string }[]> {
   const params = new URLSearchParams({
     method: 'artist.search',
@@ -148,6 +148,7 @@ export async function searchArtists(
   const data = (await lastfmRequest(params)) as LastFmArtistSearchResponse;
 
   return (data.results?.artistmatches?.artist ?? [])
+    // FIXME: This filtering is wrong. The MBID in search results can sometimes be empty string
     .filter((a) => a.mbid && a.mbid.length > 0)
     .map((a) => ({
       mbid: a.mbid,
