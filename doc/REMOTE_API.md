@@ -58,18 +58,34 @@ What we are not interested in:
 
 Known issue: Sometimes the search results are missing the artist MBID.
 
-# Other potential APIs
+## Other potential APIs
 
 We are currently not using the following endpoints but they have potential.
 
-## tag.getTopArtists
+### tag.getTopArtists
 
 Get a list of artists which are most associated with this tag.
 
 API documentation: https://www.last.fm/api/show/tag.getTopArtists
 
-##  tag.getSimilar
+###  tag.getSimilar
 
 Get a list of tags which are similar to this tag.
 
 API documentation: https://www.last.fm/api/show/tag.getSimilar
+
+# MusicBrainz API
+
+API documentation: https://musicbrainz.org/doc/MusicBrainz_API
+
+## search
+
+Search API documentation: https://musicbrainz.org/doc/MusicBrainz_API/Search
+
+If the Last.fm search does not provide artist MBIDs, we attempt to do the same search in MusicBrainz.
+
+For example: https://musicbrainz.org/ws/2/artist?query=glasgow+coma&limit=1&fmt=json
+
+What we are interested in:
+
+- `id` which is mbid

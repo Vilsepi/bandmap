@@ -1,0 +1,26 @@
+{
+  "artists": [
+    {
+      "id": "5ca3c7f7-370c-4829-98f0-b33ff3cbc584",
+      "life-span": {
+        "ended": null
+      },
+      "name": "Glasgow Coma Scale",
+      "score": 100,
+      "sort-name": "Glasgow Coma Scale",
+      "tags": [
+        {
+          "count": 1,
+          "name": "post-rock"
+        },
+        {
+          "count": 1,
+          "name": "instrumental"
+        }
+      ]
+    }
+  ],
+  "count": 1113,
+  "created": "2026-03-12T19:25:16.246Z",
+  "offset": 0
+}
