@@ -161,6 +161,7 @@ export class BandmapBackendStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
         LASTFM_API_KEY: props.lastFmApiKey,
+        LOG_LEVEL: 'DEBUG',
       },
       bundling: {
         format: lambdaNode.OutputFormat.ESM,
@@ -184,6 +185,7 @@ export class BandmapBackendStack extends cdk.Stack {
         COGNITO_USER_POOL_ID: userPool.userPoolId,
         COGNITO_CLIENT_ID: userPoolClient.userPoolClientId,
         FRONTEND_BASE_URL: `https://${props.fqdn}`,
+        LOG_LEVEL: 'DEBUG',
       },
       bundling: {
         format: lambdaNode.OutputFormat.ESM,
