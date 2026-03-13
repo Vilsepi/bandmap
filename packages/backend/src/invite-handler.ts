@@ -150,7 +150,7 @@ async function handleRedeemInvite(event: APIGatewayProxyEventV2): Promise<APIGat
   }
 
   const userId = randomUUID();
-  let cognitoUsername: string | null = username;
+  const cognitoUsername: string | null = username;
 
   try {
     const cognitoUser = await createInvitedUser({
