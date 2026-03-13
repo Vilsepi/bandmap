@@ -150,7 +150,7 @@ async function handleRedeemInvite(event: APIGatewayProxyEventV2): Promise<APIGat
   }
 
   const userId = randomUUID();
-  let cognitoUsername: string | null = username;
+  const cognitoUsername: string | null = username;
 
   try {
     const cognitoUser = await createInvitedUser({
@@ -163,7 +163,7 @@ async function handleRedeemInvite(event: APIGatewayProxyEventV2): Promise<APIGat
       id: userId,
       username,
       cognitoSub: cognitoUser.cognitoSub,
-      createdAt: new Date().toISOString(),
+      createdAt: nowEpochSeconds(),
     };
 
     await db.redeemInvite(body.code, user, nowEpochSeconds());
@@ -190,14 +190,13 @@ async function handleRedeemInvite(event: APIGatewayProxyEventV2): Promise<APIGat
 }
 
 function buildInvite(createdBy: string): Invite {
-  const createdAt = new Date();
-  const expiresAt = new Date(createdAt.getTime() + INVITE_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+  const now = nowEpochSeconds();
+  const expiresAt = now + INVITE_VALIDITY_DAYS * 24 * 60 * 60;
   return {
     code: generateInviteCode(),
     createdBy,
-    createdAt: createdAt.toISOString(),
-    expiresAt: expiresAt.toISOString(),
-    expiresAtEpoch: Math.floor(expiresAt.getTime() / 1000),
+    createdAt: now,
+    expiresAt,
     maxUses: INVITE_MAX_USES,
     usedCount: 0,
   };
@@ -219,7 +218,7 @@ function toInviteValidation(invite: Invite | null): ValidateInviteResponse['invi
   if (!invite) {
     return {
       code: '',
-      expiresAt: '',
+      expiresAt: 0,
       remainingUses: 0,
       isValid: false,
     };
@@ -230,7 +229,7 @@ function toInviteValidation(invite: Invite | null): ValidateInviteResponse['invi
     code: invite.code,
     expiresAt: invite.expiresAt,
     remainingUses,
-    isValid: invite.expiresAtEpoch > nowEpochSeconds() && remainingUses > 0,
+    isValid: invite.expiresAt > nowEpochSeconds() && remainingUses > 0,
   };
 }
 

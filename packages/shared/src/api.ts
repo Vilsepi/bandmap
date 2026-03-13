@@ -41,9 +41,9 @@ export interface ValidateInviteQuery {
 // ── Response types ───────────────────────────────────────────
 
 export interface SearchResult {
-  mbid: string;
+  aid: string;
   name: string;
-  url: string;
+  lastFmUrl: string;
 }
 
 export interface SearchResponse {
@@ -55,7 +55,7 @@ export interface ArtistResponse {
 }
 
 export interface RelatedArtistsResponse {
-  sourceMbid: string;
+  sourceAid: string;
   related: RelatedArtist[];
 }
 
@@ -85,7 +85,7 @@ export interface AuthSessionResponse {
 export interface InviteSummary {
   code: string;
   inviteUrl: string;
-  expiresAt: string;
+  expiresAt: number;
   remainingUses: number;
 }
 
@@ -96,7 +96,7 @@ export interface CreateInvitesResponse {
 export interface ValidateInviteResponse {
   invite: {
     code: string;
-    expiresAt: string;
+    expiresAt: number;
     remainingUses: number;
     isValid: boolean;
   };

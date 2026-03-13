@@ -42,21 +42,27 @@ export class BandmapBackendStack extends cdk.Stack {
       tableName: 'bandmap-invites',
       partitionKey: { name: 'code', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      timeToLiveAttribute: 'expiresAtEpoch',
+      timeToLiveAttribute: 'expiresAt',
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     const artistsTable = new dynamodb.Table(this, 'ArtistsTable', {
       tableName: 'bandmap-artists',
-      partitionKey: { name: 'mbid', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'aid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    artistsTable.addGlobalSecondaryIndex({
+      indexName: 'lastFmUrl-index',
+      partitionKey: { name: 'lastFmUrl', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const relatedArtistsTable = new dynamodb.Table(this, 'RelatedArtistsTable', {
       tableName: 'bandmap-related-artists',
-      partitionKey: { name: 'sourceMbid', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'targetMbid', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'sourceAid', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'targetAid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -64,7 +70,7 @@ export class BandmapBackendStack extends cdk.Stack {
     const ratingsTable = new dynamodb.Table(this, 'RatingsTable', {
       tableName: 'bandmap-ratings',
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'artistMbid', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'artistAid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -72,7 +78,7 @@ export class BandmapBackendStack extends cdk.Stack {
     const recommendationsTable = new dynamodb.Table(this, 'RecommendationsTable', {
       tableName: 'bandmap-recommendations',
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'artistMbid', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'artistAid', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });

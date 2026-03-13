@@ -13,7 +13,7 @@
     "build": "tsc --build && npm run --workspace @bandmap/web build",
     "build:frontend": "npm run --workspace @bandmap/web build",
     "clean": "tsc --build --clean",
-    "lint": "eslint packages/*/src/**/*.ts",
+    "lint": "eslint .",
     "format": "prettier --write 'packages/*/src/**/*.ts'",
     "test": "npm run build && npm test --workspaces --if-present",
     "deploy:backend": "bash tools/deploy-backend.sh",

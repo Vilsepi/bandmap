@@ -5,44 +5,34 @@ import {
   LASTFM_MAX_RETRIES,
   LASTFM_RETRY_BASE_MS,
 } from '@bandmap/shared';
-import type { Tag, Artist, RelatedArtist } from '@bandmap/shared';
+import type { Tag } from '@bandmap/shared';
 import type {
   LastFmArtistInfoResponse,
   LastFmArtistSearchResponse,
   LastFmSimilarArtistsResponse,
 } from './lastfmTypes.js';
 
-/** Parsed artist info result */
-export interface ArtistInfoResult {
-  artist: {
-    mbid: string;
-    name: string;
-    url: string;
-    tags: Tag[];
-  };
-}
-
-/** Parsed similar artist entry */
-export interface SimilarArtistEntry {
-  mbid: string;
+/** Parsed artist info result from Last.fm */
+export interface LastFmArtistInfo {
   name: string;
-  match: number;
-  url: string;
+  lastFmUrl: string;
+  mbid?: string;
+  tags: Tag[];
 }
 
-function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
-  return items.sort((a, b) => {
-    if (b.match !== a.match) {
-      return b.match - a.match;
-    }
+/** Parsed similar artist entry from Last.fm */
+export interface LastFmSimilarArtistEntry {
+  name: string;
+  lastFmUrl: string;
+  mbid?: string;
+  match: number;
+}
 
-    const nameOrder = a.targetName.localeCompare(b.targetName);
-    if (nameOrder !== 0) {
-      return nameOrder;
-    }
-
-    return a.targetMbid.localeCompare(b.targetMbid);
-  });
+/** Parsed search result from Last.fm */
+export interface LastFmSearchResult {
+  name: string;
+  lastFmUrl: string;
+  mbid?: string;
 }
 
 export class LastFmApiError extends Error {
@@ -64,16 +54,25 @@ function isTestRuntime(): boolean {
 }
 
 /**
- * Fetch artist info by mbid from Last.fm.
- * Returns parsed artist data with tags.
+ * Fetch artist info from Last.fm.
+ * Accepts either an MBID or an artist name (at least one must be provided).
+ * Returns raw parsed data — internal ID assignment happens in the cache layer.
  */
-export async function fetchArtistInfo(mbid: string, apiKey: string): Promise<Artist> {
+export async function fetchArtistInfo(
+  identifier: { mbid: string } | { artistName: string },
+  apiKey: string,
+): Promise<LastFmArtistInfo> {
   const params = new URLSearchParams({
     method: 'artist.getinfo',
-    mbid,
     api_key: apiKey,
     format: 'json',
   });
+
+  if ('mbid' in identifier) {
+    params.set('mbid', identifier.mbid);
+  } else {
+    params.set('artist', identifier.artistName);
+  }
 
   const data = (await lastfmRequest(params)) as LastFmArtistInfoResponse;
 
@@ -87,56 +86,58 @@ export async function fetchArtistInfo(mbid: string, apiKey: string): Promise<Art
     };
   });
 
+  const mbid = artist.mbid && artist.mbid.length > 0 ? artist.mbid : undefined;
+
   return {
-    mbid: artist.mbid,
     name: artist.name,
-    url: artist.url,
-    tags: tags.map((t) => t.name),
-    fetchedAt: new Date().toISOString(),
+    lastFmUrl: artist.url,
+    mbid,
+    tags,
   };
 }
 
 /**
- * Fetch similar artists by mbid from Last.fm.
- * Returns list of related artist records.
+ * Fetch similar artists from Last.fm.
+ * Accepts either an MBID or an artist name.
+ * Returns raw entries — no filtering by MBID presence, no internal ID assignment.
  */
 export async function fetchSimilarArtists(
-  mbid: string,
+  identifier: { mbid: string } | { artistName: string },
   apiKey: string,
   limit = 100,
-): Promise<RelatedArtist[]> {
+): Promise<LastFmSimilarArtistEntry[]> {
   const params = new URLSearchParams({
     method: 'artist.getsimilar',
-    mbid,
     api_key: apiKey,
     format: 'json',
     limit: String(limit),
   });
 
-  const data = (await lastfmRequest(params)) as LastFmSimilarArtistsResponse;
-  const now = new Date().toISOString();
+  if ('mbid' in identifier) {
+    params.set('mbid', identifier.mbid);
+  } else {
+    params.set('artist', identifier.artistName);
+  }
 
-  return sortRelatedArtistsByMatch(
-    (data.similarartists?.artist ?? [])
-      .filter((a) => a.mbid && a.mbid.length > 0)
-      .map((a) => ({
-        sourceMbid: mbid,
-        targetMbid: a.mbid,
-        targetName: a.name,
-        match: Number.parseFloat(a.match),
-        fetchedAt: now,
-      })),
-  );
+  const data = (await lastfmRequest(params)) as LastFmSimilarArtistsResponse;
+
+  return (data.similarartists?.artist ?? []).map((a) => ({
+    name: a.name,
+    lastFmUrl: a.url,
+    mbid: a.mbid && a.mbid.length > 0 ? a.mbid : undefined,
+    match: Number.parseFloat(a.match),
+  }));
 }
 
 /**
  * Search for artists by name on Last.fm.
+ * Returns all results including those without MBIDs.
  */
 export async function searchArtists(
   query: string,
   apiKey: string,
   limit = 5,
-): Promise<{ mbid: string; name: string; url: string }[]> {
+): Promise<LastFmSearchResult[]> {
   const params = new URLSearchParams({
     method: 'artist.search',
     artist: query,
@@ -147,16 +148,11 @@ export async function searchArtists(
 
   const data = (await lastfmRequest(params)) as LastFmArtistSearchResponse;
 
-  return (
-    (data.results?.artistmatches?.artist ?? [])
-      // FIXME: This filtering is wrong. The MBID in search results can sometimes be empty string
-      .filter((a) => a.mbid && a.mbid.length > 0)
-      .map((a) => ({
-        mbid: a.mbid,
-        name: a.name,
-        url: a.url,
-      }))
-  );
+  return (data.results?.artistmatches?.artist ?? []).map((a) => ({
+    name: a.name,
+    lastFmUrl: a.url,
+    mbid: a.mbid && a.mbid.length > 0 ? a.mbid : undefined,
+  }));
 }
 
 // ── Semaphore for limiting concurrent Last.fm requests ────────

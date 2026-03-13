@@ -35,14 +35,47 @@ class LocalStorageMock implements Storage {
   }
 }
 
+class CookieJarMock {
+  private readonly cookies = new Map<string, string>();
+
+  get cookie(): string {
+    return [...this.cookies.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+  }
+
+  set cookie(assignment: string) {
+    const parts = assignment.split(';').map((p) => p.trim());
+    const nameValue = parts[0] ?? '';
+    const eqIdx = nameValue.indexOf('=');
+    if (eqIdx === -1) return;
+    const name = nameValue.slice(0, eqIdx);
+    const value = nameValue.slice(eqIdx + 1);
+
+    const expiresPart = parts.find((p) => p.toLowerCase().startsWith('expires='));
+    if (expiresPart) {
+      const expiresDate = new Date(expiresPart.slice(expiresPart.indexOf('=') + 1));
+      if (expiresDate.getTime() <= Date.now()) {
+        this.cookies.delete(name);
+        return;
+      }
+    }
+
+    this.cookies.set(name, value);
+  }
+
+  clear(): void {
+    this.cookies.clear();
+  }
+}
+
 const localStorage = new LocalStorageMock();
+const cookieJar = new CookieJarMock();
 
 const session: AuthSessionResponse = {
   user: {
     id: 'user-1',
     username: 'tester',
     cognitoSub: 'cognito-sub-1',
-    createdAt: '2026-01-01T00:00:00.000Z',
+    createdAt: 1735689600,
   },
   session: {
     sessionToken: 'session-token',
@@ -53,43 +86,43 @@ const session: AuthSessionResponse = {
 
 const ratedArtist: Rating = {
   userId: 'user-1',
-  artistMbid: 'artist-rated',
+  artistAid: 'artist-rated',
   score: 5,
   status: 'rated',
-  updatedAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: 1735689600,
 };
 
 const todoArtist: Rating = {
   userId: 'user-1',
-  artistMbid: 'artist-todo',
+  artistAid: 'artist-todo',
   score: null,
   status: 'todo',
-  updatedAt: '2026-01-02T00:00:00.000Z',
+  updatedAt: 1735776000,
 };
 
 const olderRatedArtist: Rating = {
   userId: 'user-1',
-  artistMbid: 'artist-old-rated',
+  artistAid: 'artist-old-rated',
   score: 3,
   status: 'rated',
-  updatedAt: '2025-12-31T00:00:00.000Z',
+  updatedAt: 1735603200,
 };
 
 const recommendations: RecommendationsResponse = {
   recommendations: [
     {
       userId: 'user-1',
-      artistMbid: 'artist-rec-1',
+      artistAid: 'artist-rec-1',
       artistName: 'Recommended Artist',
       score: 0.91,
-      sourceArtistMbid: 'artist-rated',
+      sourceArtistAid: 'artist-rated',
       sourceArtistName: 'Rated Artist',
-      generatedAt: '2026-01-03T00:00:00.000Z',
+      generatedAt: 1735862400,
     },
   ],
 };
 
-Object.assign(globalThis, { localStorage });
+Object.assign(globalThis, { localStorage, document: cookieJar });
 
 type ApiModule = typeof import('../api.js');
 
@@ -106,6 +139,7 @@ before(async () => {
 
 beforeEach(() => {
   localStorage.clear();
+  cookieJar.clear();
   queuedResponses = [];
   fetchCalls = [];
   now = 0;
@@ -170,10 +204,10 @@ describe('frontend API caching', () => {
       ...todoArtist,
       score: 4,
       status: 'rated',
-      updatedAt: '2026-01-04T00:00:00.000Z',
+      updatedAt: 1735948800,
     };
     queueJsonResponse({ rating: updatedRating });
-    await api.putRating(updatedRating.artistMbid, { score: 4, status: 'rated' });
+    await api.putRating(updatedRating.artistAid, { score: 4, status: 'rated' });
 
     const allRatings = await api.listRatings();
     const ratedRatings = await api.listRatings('rated');
@@ -195,7 +229,7 @@ describe('frontend API caching', () => {
     await api.listRatings('todo');
 
     queueNoContentResponse();
-    await api.deleteRating(todoArtist.artistMbid);
+    await api.deleteRating(todoArtist.artistAid);
 
     const allRatings = await api.listRatings();
     const ratedRatings = await api.listRatings('rated');
@@ -217,9 +251,9 @@ describe('frontend API caching', () => {
       recommendations: [
         {
           ...recommendations.recommendations[0],
-          artistMbid: 'artist-rec-2',
+          artistAid: 'artist-rec-2',
           artistName: 'Fresh Recommendation',
-          generatedAt: '2026-01-04T00:00:00.000Z',
+          generatedAt: 1735948800,
         },
       ],
     };

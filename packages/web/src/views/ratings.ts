@@ -3,7 +3,7 @@ import { escapeHtml } from '../utils.js';
 import { renderRatingCard } from './rating-card.js';
 
 export async function loadRatings(
-  navigateToArtist: (artistMbid: string) => Promise<void>,
+  navigateToArtist: (artistAid: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('ratings-list');
   if (!container) return;
@@ -18,7 +18,7 @@ export async function loadRatings(
         return scoreOrder;
       }
 
-      return b.updatedAt.localeCompare(a.updatedAt);
+      return b.updatedAt - a.updatedAt;
     });
     if (sortedRatings.length === 0) {
       container.innerHTML =

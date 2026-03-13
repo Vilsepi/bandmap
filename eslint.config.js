@@ -3,7 +3,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   js.configs.recommended,
-  ...tseslint.configs.recommended,
+  tseslint.configs.recommended,
   {
     rules: {
       "@typescript-eslint/no-unused-vars": [
@@ -14,6 +14,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["dist/", "node_modules/", "packages/web/vite.config.ts", "packages/infra/cdk.json"],
+    ignores: ["**/dist/", "**/node_modules/", "cdk.out/", "packages/web/vite.config.ts", "packages/infra/cdk.json"],
   },
 );
