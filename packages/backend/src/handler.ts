@@ -24,6 +24,7 @@ import {
   normalizeIncomingPath,
   parseBody,
 } from './http.js';
+import { logDebug } from './log.js';
 import { generateRecommendations } from './recommendations.js';
 
 // ── Route definitions ────────────────────────────────────────
@@ -110,7 +111,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     const method = event.requestContext.http.method;
     const path = normalizeIncomingPath(event);
 
-    console.log(`${method} ${path}`, {
+    logDebug(`${method} ${path}`, {
       rawPath: event.rawPath,
       stage: event.requestContext.stage,
       queryStringParameters: event.queryStringParameters,

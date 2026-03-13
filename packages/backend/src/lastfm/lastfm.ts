@@ -11,6 +11,7 @@ import type {
   LastFmArtistSearchResponse,
   LastFmSimilarArtistsResponse,
 } from './lastfmTypes.js';
+import { logDebug } from '../log.js';
 
 /** Parsed artist info result from Last.fm */
 export interface LastFmArtistInfo {
@@ -238,9 +239,7 @@ function sleep(ms: number): Promise<void> {
 
 async function lastfmFetch(params: URLSearchParams): Promise<unknown> {
   const url = `${LASTFM_BASE_URL}?${params.toString()}`;
-  if (!isTestRuntime()) {
-    console.log(`Calling Last.fm API: ${url}`);
-  }
+  logDebug(`Calling Last.fm API: ${url}`);
   const response = await fetch(url, {
     headers: {
       'User-Agent': LASTFM_USER_AGENT,
