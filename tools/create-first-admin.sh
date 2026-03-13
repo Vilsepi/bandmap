@@ -189,7 +189,7 @@ ensure_user_does_not_exist
 ensure_group_exists
 
 APP_USER_ID="$(generate_uuid)"
-CREATED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+CREATED_AT="$(date +%s)"
 
 echo "Creating Cognito user $USERNAME in $USER_POOL_ID..."
 aws cognito-idp admin-create-user \
@@ -236,7 +236,7 @@ aws dynamodb put-item \
     "id": {"S": "'"$APP_USER_ID"'"},
     "username": {"S": "'"$USERNAME"'"},
     "cognitoSub": {"S": "'"$COGNITO_SUB"'"},
-    "createdAt": {"S": "'"$CREATED_AT"'"}
+    "createdAt": {"N": "'"$CREATED_AT"'"}
   }' >/dev/null
 
 echo "First admin user created successfully."
