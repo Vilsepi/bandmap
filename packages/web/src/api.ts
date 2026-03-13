@@ -70,9 +70,33 @@ function parseStoredSession(raw: string): StoredSession | null {
   return parsed as StoredSession;
 }
 
+function cookieSecureFlag(): string {
+  return globalThis.isSecureContext === true ? '; Secure' : '';
+}
+
+function writeCookie(name: string, value: string, expiresAt: number): void {
+  const expires = new Date(expiresAt).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict${cookieSecureFlag()}`;
+}
+
+function readCookie(name: string): string | null {
+  const prefix = `${name}=`;
+  for (const cookie of document.cookie.split(';')) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+  return null;
+}
+
+function deleteCookie(name: string): void {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Strict${cookieSecureFlag()}`;
+}
+
 function readStoredSessionRaw(): StoredSession | null {
   try {
-    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    const raw = readCookie(SESSION_STORAGE_KEY);
     if (!raw) {
       return null;
     }
@@ -94,7 +118,7 @@ function readStoredSession(): StoredSession | null {
 }
 
 function writeStoredSession(session: StoredSession): void {
-  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+  writeCookie(SESSION_STORAGE_KEY, JSON.stringify(session), session.expiresAt);
 }
 
 export function setSession(authSession: AuthSessionResponse): void {
@@ -123,7 +147,7 @@ function clearCacheByPrefix(prefix: string): void {
 
 export function clearSession(): void {
   const userId = readStoredSessionRaw()?.user.id;
-  localStorage.removeItem(SESSION_STORAGE_KEY);
+  deleteCookie(SESSION_STORAGE_KEY);
   if (userId) {
     clearCacheByPrefix(`${CACHE_PREFIX}:user:${userId}:`);
   }

@@ -35,7 +35,40 @@ class LocalStorageMock implements Storage {
   }
 }
 
+class CookieJarMock {
+  private readonly cookies = new Map<string, string>();
+
+  get cookie(): string {
+    return [...this.cookies.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+  }
+
+  set cookie(assignment: string) {
+    const parts = assignment.split(';').map((p) => p.trim());
+    const nameValue = parts[0] ?? '';
+    const eqIdx = nameValue.indexOf('=');
+    if (eqIdx === -1) return;
+    const name = nameValue.slice(0, eqIdx);
+    const value = nameValue.slice(eqIdx + 1);
+
+    const expiresPart = parts.find((p) => p.toLowerCase().startsWith('expires='));
+    if (expiresPart) {
+      const expiresDate = new Date(expiresPart.slice(expiresPart.indexOf('=') + 1));
+      if (expiresDate.getTime() <= Date.now()) {
+        this.cookies.delete(name);
+        return;
+      }
+    }
+
+    this.cookies.set(name, value);
+  }
+
+  clear(): void {
+    this.cookies.clear();
+  }
+}
+
 const localStorage = new LocalStorageMock();
+const cookieJar = new CookieJarMock();
 
 const session: AuthSessionResponse = {
   user: {
@@ -89,7 +122,7 @@ const recommendations: RecommendationsResponse = {
   ],
 };
 
-Object.assign(globalThis, { localStorage });
+Object.assign(globalThis, { localStorage, document: cookieJar });
 
 type ApiModule = typeof import('../api.js');
 
@@ -106,6 +139,7 @@ before(async () => {
 
 beforeEach(() => {
   localStorage.clear();
+  cookieJar.clear();
   queuedResponses = [];
   fetchCalls = [];
   now = 0;
