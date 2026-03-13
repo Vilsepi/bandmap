@@ -60,7 +60,7 @@ describe('musicbrainz', () => {
       globalThis.fetch = mockFetch(sampleLookup);
 
       const url = await getSpotifyUrl('5ca3c7f7-370c-4829-98f0-b33ff3cbc584');
-      assert.equal(url, 'https://open.spotify.com/artist/1K0lO9mhI3MdzJASlOuvXE');
+      assert.equal(url, 'https://open.spotify.com/artist/3OilnTuGkR6gZKZa0sV8E8');
     });
 
     it('returns null when no Spotify relation exists', async () => {
