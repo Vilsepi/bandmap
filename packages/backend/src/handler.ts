@@ -110,7 +110,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     const method = event.requestContext.http.method;
     const path = normalizeIncomingPath(event);
 
-    console.log(`${method} ${path}`, {
+    console.debug(`${method} ${path}`, {
       rawPath: event.rawPath,
       stage: event.requestContext.stage,
       queryStringParameters: event.queryStringParameters,

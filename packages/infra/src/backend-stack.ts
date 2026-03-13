@@ -146,6 +146,7 @@ export class BandmapBackendStack extends cdk.Stack {
       memorySize: 256,
       reservedConcurrentExecutions: 30,
       environment: {
+        LOG_LEVEL: 'DEBUG',
         USERS_TABLE: usersTable.tableName,
         ARTISTS_TABLE: artistsTable.tableName,
         RELATED_ARTISTS_TABLE: relatedArtistsTable.tableName,
@@ -173,6 +174,7 @@ export class BandmapBackendStack extends cdk.Stack {
       memorySize: 256,
       reservedConcurrentExecutions: 10,
       environment: {
+        LOG_LEVEL: 'DEBUG',
         USERS_TABLE: usersTable.tableName,
         INVITES_TABLE: invitesTable.tableName,
         COGNITO_USER_POOL_ID: userPool.userPoolId,

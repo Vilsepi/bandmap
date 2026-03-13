@@ -147,14 +147,16 @@ export async function searchArtists(
 
   const data = (await lastfmRequest(params)) as LastFmArtistSearchResponse;
 
-  return (data.results?.artistmatches?.artist ?? [])
-    // FIXME: This filtering is wrong. The MBID in search results can sometimes be empty string
-    .filter((a) => a.mbid && a.mbid.length > 0)
-    .map((a) => ({
-      mbid: a.mbid,
-      name: a.name,
-      url: a.url,
-    }));
+  return (
+    (data.results?.artistmatches?.artist ?? [])
+      // FIXME: This filtering is wrong. The MBID in search results can sometimes be empty string
+      .filter((a) => a.mbid && a.mbid.length > 0)
+      .map((a) => ({
+        mbid: a.mbid,
+        name: a.name,
+        url: a.url,
+      }))
+  );
 }
 
 // ── Semaphore for limiting concurrent Last.fm requests ────────
@@ -241,7 +243,7 @@ function sleep(ms: number): Promise<void> {
 async function lastfmFetch(params: URLSearchParams): Promise<unknown> {
   const url = `${LASTFM_BASE_URL}?${params.toString()}`;
   if (!isTestRuntime()) {
-    console.log(`Calling Last.fm API: ${url}`);
+    console.debug(`Calling Last.fm API: ${url}`);
   }
   const response = await fetch(url, {
     headers: {

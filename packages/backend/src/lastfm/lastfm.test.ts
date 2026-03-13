@@ -12,9 +12,7 @@ import {
 
 // Load sample responses from doc/ directory
 const sampleDir = resolve(import.meta.dirname, '../../../../doc/samples');
-const sampleGetInfo = JSON.parse(
-  readFileSync(resolve(sampleDir, 'artist_getinfo.json'), 'utf-8'),
-);
+const sampleGetInfo = JSON.parse(readFileSync(resolve(sampleDir, 'artist_getinfo.json'), 'utf-8'));
 const sampleGetSimilar = JSON.parse(
   readFileSync(resolve(sampleDir, 'artist_getsimilar.json'), 'utf-8'),
 );
