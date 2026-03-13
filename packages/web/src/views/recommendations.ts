@@ -89,7 +89,7 @@ async function renderRecommendations(
     sortedRecommendations.map(async (recommendation) => {
       try {
         const { artist } = await getArtist(recommendation.artistAid);
-        artistTagsByAid.set(recommendation.artistAid, artist.tags);
+        artistTagsByAid.set(recommendation.artistAid, artist.tags ?? []);
       } catch {
         artistTagsByAid.set(recommendation.artistAid, []);
       }

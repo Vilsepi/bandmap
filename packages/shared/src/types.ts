@@ -43,8 +43,8 @@ export interface Artist {
   name: string;
   /** Last.fm artist page — unique Last.fm identifier (always present) */
   lastFmUrl: string;
-  /** tag names, e.g. ["post-metal", "sludge"] */
-  tags: string[];
+  /** tag names, e.g. ["post-metal", "sludge"]; undefined when not yet fetched from Last.fm */
+  tags?: string[];
   /** Unix epoch seconds of last fetch from Last.fm */
   fetchedAt: number;
   /** MusicBrainz ID (optional — not always available from Last.fm) */

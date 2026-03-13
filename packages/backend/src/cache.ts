@@ -38,7 +38,7 @@ export async function getOrCreateArtist(
     aid,
     name,
     lastFmUrl,
-    tags: existing?.tags ?? [],
+    tags: existing?.tags,
     fetchedAt: nowEpoch(),
     mbid: mbid || existing?.mbid,
     spotifyUrl: existing?.spotifyUrl,
@@ -57,7 +57,7 @@ export async function getOrFetchArtist(aid: string): Promise<Artist> {
     throw new Error(`Artist not found: ${aid}`);
   }
 
-  if (!isStale(cached.fetchedAt)) {
+  if (!isStale(cached.fetchedAt) && cached.tags !== undefined) {
     return enrichArtist(cached);
   }
 
