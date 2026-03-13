@@ -6,8 +6,8 @@ import { getSpotifyUrl, searchArtistMbid } from './musicbrainz/musicbrainz.js';
 const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 const REMOTE_CALL_INTERVAL_MS = 1100;
 
-let nextRemoteCallAt = 0;
-let remoteCallQueue = Promise.resolve();
+let nextAllowedCallTimestamp = 0;
+let rateLimitQueue = Promise.resolve();
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,8 +27,8 @@ function isNetworkUnavailable(error: unknown): boolean {
 }
 
 function runRateLimited<T>(operation: () => Promise<T>): Promise<T> {
-  const scheduled = remoteCallQueue.then(async () => {
-    const waitMs = Math.max(0, nextRemoteCallAt - Date.now());
+  const scheduled = rateLimitQueue.then(async () => {
+    const waitMs = Math.max(0, nextAllowedCallTimestamp - Date.now());
     if (waitMs > 0) {
       await sleep(waitMs);
     }
@@ -36,11 +36,11 @@ function runRateLimited<T>(operation: () => Promise<T>): Promise<T> {
     try {
       return await operation();
     } finally {
-      nextRemoteCallAt = Date.now() + REMOTE_CALL_INTERVAL_MS;
+      nextAllowedCallTimestamp = Date.now() + REMOTE_CALL_INTERVAL_MS;
     }
   });
 
-  remoteCallQueue = scheduled.then(
+  rateLimitQueue = scheduled.then(
     () => undefined,
     () => undefined,
   );
