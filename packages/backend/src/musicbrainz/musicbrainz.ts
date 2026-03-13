@@ -1,4 +1,5 @@
 import type { MusicBrainzLookupResponse, MusicBrainzSearchResponse } from './musicbrainzTypes.js';
+import { logger } from '../log.js';
 
 const MUSICBRAINZ_BASE_URL = 'https://musicbrainz.org/ws/2';
 const SPOTIFY_URL_PREFIX = 'https://open.spotify.com/artist/';
@@ -18,6 +19,7 @@ async function rateLimitedFetch(url: string): Promise<Response> {
     await new Promise((resolve) => setTimeout(resolve, MIN_REQUEST_INTERVAL_MS - elapsed));
   }
   lastRequestTime = Date.now();
+  logger.debug(`Calling MusicBrainz API: ${url}`);
   return fetch(url, {
     headers: {
       Accept: 'application/json',
@@ -35,10 +37,20 @@ export async function searchArtistMbid(artistName: string): Promise<string | nul
   const url = `${MUSICBRAINZ_BASE_URL}/artist?query=artist:${query}&fmt=json&limit=5`;
 
   const response = await rateLimitedFetch(url);
-  if (!response.ok) return null;
+  if (!response.ok) {
+    logger.warn(
+      { artistName, statusCode: response.status, statusText: response.statusText, url },
+      'MusicBrainz artist search returned bad response',
+    );
+    return null;
+  }
 
   const data = (await response.json()) as MusicBrainzSearchResponse;
   const exactMatch = data.artists.find((a) => a.score === 100);
+  logger.debug(
+    { artistName, mbid: exactMatch?.id ?? null },
+    exactMatch ? 'Found MusicBrainz MBID match for artist' : 'No MusicBrainz MBID match for artist',
+  );
   return exactMatch?.id ?? null;
 }
 
@@ -50,11 +62,23 @@ export async function getSpotifyUrl(mbid: string): Promise<string | null> {
   const url = `${MUSICBRAINZ_BASE_URL}/artist/${encodeURIComponent(mbid)}?inc=url-rels&fmt=json`;
 
   const response = await rateLimitedFetch(url);
-  if (!response.ok) return null;
+  if (!response.ok) {
+    logger.warn(
+      { mbid, statusCode: response.status, statusText: response.statusText, url },
+      'MusicBrainz artist lookup returned bad response',
+    );
+    return null;
+  }
 
   const data = (await response.json()) as MusicBrainzLookupResponse;
   const spotifyRelation = data.relations?.find((r) =>
     r.url.resource.startsWith(SPOTIFY_URL_PREFIX),
+  );
+  logger.debug(
+    { mbid, spotifyUrl: spotifyRelation?.url.resource ?? null },
+    spotifyRelation
+      ? 'Found Spotify URL for MusicBrainz artist'
+      : 'No Spotify URL found for MusicBrainz artist',
   );
   return spotifyRelation?.url.resource ?? null;
 }
