@@ -2,7 +2,7 @@ export type ViewName = 'search' | 'ratings' | 'todo' | 'recommendations';
 
 export interface AppRoute {
   view: ViewName;
-  artistMbid?: string;
+  artistAid?: string;
 }
 
 export interface NavigateOptions {
@@ -16,7 +16,7 @@ function parseRoute(hash: string): AppRoute {
   const artistMatch = /^\/artists\/([^/]+)$/.exec(normalized);
   if (artistMatch?.[1]) {
     try {
-      return { view: 'search', artistMbid: decodeURIComponent(artistMatch[1]) };
+      return { view: 'search', artistAid: decodeURIComponent(artistMatch[1]) };
     } catch {
       return { view: 'search' };
     }
@@ -38,7 +38,7 @@ function parseRoute(hash: string): AppRoute {
 }
 
 function routeToHash(route: AppRoute): string {
-  if (route.artistMbid) return `#/artists/${encodeURIComponent(route.artistMbid)}`;
+  if (route.artistAid) return `#/artists/${encodeURIComponent(route.artistAid)}`;
 
   switch (route.view) {
     case 'search':

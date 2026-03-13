@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   CACHE_TTL_MS,
   SEARCH_CACHE_TTL_MS,
@@ -7,74 +8,166 @@ import {
 } from '@bandmap/shared';
 import * as db from './db.js';
 import { fetchArtistInfo, fetchSimilarArtists, searchArtists } from './lastfm/lastfm.js';
+import { searchArtistMbid, getSpotifyUrl } from './musicbrainz/musicbrainz.js';
 
-function isStale(fetchedAt: string, ttlMs: number = CACHE_TTL_MS): boolean {
-  const fetchedTime = new Date(fetchedAt).getTime();
-  return Date.now() - fetchedTime > ttlMs;
+function nowEpoch(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+function isStale(fetchedAtEpoch: number, ttlMs: number = CACHE_TTL_MS): boolean {
+  return Date.now() - fetchedAtEpoch * 1000 > ttlMs;
 }
 
 /**
- * Get an artist from the cache, or fetch from Last.fm if missing/stale.
- * Uses stampede protection: marks the entry as "refreshing" before fetching
- * so concurrent requests see a fresh-enough timestamp and skip the API call.
+ * Find or create an Artist record by Last.fm URL.
+ * If the artist already exists in the DB and is fresh, returns it.
+ * Otherwise creates a new record with a fresh UUIDv4 `aid`.
  */
-export async function getOrFetchArtist(mbid: string): Promise<Artist> {
-  const cached = await db.getArtist(mbid);
-
-  if (cached && !isStale(cached.fetchedAt)) {
-    return cached;
+export async function getOrCreateArtist(
+  lastFmUrl: string,
+  name: string,
+  mbid?: string,
+): Promise<Artist> {
+  const existing = await db.getArtistByLastFmUrl(lastFmUrl);
+  if (existing && !isStale(existing.fetchedAt)) {
+    return existing;
   }
 
-  // Stampede protection: write a sentinel with updated fetchedAt
-  // so other concurrent requests treat this entry as fresh.
-  const sentinel: Artist | null = cached
-    ? { ...cached, fetchedAt: new Date().toISOString() }
-    : null;
-  if (sentinel) {
-    await db.putArtist(sentinel);
+  const aid = existing?.aid ?? randomUUID();
+  const artist: Artist = {
+    aid,
+    name,
+    lastFmUrl,
+    tags: existing?.tags ?? [],
+    fetchedAt: nowEpoch(),
+    mbid: mbid || existing?.mbid,
+    spotifyUrl: existing?.spotifyUrl,
+  };
+  await db.putArtist(artist);
+  return artist;
+}
+
+/**
+ * Get an artist by aid from the cache, or re-fetch from Last.fm if stale.
+ * Also lazily resolves MBID and Spotify URL via MusicBrainz when missing.
+ */
+export async function getOrFetchArtist(aid: string): Promise<Artist> {
+  const cached = await db.getArtist(aid);
+  if (!cached) {
+    throw new Error(`Artist not found: ${aid}`);
   }
+
+  if (!isStale(cached.fetchedAt)) {
+    return enrichArtist(cached);
+  }
+
+  // Stampede protection
+  const sentinel: Artist = { ...cached, fetchedAt: nowEpoch() };
+  await db.putArtist(sentinel);
 
   try {
     const apiKey = getLastFmApiKey();
-    const artist = await fetchArtistInfo(mbid, apiKey);
+    const identifier = cached.mbid ? { mbid: cached.mbid } : { artistName: cached.name };
+    const info = await fetchArtistInfo(identifier, apiKey);
+
+    const artist: Artist = {
+      ...cached,
+      name: info.name,
+      lastFmUrl: info.lastFmUrl,
+      tags: info.tags.map((t) => t.name),
+      fetchedAt: nowEpoch(),
+      mbid: info.mbid || cached.mbid,
+    };
     await db.putArtist(artist);
-    return artist;
+    return enrichArtist(artist);
   } catch (err) {
-    // Roll back sentinel on failure so the next request retries
-    if (cached) {
-      await db.putArtist(cached);
-    }
+    await db.putArtist(cached);
     throw err;
   }
 }
 
 /**
- * Get related artists from the cache, or fetch from Last.fm if missing/stale.
- * Uses stampede protection similar to getOrFetchArtist.
+ * Lazily resolve MBID (via MusicBrainz search) and Spotify URL (via MusicBrainz lookup)
+ * when they are missing from the artist record. Writes back to DB on enrichment.
  */
-export async function getOrFetchRelatedArtists(mbid: string): Promise<RelatedArtist[]> {
-  const cached = await db.getRelatedArtists(mbid);
+async function enrichArtist(artist: Artist): Promise<Artist> {
+  let updated = false;
+
+  if (!artist.mbid) {
+    try {
+      const mbid = await searchArtistMbid(artist.name);
+      if (mbid) {
+        artist = { ...artist, mbid };
+        updated = true;
+      }
+    } catch {
+      // MusicBrainz unavailable — skip enrichment
+    }
+  }
+
+  if (artist.mbid && !artist.spotifyUrl) {
+    try {
+      const spotifyUrl = await getSpotifyUrl(artist.mbid);
+      if (spotifyUrl) {
+        artist = { ...artist, spotifyUrl };
+        updated = true;
+      }
+    } catch {
+      // MusicBrainz unavailable — skip enrichment
+    }
+  }
+
+  if (updated) {
+    await db.putArtist(artist);
+  }
+  return artist;
+}
+
+/**
+ * Get related artists from the cache, or fetch from Last.fm if missing/stale.
+ * Each related artist is resolved via getOrCreateArtist to ensure they have aids.
+ */
+export async function getOrFetchRelatedArtists(aid: string): Promise<RelatedArtist[]> {
+  const cached = await db.getRelatedArtists(aid);
 
   if (cached.length > 0 && !isStale(cached[0].fetchedAt)) {
     return cached;
   }
 
-  // Stampede protection: update fetchedAt on existing entries
+  // Stampede protection
   if (cached.length > 0) {
-    const now = new Date().toISOString();
+    const now = nowEpoch();
     const sentinelItems = cached.map((r) => ({ ...r, fetchedAt: now }));
-    await db.putRelatedArtists(mbid, sentinelItems);
+    await db.putRelatedArtists(aid, sentinelItems);
   }
 
   try {
+    const source = await db.getArtist(aid);
+    if (!source) throw new Error(`Artist not found: ${aid}`);
+
     const apiKey = getLastFmApiKey();
-    const related = await fetchSimilarArtists(mbid, apiKey);
-    await db.putRelatedArtists(mbid, related);
+    const identifier = source.mbid ? { mbid: source.mbid } : { artistName: source.name };
+    const entries = await fetchSimilarArtists(identifier, apiKey);
+
+    const now = nowEpoch();
+    const related: RelatedArtist[] = [];
+    for (const entry of entries) {
+      const target = await getOrCreateArtist(entry.lastFmUrl, entry.name, entry.mbid);
+      related.push({
+        sourceAid: aid,
+        targetAid: target.aid,
+        targetName: target.name,
+        targetLastFmUrl: target.lastFmUrl,
+        match: entry.match,
+        fetchedAt: now,
+      });
+    }
+
+    await db.putRelatedArtists(aid, related);
     return related;
   } catch (err) {
-    // Roll back sentinel on failure
     if (cached.length > 0) {
-      await db.putRelatedArtists(mbid, cached);
+      await db.putRelatedArtists(aid, cached);
     }
     throw err;
   }
@@ -82,12 +175,9 @@ export async function getOrFetchRelatedArtists(mbid: string): Promise<RelatedArt
 
 /**
  * Get search results from cache, or fetch from Last.fm if missing/stale.
- * Search results use a shorter TTL (1 day).
+ * Each result is resolved via getOrCreateArtist to ensure they have aids.
  */
-export async function getOrFetchSearchResults(
-  query: string,
-  apiKey: string,
-): Promise<SearchResult[]> {
+export async function getOrFetchSearchResults(query: string): Promise<SearchResult[]> {
   const normalizedQuery = query.trim().toLowerCase();
   const cached = await db.getSearchResults(normalizedQuery);
 
@@ -95,7 +185,15 @@ export async function getOrFetchSearchResults(
     return cached.results;
   }
 
-  const results = await searchArtists(normalizedQuery, apiKey);
+  const apiKey = getLastFmApiKey();
+  const lastFmResults = await searchArtists(normalizedQuery, apiKey);
+
+  const results: SearchResult[] = [];
+  for (const entry of lastFmResults) {
+    const artist = await getOrCreateArtist(entry.lastFmUrl, entry.name, entry.mbid);
+    results.push({ aid: artist.aid, name: artist.name, lastFmUrl: artist.lastFmUrl });
+  }
+
   await db.putSearchResults(normalizedQuery, results);
   return results;
 }

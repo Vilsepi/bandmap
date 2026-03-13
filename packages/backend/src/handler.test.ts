@@ -101,35 +101,36 @@ describe('handler', () => {
   describe('type contracts', () => {
     it('Artist type has required fields', () => {
       const artist: Artist = {
-        mbid: 'test-mbid',
+        aid: 'test-aid',
         name: 'Test',
-        url: 'https://last.fm/test',
+        lastFmUrl: 'https://last.fm/test',
         tags: ['rock'],
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: Math.floor(Date.now() / 1000),
       };
-      assert.ok(artist.mbid);
+      assert.ok(artist.aid);
       assert.ok(artist.fetchedAt);
     });
 
     it('RelatedArtist type has required fields', () => {
       const related: RelatedArtist = {
-        sourceMbid: 'source',
-        targetMbid: 'target',
+        sourceAid: 'source',
+        targetAid: 'target',
         targetName: 'Target Artist',
+        targetLastFmUrl: 'https://last.fm/target',
         match: 0.85,
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: Math.floor(Date.now() / 1000),
       };
-      assert.ok(related.sourceMbid);
+      assert.ok(related.sourceAid);
       assert.ok(related.match >= 0 && related.match <= 1);
     });
 
     it('Rating type has required fields', () => {
       const rating: Rating = {
         userId: 'user-uuid',
-        artistMbid: 'mbid',
+        artistAid: 'aid',
         score: 4,
         status: 'rated',
-        updatedAt: new Date().toISOString(),
+        updatedAt: Math.floor(Date.now() / 1000),
       };
       assert.equal(rating.status, 'rated');
       assert.equal(rating.score, 4);
@@ -138,10 +139,10 @@ describe('handler', () => {
     it('Rating todo has null score', () => {
       const rating: Rating = {
         userId: 'user-uuid',
-        artistMbid: 'mbid',
+        artistAid: 'aid',
         score: null,
         status: 'todo',
-        updatedAt: new Date().toISOString(),
+        updatedAt: Math.floor(Date.now() / 1000),
       };
       assert.equal(rating.status, 'todo');
       assert.equal(rating.score, null);
@@ -152,7 +153,7 @@ describe('handler', () => {
         id: 'user-uuid',
         username: 'test-user',
         cognitoSub: 'cognito-sub-123',
-        createdAt: new Date().toISOString(),
+        createdAt: Math.floor(Date.now() / 1000),
       };
       assert.ok(user.id);
       assert.ok(user.username);
@@ -162,15 +163,15 @@ describe('handler', () => {
     it('Recommendation type has required fields', () => {
       const rec: Recommendation = {
         userId: 'user-uuid',
-        artistMbid: 'mbid',
+        artistAid: 'aid',
         artistName: 'Band',
         score: 4.2,
-        sourceArtistMbid: 'source-mbid',
+        sourceArtistAid: 'source-aid',
         sourceArtistName: 'Source Band',
-        generatedAt: new Date().toISOString(),
+        generatedAt: Math.floor(Date.now() / 1000),
       };
       assert.ok(rec.score > 0);
-      assert.ok(rec.sourceArtistMbid);
+      assert.ok(rec.sourceArtistAid);
     });
   });
 });

@@ -1,0 +1,25 @@
+{
+  "id": "5ca3c7f7-370c-4829-98f0-b33ff3cbc584",
+  "name": "Glasgow Coma Scale",
+  "sort-name": "Glasgow Coma Scale",
+  "relations": [
+    {
+      "type": "streaming",
+      "url": {
+        "resource": "https://open.spotify.com/artist/3OilnTuGkR6gZKZa0sV8E8"
+      }
+    },
+    {
+      "type": "social network",
+      "url": {
+        "resource": "https://www.facebook.com/glasgowcomascale"
+      }
+    },
+    {
+      "type": "bandcamp",
+      "url": {
+        "resource": "https://glasgow-coma-scale.bandcamp.com"
+      }
+    }
+  ]
+}

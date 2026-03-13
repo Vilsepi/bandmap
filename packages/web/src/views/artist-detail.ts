@@ -1,8 +1,8 @@
 import type { Artist, Rating, RelatedArtist } from '@bandmap/shared';
 import { escapeHtml } from '../utils.js';
 
-export function findArtistRating(ratings: Rating[], artistMbid: string): Rating | null {
-  return ratings.find((rating) => rating.artistMbid === artistMbid) ?? null;
+export function findArtistRating(ratings: Rating[], artistAid: string): Rating | null {
+  return ratings.find((rating) => rating.artistAid === artistAid) ?? null;
 }
 
 export function renderArtistDetail(
@@ -18,7 +18,7 @@ export function renderArtistDetail(
     .slice(0, 30)
     .map(
       (relation) => `
-      <li class="related-item" data-mbid="${escapeHtml(relation.targetMbid)}">
+      <li class="related-item" data-aid="${escapeHtml(relation.targetAid)}">
         <span>${escapeHtml(relation.targetName)}</span>
         <span class="match-score">${(relation.match * 100).toFixed(0)}%</span>
       </li>

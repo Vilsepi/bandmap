@@ -1,6 +1,5 @@
 import type { Artist } from '@bandmap/shared';
 import { getArtist, getRelatedArtists, listRatings, putRating, searchArtists } from '../api.js';
-import { openPlayUrl } from '../musicbrainz.js';
 import type { AppRoute } from '../router.js';
 import { escapeHtml } from '../utils.js';
 import { findArtistRating, renderArtistDetail } from './artist-detail.js';
@@ -40,7 +39,7 @@ export function showSearchResults(): void {
 }
 
 export async function showArtistDetail(
-  mbid: string,
+  aid: string,
   navigateToRoute: (route: AppRoute) => Promise<void>,
 ): Promise<void> {
   searchResultsEl.style.display = 'none';
@@ -49,16 +48,12 @@ export async function showArtistDetail(
 
   try {
     const [{ artist }, { related }, { ratings }] = await Promise.all([
-      getArtist(mbid),
-      getRelatedArtists(mbid),
+      getArtist(aid),
+      getRelatedArtists(aid),
       listRatings(),
     ]);
 
-    detailContentEl.innerHTML = renderArtistDetail(
-      artist,
-      related,
-      findArtistRating(ratings, mbid),
-    );
+    detailContentEl.innerHTML = renderArtistDetail(artist, related, findArtistRating(ratings, aid));
     attachDetailActions(artist, navigateToRoute);
   } catch (err) {
     detailContentEl.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
@@ -86,7 +81,7 @@ async function performSearch(
         <div class="card-title">${escapeHtml(result.name)}</div>
       `;
       card.addEventListener('click', () => {
-        void navigateToRoute({ view: 'search', artistMbid: result.mbid });
+        void navigateToRoute({ view: 'search', artistAid: result.aid });
       });
       searchResultsEl.appendChild(card);
     }
@@ -102,7 +97,8 @@ function attachDetailActions(
   const playLink = detailContentEl.querySelector<HTMLAnchorElement>('#detail-play-link');
   playLink?.addEventListener('click', (event) => {
     event.preventDefault();
-    void openPlayUrl(artist.mbid, artist.url);
+    const url = artist.spotifyUrl ?? artist.lastFmUrl;
+    window.open(url, '_blank', 'noopener,noreferrer');
   });
 
   const stars = detailContentEl.querySelectorAll<HTMLButtonElement>('.star');
@@ -110,7 +106,7 @@ function attachDetailActions(
   stars.forEach((star) => {
     star.addEventListener('click', () => {
       const score = Number(star.dataset['score']);
-      void putRating(artist.mbid, { score, status: 'rated' });
+      void putRating(artist.aid, { score, status: 'rated' });
       stars.forEach((targetStar) => {
         targetStar.classList.toggle('active', Number(targetStar.dataset['score']) <= score);
       });
@@ -125,7 +121,7 @@ function attachDetailActions(
   });
 
   todoBtn?.addEventListener('click', () => {
-    void putRating(artist.mbid, { score: null, status: 'todo' });
+    void putRating(artist.aid, { score: null, status: 'todo' });
     stars.forEach((targetStar) => {
       targetStar.classList.remove('active');
     });
@@ -138,9 +134,9 @@ function attachDetailActions(
   const relatedItems = detailContentEl.querySelectorAll<HTMLElement>('.related-item');
   relatedItems.forEach((item) => {
     item.addEventListener('click', () => {
-      const mbid = item.dataset['mbid'];
-      if (mbid) {
-        void navigateToRoute({ view: 'search', artistMbid: mbid });
+      const aid = item.dataset['aid'];
+      if (aid) {
+        void navigateToRoute({ view: 'search', artistAid: aid });
       }
     });
   });
