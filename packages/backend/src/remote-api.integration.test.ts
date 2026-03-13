@@ -13,6 +13,19 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function isNetworkUnavailable(error: unknown): boolean {
+  if (!(error instanceof TypeError) || !('cause' in error)) {
+    return false;
+  }
+
+  const cause = error.cause;
+  if (!(cause instanceof Error) || !('code' in cause)) {
+    return false;
+  }
+
+  return cause.code === 'ENOTFOUND' || cause.code === 'EAI_AGAIN';
+}
+
 function runRateLimited<T>(operation: () => Promise<T>): Promise<T> {
   const scheduled = remoteCallQueue.then(async () => {
     const waitMs = Math.max(0, nextRemoteCallAt - Date.now());
@@ -38,13 +51,19 @@ function runRateLimited<T>(operation: () => Promise<T>): Promise<T> {
 describe('remote API integration', () => {
   const itLastFm = LASTFM_API_KEY ? it : it.skip;
 
-  itLastFm('fetches artist info from Last.fm for Rosetta', async () => {
-    const artist = await runRateLimited(() =>
-      fetchArtistInfo(
-        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
-        LASTFM_API_KEY as string,
-      ),
-    );
+  itLastFm('fetches artist info from Last.fm for Rosetta', async (t) => {
+    let artist;
+    try {
+      artist = await runRateLimited(() =>
+        fetchArtistInfo({ mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' }, LASTFM_API_KEY as string),
+      );
+    } catch (error) {
+      if (isNetworkUnavailable(error)) {
+        t.skip('Last.fm is unreachable from this environment');
+        return;
+      }
+      throw error;
+    }
 
     assert.equal(artist.name, 'Rosetta');
     assert.equal(artist.mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
@@ -52,16 +71,34 @@ describe('remote API integration', () => {
     assert.ok(artist.tags.some((tag) => tag.name === 'post-metal'));
   });
 
-  it('searches MusicBrainz for Glasgow Coma Scale', async () => {
-    const mbid = await runRateLimited(() => searchArtistMbid('Glasgow Coma Scale'));
+  it('searches MusicBrainz for Glasgow Coma Scale', async (t) => {
+    let mbid;
+    try {
+      mbid = await runRateLimited(() => searchArtistMbid('Glasgow Coma Scale'));
+    } catch (error) {
+      if (isNetworkUnavailable(error)) {
+        t.skip('MusicBrainz is unreachable from this environment');
+        return;
+      }
+      throw error;
+    }
 
     assert.equal(mbid, '5ca3c7f7-370c-4829-98f0-b33ff3cbc584');
   });
 
-  it('looks up a Spotify URL from MusicBrainz', async () => {
-    const spotifyUrl = await runRateLimited(() =>
-      getSpotifyUrl('5ca3c7f7-370c-4829-98f0-b33ff3cbc584'),
-    );
+  it('looks up a Spotify URL from MusicBrainz', async (t) => {
+    let spotifyUrl;
+    try {
+      spotifyUrl = await runRateLimited(() =>
+        getSpotifyUrl('5ca3c7f7-370c-4829-98f0-b33ff3cbc584'),
+      );
+    } catch (error) {
+      if (isNetworkUnavailable(error)) {
+        t.skip('MusicBrainz is unreachable from this environment');
+        return;
+      }
+      throw error;
+    }
 
     assert.equal(spotifyUrl, 'https://open.spotify.com/artist/3OilnTuGkR6gZKZa0sV8E8');
   });
