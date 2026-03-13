@@ -10,7 +10,7 @@ export function renderArtistDetail(
   related: RelatedArtist[],
   rating: Rating | null,
 ): string {
-  const tagBadges = artist.tags
+  const tagBadges = (artist.tags ?? [])
     .map((tag) => `<span class="tag-badge">${escapeHtml(tag)}</span>`)
     .join('');
 
