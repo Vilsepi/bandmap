@@ -16,8 +16,8 @@ export interface User {
   username: string;
   /** Cognito subject used as the auth linkage */
   cognitoSub: string;
-  /** ISO 8601 timestamp */
-  createdAt: string;
+  /** Unix epoch seconds */
+  createdAt: number;
 }
 
 /** Invitation code for account creation */
@@ -26,12 +26,10 @@ export interface Invite {
   code: string;
   /** UUIDv4 user id of the admin that created the invite */
   createdBy: string;
-  /** ISO 8601 timestamp */
-  createdAt: string;
-  /** ISO 8601 timestamp */
-  expiresAt: string;
-  /** Epoch seconds used by DynamoDB TTL cleanup */
-  expiresAtEpoch: number;
+  /** Unix epoch seconds */
+  createdAt: number;
+  /** Unix epoch seconds — also used as DynamoDB TTL attribute */
+  expiresAt: number;
   /** Maximum number of users that can redeem this code */
   maxUses: number;
   /** Number of successful redemptions */
@@ -40,15 +38,19 @@ export interface Invite {
 
 /** Core artist record — pull-through cache of Last.fm artist.getInfo */
 export interface Artist {
-  /** PRIMARY KEY — MusicBrainz ID */
-  mbid: string;
+  /** PRIMARY KEY — UUIDv4 surrogate artist ID */
+  aid: string;
   name: string;
-  /** last.fm artist page */
-  url: string;
+  /** Last.fm artist page — unique Last.fm identifier (always present) */
+  lastFmUrl: string;
   /** tag names, e.g. ["post-metal", "sludge"] */
   tags: string[];
-  /** ISO 8601 timestamp of last fetch from Last.fm */
-  fetchedAt: string;
+  /** Unix epoch seconds of last fetch from Last.fm */
+  fetchedAt: number;
+  /** MusicBrainz ID (optional — not always available from Last.fm) */
+  mbid?: string;
+  /** Spotify artist URL (optional — resolved from MusicBrainz) */
+  spotifyUrl?: string;
 }
 
 /**
@@ -57,46 +59,48 @@ export interface Artist {
  * Note: Last.fm similarity is NOT symmetric — A→B may differ from B→A.
  */
 export interface RelatedArtist {
-  /** PK — FK → Artist.mbid (the artist we queried) */
-  sourceMbid: string;
-  /** SK — FK → Artist.mbid (a similar artist) */
-  targetMbid: string;
+  /** PK — FK → Artist.aid (the artist we queried) */
+  sourceAid: string;
+  /** SK — FK → Artist.aid (a similar artist) */
+  targetAid: string;
   /** denormalized — target may not be in the artists table yet */
   targetName: string;
+  /** Last.fm URL of the target artist */
+  targetLastFmUrl: string;
   /** 0.0–1.0 similarity score. 1.0 is very similar. */
   match: number;
-  /** ISO 8601 timestamp of last fetch */
-  fetchedAt: string;
+  /** Unix epoch seconds of last fetch */
+  fetchedAt: number;
 }
 
 /** A user's rating on an artist — rated or bookmarked for later */
 export interface Rating {
   /** PK — FK → User.id */
   userId: string;
-  /** SK — FK → Artist.mbid */
-  artistMbid: string;
+  /** SK — FK → Artist.aid */
+  artistAid: string;
   /** 1–5 star rating (only set when status is "rated") */
   score: number | null;
   /** Status values: rated means user has scored it, or saved for later */
   status: 'rated' | 'todo';
-  /** ISO 8601 timestamp */
-  updatedAt: string;
+  /** Unix epoch seconds */
+  updatedAt: number;
 }
 
 /** A recommended artist for a user */
 export interface Recommendation {
   /** PK — FK → User.id */
   userId: string;
-  /** SK — FK → Artist.mbid */
-  artistMbid: string;
+  /** SK — FK → Artist.aid */
+  artistAid: string;
   /** denormalized artist name for display */
   artistName: string;
   /** computed relevance score (higher = more relevant) */
   score: number;
   /** the liked artist that led to this recommendation */
-  sourceArtistMbid: string;
+  sourceArtistAid: string;
   /** denormalized source artist name */
   sourceArtistName: string;
-  /** ISO 8601 timestamp */
-  generatedAt: string;
+  /** Unix epoch seconds */
+  generatedAt: number;
 }

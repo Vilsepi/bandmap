@@ -11,8 +11,8 @@ Sample response: [samples/artist_getinfo.json](samples/artist_getinfo.json)
 What we are interested in this response:
 
 - artist name
-- `mbid` as the primary unique id to refer to an artist
-- url to last.fm artist page
+- `mbid` — optional, used to look up Spotify URL via MusicBrainz
+- url to last.fm artist page — used as the unique external identifier for an artist
 - genre tags
 
 What we are not interested in the data:
@@ -29,9 +29,9 @@ Sample response: [samples/artist_getsimilar.json](samples/artist_getsimilar.json
 What we especially want from this response for each of the similar artists:
 
 - `name`
-- `mbid`
+- `mbid` — optional
 - `match` which is the similarity score
-- `url`
+- `url` — last.fm artist page URL
 
 What we are not interested in the data:
 
@@ -49,14 +49,14 @@ Sample responses:
 What we are interested in:
 
 - `results.artistmatches.artist.name`
-- `results.artistmatches.artist.mbid`
+- `results.artistmatches.artist.mbid` — optional, not always present
 - `results.artistmatches.artist.url`
 
 What we are not interested in:
 
 - `image` urls. Do not download any images.
 
-Known issue: Sometimes the search results are missing the artist MBID.
+Note: Search results often have missing artist MBIDs. All results are included regardless.
 
 ## Other potential APIs
 
@@ -78,14 +78,31 @@ API documentation: https://www.last.fm/api/show/tag.getSimilar
 
 API documentation: https://musicbrainz.org/doc/MusicBrainz_API
 
-## search
+## Artist search
 
 Search API documentation: https://musicbrainz.org/doc/MusicBrainz_API/Search
+Sample response: [samples/musicbrainz_search.json](samples/musicbrainz_search.json)
 
-If the Last.fm search does not provide artist MBIDs, we attempt to do the same search in MusicBrainz.
+Used to resolve an MBID for artists that Last.fm did not provide one for.
+We search by artist name and accept the result only when the match score is 100.
 
-For example: https://musicbrainz.org/ws/2/artist?query=glasgow+coma&limit=1&fmt=json
+For example: https://musicbrainz.org/ws/2/artist?query=artist:glasgow+coma+scale&limit=5&fmt=json
 
 What we are interested in:
 
-- `id` which is mbid
+- `id` which is the MBID
+
+## Artist lookup (url-rels)
+
+Sample response: [samples/musicbrainz_lookup.json](samples/musicbrainz_lookup.json)
+
+Used to find the Spotify artist URL from an artist's MBID.
+Fetches the artist with `inc=url-rels` and looks for a relation with a Spotify URL prefix.
+
+For example: https://musicbrainz.org/ws/2/artist/5ca3c7f7-370c-4829-98f0-b33ff3cbc584?inc=url-rels&fmt=json
+
+What we are interested in:
+
+- `relations[].url.resource` where the URL starts with `https://open.spotify.com/artist/`
+
+Rate limit: MusicBrainz enforces 1 request per second. The backend client enforces this.

@@ -25,20 +25,21 @@ Object.assign(globalThis, {
 });
 
 const artist: Artist = {
-  mbid: 'artist-1',
+  aid: 'artist-1',
   name: 'Test Artist',
-  url: 'https://example.com/artist-1',
+  lastFmUrl: 'https://example.com/artist-1',
   tags: ['post-metal', 'doom'],
-  fetchedAt: '2026-01-01T00:00:00.000Z',
+  fetchedAt: 1735689600,
 };
 
 const related: RelatedArtist[] = [
   {
-    sourceMbid: 'artist-1',
-    targetMbid: 'artist-2',
+    sourceAid: 'artist-1',
+    targetAid: 'artist-2',
     targetName: 'Related Artist',
+    targetLastFmUrl: 'https://example.com/artist-2',
     match: 0.81,
-    fetchedAt: '2026-01-01T00:00:00.000Z',
+    fetchedAt: 1735689600,
   },
 ];
 
@@ -47,17 +48,17 @@ describe('artist detail view state', () => {
     const ratings: Rating[] = [
       {
         userId: 'user-1',
-        artistMbid: 'artist-2',
+        artistAid: 'artist-2',
         score: null,
         status: 'todo',
-        updatedAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: 1735689600,
       },
       {
         userId: 'user-1',
-        artistMbid: 'artist-1',
+        artistAid: 'artist-1',
         score: 4,
         status: 'rated',
-        updatedAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: 1735776000,
       },
     ];
 
@@ -68,10 +69,10 @@ describe('artist detail view state', () => {
   it('renders the current star rating when the artist is rated', () => {
     const html = renderArtistDetail(artist, related, {
       userId: 'user-1',
-      artistMbid: 'artist-1',
+      artistAid: 'artist-1',
       score: 3,
       status: 'rated',
-      updatedAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: 1735776000,
     });
 
     assert.equal(html.match(/class="star active"/g)?.length, 3);
@@ -82,10 +83,10 @@ describe('artist detail view state', () => {
   it('renders the todo bookmark state when the artist is saved for later', () => {
     const html = renderArtistDetail(artist, related, {
       userId: 'user-1',
-      artistMbid: 'artist-1',
+      artistAid: 'artist-1',
       score: null,
       status: 'todo',
-      updatedAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: 1735776000,
     });
 
     assert.equal(html.match(/class="star active"/g)?.length ?? 0, 0);

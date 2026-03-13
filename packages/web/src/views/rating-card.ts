@@ -1,11 +1,10 @@
 import type { Rating } from '@bandmap/shared';
 import { deleteRating, getArtist } from '../api.js';
-import { openPlayUrl } from '../musicbrainz.js';
 import { escapeHtml } from '../utils.js';
 
 export function renderRatingCard(
   rating: Rating,
-  navigateToArtist: (artistMbid: string) => Promise<void>,
+  navigateToArtist: (artistAid: string) => Promise<void>,
   showPlayLink = false,
 ): HTMLElement {
   const card = document.createElement('div');
@@ -20,7 +19,7 @@ export function renderRatingCard(
     <button
       class="card-remove-btn"
       data-action="delete"
-      data-mbid="${escapeHtml(rating.artistMbid)}"
+      data-aid="${escapeHtml(rating.artistAid)}"
       aria-label="Remove artist"
       title="Remove"
     >
@@ -28,8 +27,8 @@ export function renderRatingCard(
     </button>
     <div class="card-row card-main-row">
       <div class="card-title-row">
-        <div class="card-title clickable-text" data-mbid="${escapeHtml(rating.artistMbid)}">
-          ${escapeHtml(rating.artistMbid)}
+        <div class="card-title clickable-text" data-aid="${escapeHtml(rating.artistAid)}">
+          ${escapeHtml(rating.artistAid)}
         </div>
         <div class="card-title-actions">
           <a
@@ -47,7 +46,7 @@ export function renderRatingCard(
     </div>
   `;
 
-  void getArtist(rating.artistMbid).then(({ artist }) => {
+  void getArtist(rating.artistAid).then(({ artist }) => {
     const titleEl = card.querySelector('.card-title');
     if (titleEl) {
       titleEl.textContent = artist.name;
@@ -57,19 +56,20 @@ export function renderRatingCard(
     if (playLinkEl && showPlayLink) {
       playLinkEl.addEventListener('click', (event) => {
         event.preventDefault();
-        void openPlayUrl(rating.artistMbid, artist.url);
+        const url = artist.spotifyUrl ?? artist.lastFmUrl;
+        window.open(url, '_blank', 'noopener,noreferrer');
       });
       playLinkEl.classList.remove('hidden');
     }
   });
 
   card.querySelector('.card-title')?.addEventListener('click', () => {
-    void navigateToArtist(rating.artistMbid);
+    void navigateToArtist(rating.artistAid);
   });
 
   card.querySelector('[data-action="delete"]')?.addEventListener('click', async (event) => {
     event.stopPropagation();
-    await deleteRating(rating.artistMbid);
+    await deleteRating(rating.artistAid);
     card.remove();
   });
 

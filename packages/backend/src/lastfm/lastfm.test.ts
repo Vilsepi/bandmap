@@ -12,9 +12,7 @@ import {
 
 // Load sample responses from doc/ directory
 const sampleDir = resolve(import.meta.dirname, '../../../../doc/samples');
-const sampleGetInfo = JSON.parse(
-  readFileSync(resolve(sampleDir, 'artist_getinfo.json'), 'utf-8'),
-);
+const sampleGetInfo = JSON.parse(readFileSync(resolve(sampleDir, 'artist_getinfo.json'), 'utf-8'));
 const sampleGetSimilar = JSON.parse(
   readFileSync(resolve(sampleDir, 'artist_getsimilar.json'), 'utf-8'),
 );
@@ -69,14 +67,27 @@ describe('lastfm', () => {
       responses.set('artist.getinfo', sampleGetInfo);
       globalThis.fetch = mockFetch(responses);
 
-      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
+      const result = await fetchArtistInfo(
+        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
+        'test-api-key',
+      );
 
       assert.equal(result.name, 'Rosetta');
       assert.equal(result.mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
-      assert.equal(result.url, 'https://www.last.fm/music/Rosetta');
+      assert.equal(result.lastFmUrl, 'https://www.last.fm/music/Rosetta');
       assert.equal(result.tags.length, 5);
-      assert.equal(result.tags[0], 'post-metal');
-      assert.ok(result.fetchedAt, 'should have a fetchedAt timestamp');
+      assert.equal(result.tags[0].name, 'post-metal');
+    });
+
+    it('accepts artistName identifier', async () => {
+      const responses = new Map<string, unknown>();
+      responses.set('artist.getinfo', sampleGetInfo);
+      globalThis.fetch = mockFetch(responses);
+
+      const result = await fetchArtistInfo({ artistName: 'Rosetta' }, 'test-api-key');
+
+      assert.equal(result.name, 'Rosetta');
+      assert.equal(result.lastFmUrl, 'https://www.last.fm/music/Rosetta');
     });
 
     it('extracts all tag names', async () => {
@@ -84,15 +95,15 @@ describe('lastfm', () => {
       responses.set('artist.getinfo', sampleGetInfo);
       globalThis.fetch = mockFetch(responses);
 
-      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
+      const result = await fetchArtistInfo(
+        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
+        'test-api-key',
+      );
 
-      assert.deepEqual(result.tags, [
-        'post-metal',
-        'sludge',
-        'post-rock',
-        'ambient',
-        'post-hardcore',
-      ]);
+      assert.deepEqual(
+        result.tags.map((t) => t.name),
+        ['post-metal', 'sludge', 'post-rock', 'ambient', 'post-hardcore'],
+      );
     });
   });
 
@@ -103,21 +114,21 @@ describe('lastfm', () => {
       globalThis.fetch = mockFetch(responses);
 
       const result = await fetchSimilarArtists(
-        '79489e1b-5658-4e5f-8841-3e313946dc4d',
+        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
         'test-api-key',
       );
 
       assert.equal(result.length, 3);
 
-      assert.equal(result[0].targetName, 'Cult of Luna');
-      assert.equal(result[0].targetMbid, 'd347406f-839d-4423-9a28-188939282afa');
+      assert.equal(result[0].name, 'Cult of Luna');
+      assert.equal(result[0].mbid, 'd347406f-839d-4423-9a28-188939282afa');
+      assert.equal(result[0].lastFmUrl, 'https://www.last.fm/music/Cult+of+Luna');
       assert.equal(result[0].match, 1);
-      assert.equal(result[0].sourceMbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
 
-      assert.equal(result[1].targetName, 'Isis');
+      assert.equal(result[1].name, 'Isis');
       assert.equal(result[1].match, 0.927844);
 
-      assert.equal(result[2].targetName, 'Mouth of the Architect');
+      assert.equal(result[2].name, 'Mouth of the Architect');
       assert.equal(result[2].match, 0.768387);
     });
 
@@ -126,11 +137,11 @@ describe('lastfm', () => {
       responses.set('artist.getsimilar', { similarartists: { artist: [] } });
       globalThis.fetch = mockFetch(responses);
 
-      const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
+      const result = await fetchSimilarArtists({ mbid: 'some-mbid' }, 'test-api-key');
       assert.equal(result.length, 0);
     });
 
-    it('filters out artists with empty mbid', async () => {
+    it('includes artists without mbid', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getsimilar', {
         similarartists: {
@@ -139,8 +150,10 @@ describe('lastfm', () => {
       });
       globalThis.fetch = mockFetch(responses);
 
-      const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
-      assert.equal(result.length, 0);
+      const result = await fetchSimilarArtists({ mbid: 'some-mbid' }, 'test-api-key');
+      assert.equal(result.length, 1);
+      assert.equal(result[0].name, 'No MBID Artist');
+      assert.equal(result[0].mbid, undefined);
     });
 
     it('sorts similar artists by match descending', async () => {
@@ -166,11 +179,12 @@ describe('lastfm', () => {
       });
       globalThis.fetch = mockFetch(responses);
 
-      const result = await fetchSimilarArtists('some-mbid', 'test-api-key');
+      const result = await fetchSimilarArtists({ mbid: 'some-mbid' }, 'test-api-key');
 
+      assert.equal(result.length, 3);
       assert.deepEqual(
-        result.map((artist) => artist.targetMbid),
-        ['top-mbid', 'second-mbid', 'third-mbid'],
+        result.map((artist) => artist.match),
+        [0.2, 0.95, 0.6],
       );
     });
   });
@@ -196,10 +210,11 @@ describe('lastfm', () => {
       const result = await searchArtists('Rosetta', 'test-api-key');
       assert.equal(result.length, 1);
       assert.equal(result[0].name, 'Rosetta');
+      assert.equal(result[0].lastFmUrl, 'https://www.last.fm/music/Rosetta');
       assert.equal(result[0].mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
     });
 
-    it('filters out results without mbid', async () => {
+    it('includes results without mbid', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.search', {
         results: {
@@ -218,8 +233,11 @@ describe('lastfm', () => {
       globalThis.fetch = mockFetch(responses);
 
       const result = await searchArtists('test', 'test-api-key');
-      assert.equal(result.length, 1);
-      assert.equal(result[0].name, 'Has MBID');
+      assert.equal(result.length, 2);
+      assert.equal(result[0].name, 'No MBID');
+      assert.equal(result[0].mbid, undefined);
+      assert.equal(result[1].name, 'Has MBID');
+      assert.equal(result[1].mbid, 'abc-123');
     });
   });
 
@@ -233,7 +251,7 @@ describe('lastfm', () => {
       })) as unknown as typeof globalThis.fetch;
 
       await assert.rejects(
-        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        () => fetchArtistInfo({ mbid: 'some-mbid' }, 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.statusCode, 500);
@@ -252,7 +270,7 @@ describe('lastfm', () => {
       })) as unknown as typeof globalThis.fetch;
 
       await assert.rejects(
-        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        () => fetchArtistInfo({ mbid: 'some-mbid' }, 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.retryable, false);
@@ -270,7 +288,7 @@ describe('lastfm', () => {
       })) as unknown as typeof globalThis.fetch;
 
       await assert.rejects(
-        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        () => fetchArtistInfo({ mbid: 'some-mbid' }, 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.retryable, true);
@@ -288,7 +306,7 @@ describe('lastfm', () => {
       })) as unknown as typeof globalThis.fetch;
 
       await assert.rejects(
-        () => fetchArtistInfo('nonexistent', 'test-api-key'),
+        () => fetchArtistInfo({ mbid: 'nonexistent' }, 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           return true;
@@ -317,7 +335,10 @@ describe('lastfm', () => {
         return mockFetch(responses)(input);
       }) as typeof globalThis.fetch;
 
-      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
+      const result = await fetchArtistInfo(
+        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
+        'test-api-key',
+      );
       assert.equal(result.name, 'Rosetta');
       assert.equal(callCount, 3);
     });
@@ -340,7 +361,10 @@ describe('lastfm', () => {
         return mockFetch(responses)(input);
       }) as typeof globalThis.fetch;
 
-      const result = await fetchArtistInfo('79489e1b-5658-4e5f-8841-3e313946dc4d', 'test-api-key');
+      const result = await fetchArtistInfo(
+        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
+        'test-api-key',
+      );
       assert.equal(result.name, 'Rosetta');
       assert.equal(callCount, 2);
     });
@@ -359,7 +383,7 @@ describe('lastfm', () => {
       }) as typeof globalThis.fetch;
 
       await assert.rejects(
-        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        () => fetchArtistInfo({ mbid: 'some-mbid' }, 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.retryable, false);
@@ -383,7 +407,7 @@ describe('lastfm', () => {
       }) as typeof globalThis.fetch;
 
       await assert.rejects(
-        () => fetchArtistInfo('some-mbid', 'test-api-key'),
+        () => fetchArtistInfo({ mbid: 'some-mbid' }, 'test-api-key'),
         (err: unknown) => {
           assert.ok(err instanceof LastFmApiError);
           assert.equal(err.statusCode, 429);

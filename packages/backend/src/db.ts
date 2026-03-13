@@ -45,7 +45,7 @@ function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
       return nameOrder;
     }
 
-    return a.targetMbid.localeCompare(b.targetMbid);
+    return a.targetAid.localeCompare(b.targetAid);
   });
 }
 
@@ -145,7 +145,7 @@ export async function redeemInvite(
             Key: { code: inviteCode },
             UpdateExpression: 'SET usedCount = usedCount + :one',
             ConditionExpression:
-              'attribute_exists(code) AND expiresAtEpoch > :nowEpoch AND usedCount < maxUses',
+              'attribute_exists(code) AND expiresAt > :nowEpoch AND usedCount < maxUses',
             ExpressionAttributeValues: {
               ':one': 1,
               ':nowEpoch': nowEpoch,
@@ -159,14 +159,27 @@ export async function redeemInvite(
 
 // ── Artists ──────────────────────────────────────────────────
 
-export async function getArtist(mbid: string): Promise<Artist | null> {
+export async function getArtist(aid: string): Promise<Artist | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName('ARTISTS_TABLE'),
-      Key: { mbid },
+      Key: { aid },
     }),
   );
   return (result.Item as Artist | undefined) ?? null;
+}
+
+export async function getArtistByLastFmUrl(lastFmUrl: string): Promise<Artist | null> {
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: tableName('ARTISTS_TABLE'),
+      IndexName: 'lastFmUrl-index',
+      KeyConditionExpression: 'lastFmUrl = :url',
+      ExpressionAttributeValues: { ':url': lastFmUrl },
+    }),
+  );
+  const items = (result.Items as Artist[] | undefined) ?? [];
+  return items[0] ?? null;
 }
 
 export async function putArtist(artist: Artist): Promise<void> {
@@ -180,19 +193,19 @@ export async function putArtist(artist: Artist): Promise<void> {
 
 // ── Related Artists ──────────────────────────────────────────
 
-export async function getRelatedArtists(sourceMbid: string): Promise<RelatedArtist[]> {
+export async function getRelatedArtists(sourceAid: string): Promise<RelatedArtist[]> {
   const result = await docClient.send(
     new QueryCommand({
       TableName: tableName('RELATED_ARTISTS_TABLE'),
-      KeyConditionExpression: 'sourceMbid = :src',
-      ExpressionAttributeValues: { ':src': sourceMbid },
+      KeyConditionExpression: 'sourceAid = :src',
+      ExpressionAttributeValues: { ':src': sourceAid },
     }),
   );
   const items = (result.Items as RelatedArtist[] | undefined) ?? [];
   return sortRelatedArtistsByMatch(items);
 }
 
-export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist[]): Promise<void> {
+export async function putRelatedArtists(sourceAid: string, items: RelatedArtist[]): Promise<void> {
   const table = tableName('RELATED_ARTISTS_TABLE');
 
   // DynamoDB BatchWrite supports max 25 items per call
@@ -202,7 +215,7 @@ export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist
   }
 
   // First, delete all existing related artists for this source
-  const existing = await getRelatedArtists(sourceMbid);
+  const existing = await getRelatedArtists(sourceAid);
   const deleteBatches: RelatedArtist[][] = [];
   for (let i = 0; i < existing.length; i += 25) {
     deleteBatches.push(existing.slice(i, i + 25));
@@ -213,7 +226,7 @@ export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist
         RequestItems: {
           [table]: batch.map((item) => ({
             DeleteRequest: {
-              Key: { sourceMbid: item.sourceMbid, targetMbid: item.targetMbid },
+              Key: { sourceAid: item.sourceAid, targetAid: item.targetAid },
             },
           })),
         },
@@ -237,11 +250,11 @@ export async function putRelatedArtists(sourceMbid: string, items: RelatedArtist
 
 // ── Ratings ──────────────────────────────────────────────────
 
-export async function getRating(userId: string, artistMbid: string): Promise<Rating | null> {
+export async function getRating(userId: string, artistAid: string): Promise<Rating | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName('RATINGS_TABLE'),
-      Key: { userId, artistMbid },
+      Key: { userId, artistAid },
     }),
   );
   return (result.Item as Rating | undefined) ?? null;
@@ -282,11 +295,11 @@ export async function putRating(rating: Rating): Promise<void> {
   );
 }
 
-export async function deleteRating(userId: string, artistMbid: string): Promise<void> {
+export async function deleteRating(userId: string, artistAid: string): Promise<void> {
   await docClient.send(
     new DeleteCommand({
       TableName: tableName('RATINGS_TABLE'),
-      Key: { userId, artistMbid },
+      Key: { userId, artistAid },
     }),
   );
 }
@@ -319,7 +332,7 @@ export async function putRecommendations(userId: string, items: Recommendation[]
         RequestItems: {
           [table]: batch.map((item) => ({
             DeleteRequest: {
-              Key: { userId: item.userId, artistMbid: item.artistMbid },
+              Key: { userId: item.userId, artistAid: item.artistAid },
             },
           })),
         },
@@ -350,7 +363,7 @@ export async function putRecommendations(userId: string, items: Recommendation[]
 export interface CachedSearchResults {
   query: string;
   results: SearchResult[];
-  fetchedAt: string;
+  fetchedAt: number;
 }
 
 export async function getSearchResults(query: string): Promise<CachedSearchResults | null> {
@@ -370,7 +383,7 @@ export async function putSearchResults(query: string, results: SearchResult[]): 
       Item: {
         query,
         results,
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: Math.floor(Date.now() / 1000),
       },
     }),
   );

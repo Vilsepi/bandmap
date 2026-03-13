@@ -52,7 +52,7 @@ function isStoredUser(user: unknown): user is StoredSession['user'] {
     typeof (user as StoredSession['user']).id === 'string' &&
     typeof (user as StoredSession['user']).username === 'string' &&
     typeof (user as StoredSession['user']).cognitoSub === 'string' &&
-    typeof (user as StoredSession['user']).createdAt === 'string'
+    typeof (user as StoredSession['user']).createdAt === 'number'
   );
 }
 
@@ -146,8 +146,8 @@ export function isApiConfigured(): boolean {
   return API_BASE.length > 0;
 }
 
-function createCacheKey(collection: 'artist' | 'related', mbid: string): string {
-  return `${CACHE_PREFIX}:${collection}:${mbid}`;
+function createCacheKey(collection: 'artist' | 'related', aid: string): string {
+  return `${CACHE_PREFIX}:${collection}:${aid}`;
 }
 
 function createUserCacheKey(
@@ -233,7 +233,7 @@ function upsertRating(
   nextRating: Rating,
   expectedStatus?: 'rated' | 'todo',
 ): Rating[] {
-  const remainingRatings = ratings.filter((rating) => rating.artistMbid !== nextRating.artistMbid);
+  const remainingRatings = ratings.filter((rating) => rating.artistAid !== nextRating.artistAid);
   if (expectedStatus && nextRating.status !== expectedStatus) {
     return remainingRatings;
   }
@@ -241,8 +241,8 @@ function upsertRating(
   return [...remainingRatings, nextRating];
 }
 
-function removeRating(ratings: Rating[], artistMbid: string): Rating[] {
-  return ratings.filter((rating) => rating.artistMbid !== artistMbid);
+function removeRating(ratings: Rating[], artistAid: string): Rating[] {
+  return ratings.filter((rating) => rating.artistAid !== artistAid);
 }
 
 function updateCachedRatings(nextRating: Rating): void {
@@ -263,21 +263,21 @@ function updateCachedRatings(nextRating: Rating): void {
   );
 }
 
-function removeCachedRating(artistMbid: string): void {
+function removeCachedRating(artistAid: string): void {
   updateCachedRecord<RatingsListResponse>(
     createRatingsCacheKey(),
     RATINGS_CACHE_TTL_MS,
-    ({ ratings }) => ({ ratings: removeRating(ratings, artistMbid) }),
+    ({ ratings }) => ({ ratings: removeRating(ratings, artistAid) }),
   );
   updateCachedRecord<RatingsListResponse>(
     createRatingsCacheKey('rated'),
     RATINGS_CACHE_TTL_MS,
-    ({ ratings }) => ({ ratings: removeRating(ratings, artistMbid) }),
+    ({ ratings }) => ({ ratings: removeRating(ratings, artistAid) }),
   );
   updateCachedRecord<RatingsListResponse>(
     createRatingsCacheKey('todo'),
     RATINGS_CACHE_TTL_MS,
-    ({ ratings }) => ({ ratings: removeRating(ratings, artistMbid) }),
+    ({ ratings }) => ({ ratings: removeRating(ratings, artistAid) }),
   );
 }
 
@@ -456,26 +456,26 @@ export async function searchArtists(query: string): Promise<SearchResponse> {
   });
 }
 
-export async function getArtist(mbid: string): Promise<ArtistResponse> {
-  const key = createCacheKey('artist', mbid);
+export async function getArtist(aid: string): Promise<ArtistResponse> {
+  const key = createCacheKey('artist', aid);
   const cached = readCache<ArtistResponse>(key, ARTIST_CACHE_TTL_MS);
   if (cached) {
     return cached;
   }
 
-  const response = await apiFetch<ArtistResponse>(`/artists/${mbid}`);
+  const response = await apiFetch<ArtistResponse>(`/artists/${aid}`);
   writeCache(key, response);
   return response;
 }
 
-export async function getRelatedArtists(mbid: string): Promise<RelatedArtistsResponse> {
-  const key = createCacheKey('related', mbid);
+export async function getRelatedArtists(aid: string): Promise<RelatedArtistsResponse> {
+  const key = createCacheKey('related', aid);
   const cached = readCache<RelatedArtistsResponse>(key, ARTIST_CACHE_TTL_MS);
   if (cached) {
     return cached;
   }
 
-  const response = await apiFetch<RelatedArtistsResponse>(`/artists/${mbid}/related`);
+  const response = await apiFetch<RelatedArtistsResponse>(`/artists/${aid}/related`);
   writeCache(key, response);
   return response;
 }
@@ -497,8 +497,8 @@ export async function listRatings(status?: 'rated' | 'todo'): Promise<RatingsLis
   return response;
 }
 
-export async function putRating(artistMbid: string, body: PutRatingBody): Promise<RatingResponse> {
-  const response = await apiFetch<RatingResponse>(`/ratings/${artistMbid}`, {
+export async function putRating(artistAid: string, body: PutRatingBody): Promise<RatingResponse> {
+  const response = await apiFetch<RatingResponse>(`/ratings/${artistAid}`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
@@ -506,9 +506,9 @@ export async function putRating(artistMbid: string, body: PutRatingBody): Promis
   return response;
 }
 
-export async function deleteRating(artistMbid: string): Promise<void> {
-  await apiFetch<void>(`/ratings/${artistMbid}`, { method: 'DELETE' });
-  removeCachedRating(artistMbid);
+export async function deleteRating(artistAid: string): Promise<void> {
+  await apiFetch<void>(`/ratings/${artistAid}`, { method: 'DELETE' });
+  removeCachedRating(artistAid);
 }
 
 export async function getRecommendations(): Promise<RecommendationsResponse> {

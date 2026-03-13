@@ -5,38 +5,39 @@ import { generateRecommendationsWithDeps } from './recommendations.js';
 
 const USER_ID = 'user-1';
 
-function makeRating(artistMbid: string, score: number): Rating {
+function makeRating(artistAid: string, score: number): Rating {
   return {
     userId: USER_ID,
-    artistMbid,
+    artistAid,
     score,
     status: 'rated',
-    updatedAt: new Date().toISOString(),
+    updatedAt: Math.floor(Date.now() / 1000),
   };
 }
 
-function makeArtist(mbid: string, name: string): Artist {
+function makeArtist(aid: string, name: string): Artist {
   return {
-    mbid,
+    aid,
     name,
-    url: `https://example.com/${mbid}`,
+    lastFmUrl: `https://example.com/${aid}`,
     tags: [],
-    fetchedAt: new Date().toISOString(),
+    fetchedAt: Math.floor(Date.now() / 1000),
   };
 }
 
 function makeRelated(
-  sourceMbid: string,
-  targetMbid: string,
+  sourceAid: string,
+  targetAid: string,
   targetName: string,
   match: number,
 ): RelatedArtist {
   return {
-    sourceMbid,
-    targetMbid,
+    sourceAid,
+    targetAid,
     targetName,
+    targetLastFmUrl: `https://example.com/${targetAid}`,
     match,
-    fetchedAt: new Date().toISOString(),
+    fetchedAt: Math.floor(Date.now() / 1000),
   };
 }
 
@@ -48,10 +49,10 @@ describe('generateRecommendations scoring', () => {
     let written: Recommendation[] = [];
     const result = await generateRecommendationsWithDeps(USER_ID, {
       listRatings: async () => [makeRating(seedA, 5), makeRating(seedB, 4)],
-      getArtist: async (mbid: string) =>
-        mbid === seedA ? makeArtist(seedA, 'Seed A') : makeArtist(seedB, 'Seed B'),
-      getOrFetchRelatedArtists: async (mbid: string) => {
-        if (mbid === seedA) {
+      getArtist: async (aid: string) =>
+        aid === seedA ? makeArtist(seedA, 'Seed A') : makeArtist(seedB, 'Seed B'),
+      getOrFetchRelatedArtists: async (aid: string) => {
+        if (aid === seedA) {
           return [makeRelated(seedA, 'target-x', 'Target X', 0.8)];
         }
         return [makeRelated(seedB, 'target-y', 'Target Y', 0.9)];
@@ -62,9 +63,9 @@ describe('generateRecommendations scoring', () => {
     });
 
     assert.equal(result.length, 2);
-    assert.equal(result[0]?.artistMbid, 'target-x');
+    assert.equal(result[0]?.artistAid, 'target-x');
     assert.equal(result[0]?.score, 4);
-    assert.equal(result[1]?.artistMbid, 'target-y');
+    assert.equal(result[1]?.artistAid, 'target-y');
     assert.equal(result[1]?.score, 3.6);
     assert.deepEqual(written, result);
   });
@@ -83,9 +84,9 @@ describe('generateRecommendations scoring', () => {
     });
 
     assert.equal(result.length, 2);
-    assert.equal(result[0]?.artistMbid, 'target-high');
+    assert.equal(result[0]?.artistAid, 'target-high');
     assert.equal(result[0]?.score, 4);
-    assert.equal(result[1]?.artistMbid, 'target-low');
+    assert.equal(result[1]?.artistAid, 'target-low');
     assert.equal(result[1]?.score, 1);
   });
 

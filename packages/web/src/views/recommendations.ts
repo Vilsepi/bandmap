@@ -9,7 +9,7 @@ const MAX_TAGS_PER_RECOMMENDATION = 8;
 let isInitialized = false;
 
 export function initRecommendationsView(
-  navigateToArtist: (artistMbid: string) => Promise<void>,
+  navigateToArtist: (artistAid: string) => Promise<void>,
 ): void {
   if (isInitialized) return;
   isInitialized = true;
@@ -21,7 +21,7 @@ export function initRecommendationsView(
 }
 
 export async function loadRecommendations(
-  navigateToArtist: (artistMbid: string) => Promise<void>,
+  navigateToArtist: (artistAid: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('recommendations-list');
   if (!container) return;
@@ -38,7 +38,7 @@ export async function loadRecommendations(
 }
 
 async function refreshRecommendations(
-  navigateToArtist: (artistMbid: string) => Promise<void>,
+  navigateToArtist: (artistAid: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('recommendations-list');
   if (!container) return;
@@ -61,9 +61,9 @@ function getRecommendationReason(recommendation: Recommendation): string {
   }
 
   console.warn('Recommendation missing source artist name', {
-    artistMbid: recommendation.artistMbid,
+    artistAid: recommendation.artistAid,
     artistName: recommendation.artistName,
-    sourceArtistMbid: recommendation.sourceArtistMbid,
+    sourceArtistAid: recommendation.sourceArtistAid,
     sourceArtistName: recommendation.sourceArtistName,
   });
   return 'Based on one of your highly rated artists';
@@ -72,7 +72,7 @@ function getRecommendationReason(recommendation: Recommendation): string {
 async function renderRecommendations(
   container: HTMLElement,
   recommendations: Recommendation[],
-  navigateToArtist: (artistMbid: string) => Promise<void>,
+  navigateToArtist: (artistAid: string) => Promise<void>,
 ): Promise<void> {
   if (recommendations.length === 0) {
     container.innerHTML =
@@ -84,21 +84,21 @@ async function renderRecommendations(
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_RECOMMENDATIONS);
 
-  const artistTagsByMbid = new Map<string, string[]>();
+  const artistTagsByAid = new Map<string, string[]>();
   await Promise.all(
     sortedRecommendations.map(async (recommendation) => {
       try {
-        const { artist } = await getArtist(recommendation.artistMbid);
-        artistTagsByMbid.set(recommendation.artistMbid, artist.tags);
+        const { artist } = await getArtist(recommendation.artistAid);
+        artistTagsByAid.set(recommendation.artistAid, artist.tags);
       } catch {
-        artistTagsByMbid.set(recommendation.artistMbid, []);
+        artistTagsByAid.set(recommendation.artistAid, []);
       }
     }),
   );
 
   container.innerHTML = '';
   for (const recommendation of sortedRecommendations) {
-    const tags = artistTagsByMbid.get(recommendation.artistMbid) ?? [];
+    const tags = artistTagsByAid.get(recommendation.artistAid) ?? [];
     const tagBadges =
       tags.length > 0
         ? tags
@@ -130,7 +130,7 @@ async function renderRecommendations(
     const addToTodoButton = card.querySelector<HTMLButtonElement>('[data-action="add-todo"]');
     addToTodoButton?.addEventListener('click', async (event) => {
       event.stopPropagation();
-      await putRating(recommendation.artistMbid, { score: null, status: 'todo' });
+      await putRating(recommendation.artistAid, { score: null, status: 'todo' });
       if (addToTodoButton) {
         addToTodoButton.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
         addToTodoButton.setAttribute('aria-label', 'Added to todo');
@@ -140,7 +140,7 @@ async function renderRecommendations(
     });
 
     card.addEventListener('click', () => {
-      void navigateToArtist(recommendation.artistMbid);
+      void navigateToArtist(recommendation.artistAid);
     });
     container.appendChild(card);
   }

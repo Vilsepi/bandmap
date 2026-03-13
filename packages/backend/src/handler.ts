@@ -40,7 +40,7 @@ interface RouteMatch {
 
 const ARTISTS_PATTERN = /^\/artists\/([^/]+)$/;
 const RELATED_PATTERN = /^\/artists\/([^/]+)\/related$/;
-const RATINGS_MBID_PATTERN = /^\/ratings\/([^/]+)$/;
+const RATINGS_PATTERN = /^\/ratings\/([^/]+)$/;
 
 function matchRoute(method: string, path: string): RouteMatch | null {
   const staticRoute = matchStaticRoute(method, path);
@@ -90,7 +90,7 @@ function matchEntityRoute(method: string, path: string): RouteMatch | null {
     return { params: [relatedExec[1]], requiresAuth: true, handle: handleGetRelatedArtists };
   }
 
-  const ratingExec = RATINGS_MBID_PATTERN.exec(path);
+  const ratingExec = RATINGS_PATTERN.exec(path);
   if (ratingExec) {
     if (method === 'PUT') {
       return { params: [ratingExec[1]], requiresAuth: true, handle: handlePutRating };
@@ -152,8 +152,7 @@ async function handleSearch(event: APIGatewayProxyEventV2): Promise<APIGatewayPr
     return jsonResponse<ErrorResponse>(400, { error: 'Query parameter "q" is required' });
   }
 
-  const apiKey = getLastFmApiKey();
-  const results = await getOrFetchSearchResults(q, apiKey);
+  const results = await getOrFetchSearchResults(q);
 
   return jsonResponse<SearchResponse>(200, { results });
 }
@@ -202,9 +201,9 @@ async function handleGetRelatedArtists(
   _userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
-  const mbid = params[0];
-  const related = await getOrFetchRelatedArtists(mbid);
-  return jsonResponse<RelatedArtistsResponse>(200, { sourceMbid: mbid, related });
+  const aid = params[0];
+  const related = await getOrFetchRelatedArtists(aid);
+  return jsonResponse<RelatedArtistsResponse>(200, { sourceAid: aid, related });
 }
 
 async function handleListRatings(
@@ -222,7 +221,7 @@ async function handlePutRating(
   userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
-  const artistMbid = params[0];
+  const artistAid = params[0];
   const body = parseBody<PutRatingBody>(event.body);
   if (!body) {
     return jsonResponse<ErrorResponse>(400, { error: 'Invalid request body' });
@@ -242,10 +241,10 @@ async function handlePutRating(
 
   const rating = {
     userId,
-    artistMbid,
+    artistAid,
     score: body.status === 'rated' ? body.score : null,
     status: body.status,
-    updatedAt: new Date().toISOString(),
+    updatedAt: Math.floor(Date.now() / 1000),
   };
 
   await db.putRating(rating);
@@ -277,11 +276,11 @@ function logRecommendationsWithInvalidSourceNames(
   console.warn(logMessage, {
     userId,
     count: recommendationsWithMissingSourceName.length,
-    recommendationArtistMbids: recommendationsWithMissingSourceName.map(
-      (recommendation) => recommendation.artistMbid,
+    recommendationArtistAids: recommendationsWithMissingSourceName.map(
+      (recommendation) => recommendation.artistAid,
     ),
-    sourceArtistMbids: recommendationsWithMissingSourceName.map(
-      (recommendation) => recommendation.sourceArtistMbid,
+    sourceArtistAids: recommendationsWithMissingSourceName.map(
+      (recommendation) => recommendation.sourceArtistAid,
     ),
   });
 }
@@ -310,12 +309,4 @@ async function handleGenerateRecommendations(
     recommendations,
   );
   return jsonResponse<RecommendationsResponse>(200, { recommendations });
-}
-
-function getLastFmApiKey(): string {
-  const key = process.env['LASTFM_API_KEY'];
-  if (!key) {
-    throw new Error('Missing environment variable: LASTFM_API_KEY');
-  }
-  return key;
 }
