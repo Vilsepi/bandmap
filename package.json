@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "format": "prettier --write 'packages/*/src/**/*.ts'",
     "test": "npm run build && npm test --workspaces --if-present",
+    "test:integration": "npm run build && npm run --workspace @bandmap/backend test:integration",
     "deploy:backend": "bash tools/deploy-backend.sh",
     "deploy:frontend": "bash tools/deploy-frontend-infra.sh",
     "deploy:assets": "bash tools/deploy-frontend-assets.sh",

@@ -62,6 +62,14 @@ npm run lint
 npm run format
 ```
 
+## Run integration tests
+
+Integration tests make live, rate-limited requests to Last.fm and MusicBrainz, so they are not included in `npm run test`.
+
+```sh
+LASTFM_API_KEY=your_api_key_here npm run test:integration
+```
+
 ## Deploy to AWS
 
 To deploy the backend AWS infra resources and the backend Lambda code:

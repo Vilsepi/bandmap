@@ -1,0 +1,68 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { fetchArtistInfo } from './lastfm/lastfm.js';
+import { getSpotifyUrl, searchArtistMbid } from './musicbrainz/musicbrainz.js';
+
+const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
+const REMOTE_CALL_INTERVAL_MS = 1100;
+
+let nextRemoteCallAt = 0;
+let remoteCallQueue = Promise.resolve();
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function runRateLimited<T>(operation: () => Promise<T>): Promise<T> {
+  const scheduled = remoteCallQueue.then(async () => {
+    const waitMs = Math.max(0, nextRemoteCallAt - Date.now());
+    if (waitMs > 0) {
+      await sleep(waitMs);
+    }
+
+    try {
+      return await operation();
+    } finally {
+      nextRemoteCallAt = Date.now() + REMOTE_CALL_INTERVAL_MS;
+    }
+  });
+
+  remoteCallQueue = scheduled.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return scheduled;
+}
+
+describe('remote API integration', () => {
+  const itLastFm = LASTFM_API_KEY ? it : it.skip;
+
+  itLastFm('fetches artist info from Last.fm for Rosetta', async () => {
+    const artist = await runRateLimited(() =>
+      fetchArtistInfo(
+        { mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' },
+        LASTFM_API_KEY as string,
+      ),
+    );
+
+    assert.equal(artist.name, 'Rosetta');
+    assert.equal(artist.mbid, '79489e1b-5658-4e5f-8841-3e313946dc4d');
+    assert.equal(artist.lastFmUrl, 'https://www.last.fm/music/Rosetta');
+    assert.ok(artist.tags.some((tag) => tag.name === 'post-metal'));
+  });
+
+  it('searches MusicBrainz for Glasgow Coma Scale', async () => {
+    const mbid = await runRateLimited(() => searchArtistMbid('Glasgow Coma Scale'));
+
+    assert.equal(mbid, '5ca3c7f7-370c-4829-98f0-b33ff3cbc584');
+  });
+
+  it('looks up a Spotify URL from MusicBrainz', async () => {
+    const spotifyUrl = await runRateLimited(() =>
+      getSpotifyUrl('5ca3c7f7-370c-4829-98f0-b33ff3cbc584'),
+    );
+
+    assert.equal(spotifyUrl, 'https://open.spotify.com/artist/3OilnTuGkR6gZKZa0sV8E8');
+  });
+});
