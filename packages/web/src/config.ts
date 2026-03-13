@@ -84,7 +84,7 @@ export function initGlobalConfig({ onAuthenticated }: GlobalConfigOptions): void
     clearMessages();
     loginPanel?.classList.remove('hidden');
     invitePanel?.classList.add('hidden');
-    loginPasswordInput && (loginPasswordInput.value = '');
+    if (loginPasswordInput) loginPasswordInput.value = '';
     loginUsernameInput?.focus();
   };
 
