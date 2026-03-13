@@ -1,13 +1,5 @@
-const DEBUG_LOG_LEVEL = 'DEBUG';
+import pino from 'pino';
 
-export function isDebugLoggingEnabled(): boolean {
-  return process.env.LOG_LEVEL?.toUpperCase() === DEBUG_LOG_LEVEL;
-}
-
-export function logDebug(message?: unknown, ...optionalParams: unknown[]): void {
-  if (!isDebugLoggingEnabled()) {
-    return;
-  }
-
-  console.debug(message, ...optionalParams);
-}
+export const logger = pino({
+  level: process.env.LOG_LEVEL?.toLowerCase() ?? 'info',
+});
