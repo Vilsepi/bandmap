@@ -205,9 +205,9 @@ async function handleGetRelatedArtists(
   _userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
-  const aid = params[0];
-  const related = await getOrFetchRelatedArtists(aid);
-  return jsonResponse<RelatedArtistsResponse>(200, { sourceAid: aid, related });
+  const artistId = params[0];
+  const related = await getOrFetchRelatedArtists(artistId);
+  return jsonResponse<RelatedArtistsResponse>(200, { sourceId: artistId, related });
 }
 
 async function handleListRatings(
@@ -225,7 +225,7 @@ async function handlePutRating(
   userId: string,
   params: string[],
 ): Promise<APIGatewayProxyResultV2> {
-  const artistAid = params[0];
+  const artistId = params[0];
   const body = parseBody<PutRatingBody>(event.body);
   if (!body) {
     return jsonResponse<ErrorResponse>(400, { error: 'Invalid request body' });
@@ -245,7 +245,7 @@ async function handlePutRating(
 
   const rating = {
     userId,
-    artistAid,
+    artistId,
     score: body.status === 'rated' ? body.score : null,
     status: body.status,
     updatedAt: Math.floor(Date.now() / 1000),
@@ -271,7 +271,7 @@ function logRecommendationsWithInvalidSourceNames(
 ): void {
   const recommendationsWithMissingSourceName = recommendations.filter(
     (recommendation) =>
-      normalizeRecommendationSourceArtistName(recommendation.sourceArtistName).length === 0,
+      normalizeRecommendationSourceArtistName(recommendation.sourceName).length === 0,
   );
   if (recommendationsWithMissingSourceName.length === 0) {
     return;
@@ -280,11 +280,11 @@ function logRecommendationsWithInvalidSourceNames(
   console.warn(logMessage, {
     userId,
     count: recommendationsWithMissingSourceName.length,
-    recommendationArtistAids: recommendationsWithMissingSourceName.map(
-      (recommendation) => recommendation.artistAid,
+    recommendationArtistIds: recommendationsWithMissingSourceName.map(
+      (recommendation) => recommendation.artistId,
     ),
-    sourceArtistAids: recommendationsWithMissingSourceName.map(
-      (recommendation) => recommendation.sourceArtistAid,
+    sourceArtistIds: recommendationsWithMissingSourceName.map(
+      (recommendation) => recommendation.sourceId,
     ),
   });
 }

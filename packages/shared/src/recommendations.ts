@@ -1,7 +1,7 @@
 export function normalizeRecommendationSourceArtistName(
-  sourceArtistName: string | null | undefined,
+  sourceName: string | null | undefined,
 ): string {
-  const normalizedSourceArtistName = sourceArtistName?.trim() ?? '';
+  const normalizedSourceArtistName = sourceName?.trim() ?? '';
   if (
     normalizedSourceArtistName.length === 0 ||
     normalizedSourceArtistName.toLowerCase() === 'unknown'

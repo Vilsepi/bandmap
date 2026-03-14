@@ -45,7 +45,7 @@ function sortRelatedArtistsByMatch(items: RelatedArtist[]): RelatedArtist[] {
       return nameOrder;
     }
 
-    return a.targetAid.localeCompare(b.targetAid);
+    return a.targetId.localeCompare(b.targetId);
   });
 }
 
@@ -159,11 +159,11 @@ export async function redeemInvite(
 
 // ── Artists ──────────────────────────────────────────────────
 
-export async function getArtist(aid: string): Promise<Artist | null> {
+export async function getArtist(artistId: string): Promise<Artist | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName('ARTISTS_TABLE'),
-      Key: { aid },
+      Key: { artistId },
     }),
   );
   return (result.Item as Artist | undefined) ?? null;
@@ -193,19 +193,19 @@ export async function putArtist(artist: Artist): Promise<void> {
 
 // ── Related Artists ──────────────────────────────────────────
 
-export async function getRelatedArtists(sourceAid: string): Promise<RelatedArtist[]> {
+export async function getRelatedArtists(sourceId: string): Promise<RelatedArtist[]> {
   const result = await docClient.send(
     new QueryCommand({
       TableName: tableName('RELATED_ARTISTS_TABLE'),
-      KeyConditionExpression: 'sourceAid = :src',
-      ExpressionAttributeValues: { ':src': sourceAid },
+      KeyConditionExpression: 'sourceId = :src',
+      ExpressionAttributeValues: { ':src': sourceId },
     }),
   );
   const items = (result.Items as RelatedArtist[] | undefined) ?? [];
   return sortRelatedArtistsByMatch(items);
 }
 
-export async function putRelatedArtists(sourceAid: string, items: RelatedArtist[]): Promise<void> {
+export async function putRelatedArtists(sourceId: string, items: RelatedArtist[]): Promise<void> {
   const table = tableName('RELATED_ARTISTS_TABLE');
 
   // DynamoDB BatchWrite supports max 25 items per call
@@ -215,7 +215,7 @@ export async function putRelatedArtists(sourceAid: string, items: RelatedArtist[
   }
 
   // First, delete all existing related artists for this source
-  const existing = await getRelatedArtists(sourceAid);
+  const existing = await getRelatedArtists(sourceId);
   const deleteBatches: RelatedArtist[][] = [];
   for (let i = 0; i < existing.length; i += 25) {
     deleteBatches.push(existing.slice(i, i + 25));
@@ -226,7 +226,7 @@ export async function putRelatedArtists(sourceAid: string, items: RelatedArtist[
         RequestItems: {
           [table]: batch.map((item) => ({
             DeleteRequest: {
-              Key: { sourceAid: item.sourceAid, targetAid: item.targetAid },
+              Key: { sourceId: item.sourceId, targetId: item.targetId },
             },
           })),
         },
@@ -250,11 +250,11 @@ export async function putRelatedArtists(sourceAid: string, items: RelatedArtist[
 
 // ── Ratings ──────────────────────────────────────────────────
 
-export async function getRating(userId: string, artistAid: string): Promise<Rating | null> {
+export async function getRating(userId: string, artistId: string): Promise<Rating | null> {
   const result = await docClient.send(
     new GetCommand({
       TableName: tableName('RATINGS_TABLE'),
-      Key: { userId, artistAid },
+      Key: { userId, artistId },
     }),
   );
   return (result.Item as Rating | undefined) ?? null;
@@ -295,11 +295,11 @@ export async function putRating(rating: Rating): Promise<void> {
   );
 }
 
-export async function deleteRating(userId: string, artistAid: string): Promise<void> {
+export async function deleteRating(userId: string, artistId: string): Promise<void> {
   await docClient.send(
     new DeleteCommand({
       TableName: tableName('RATINGS_TABLE'),
-      Key: { userId, artistAid },
+      Key: { userId, artistId },
     }),
   );
 }
@@ -332,7 +332,7 @@ export async function putRecommendations(userId: string, items: Recommendation[]
         RequestItems: {
           [table]: batch.map((item) => ({
             DeleteRequest: {
-              Key: { userId: item.userId, artistAid: item.artistAid },
+              Key: { userId: item.userId, artistId: item.artistId },
             },
           })),
         },

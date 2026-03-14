@@ -9,7 +9,7 @@ const MAX_TAGS_PER_RECOMMENDATION = 8;
 let isInitialized = false;
 
 export function initRecommendationsView(
-  navigateToArtist: (artistAid: string) => Promise<void>,
+  navigateToArtist: (artistId: string) => Promise<void>,
 ): void {
   if (isInitialized) return;
   isInitialized = true;
@@ -21,7 +21,7 @@ export function initRecommendationsView(
 }
 
 export async function loadRecommendations(
-  navigateToArtist: (artistAid: string) => Promise<void>,
+  navigateToArtist: (artistId: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('recommendations-list');
   if (!container) return;
@@ -38,7 +38,7 @@ export async function loadRecommendations(
 }
 
 async function refreshRecommendations(
-  navigateToArtist: (artistAid: string) => Promise<void>,
+  navigateToArtist: (artistId: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('recommendations-list');
   if (!container) return;
@@ -55,16 +55,16 @@ async function refreshRecommendations(
 }
 
 function getRecommendationReason(recommendation: Recommendation): string {
-  const sourceArtistName = normalizeRecommendationSourceArtistName(recommendation.sourceArtistName);
-  if (sourceArtistName.length > 0) {
-    return `Because you like ${escapeHtml(sourceArtistName)}`;
+  const sourceName = normalizeRecommendationSourceArtistName(recommendation.sourceName);
+  if (sourceName.length > 0) {
+    return `Because you like ${escapeHtml(sourceName)}`;
   }
 
   console.warn('Recommendation missing source artist name', {
-    artistAid: recommendation.artistAid,
+    artistId: recommendation.artistId,
     artistName: recommendation.artistName,
-    sourceArtistAid: recommendation.sourceArtistAid,
-    sourceArtistName: recommendation.sourceArtistName,
+    sourceId: recommendation.sourceId,
+    sourceName: recommendation.sourceName,
   });
   return 'Based on one of your highly rated artists';
 }
@@ -72,7 +72,7 @@ function getRecommendationReason(recommendation: Recommendation): string {
 async function renderRecommendations(
   container: HTMLElement,
   recommendations: Recommendation[],
-  navigateToArtist: (artistAid: string) => Promise<void>,
+  navigateToArtist: (artistId: string) => Promise<void>,
 ): Promise<void> {
   if (recommendations.length === 0) {
     container.innerHTML =
@@ -84,21 +84,21 @@ async function renderRecommendations(
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_RECOMMENDATIONS);
 
-  const artistTagsByAid = new Map<string, string[]>();
+  const artistTagsById = new Map<string, string[]>();
   await Promise.all(
     sortedRecommendations.map(async (recommendation) => {
       try {
-        const { artist } = await getArtist(recommendation.artistAid);
-        artistTagsByAid.set(recommendation.artistAid, artist.tags ?? []);
+        const { artist } = await getArtist(recommendation.artistId);
+        artistTagsById.set(recommendation.artistId, artist.tags ?? []);
       } catch {
-        artistTagsByAid.set(recommendation.artistAid, []);
+        artistTagsById.set(recommendation.artistId, []);
       }
     }),
   );
 
   container.innerHTML = '';
   for (const recommendation of sortedRecommendations) {
-    const tags = artistTagsByAid.get(recommendation.artistAid) ?? [];
+    const tags = artistTagsById.get(recommendation.artistId) ?? [];
     const tagBadges =
       tags.length > 0
         ? tags
@@ -130,7 +130,7 @@ async function renderRecommendations(
     const addToTodoButton = card.querySelector<HTMLButtonElement>('[data-action="add-todo"]');
     addToTodoButton?.addEventListener('click', async (event) => {
       event.stopPropagation();
-      await putRating(recommendation.artistAid, { score: null, status: 'todo' });
+      await putRating(recommendation.artistId, { score: null, status: 'todo' });
       if (addToTodoButton) {
         addToTodoButton.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
         addToTodoButton.setAttribute('aria-label', 'Added to todo');
@@ -140,7 +140,7 @@ async function renderRecommendations(
     });
 
     card.addEventListener('click', () => {
-      void navigateToArtist(recommendation.artistAid);
+      void navigateToArtist(recommendation.artistId);
     });
     container.appendChild(card);
   }

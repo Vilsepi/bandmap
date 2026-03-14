@@ -86,7 +86,7 @@ const session: AuthSessionResponse = {
 
 const ratedArtist: Rating = {
   userId: 'user-1',
-  artistAid: 'artist-rated',
+  artistId: 'artist-rated',
   score: 5,
   status: 'rated',
   updatedAt: 1735689600,
@@ -94,7 +94,7 @@ const ratedArtist: Rating = {
 
 const todoArtist: Rating = {
   userId: 'user-1',
-  artistAid: 'artist-todo',
+  artistId: 'artist-todo',
   score: null,
   status: 'todo',
   updatedAt: 1735776000,
@@ -102,7 +102,7 @@ const todoArtist: Rating = {
 
 const olderRatedArtist: Rating = {
   userId: 'user-1',
-  artistAid: 'artist-old-rated',
+  artistId: 'artist-old-rated',
   score: 3,
   status: 'rated',
   updatedAt: 1735603200,
@@ -112,11 +112,11 @@ const recommendations: RecommendationsResponse = {
   recommendations: [
     {
       userId: 'user-1',
-      artistAid: 'artist-rec-1',
+      artistId: 'artist-rec-1',
       artistName: 'Recommended Artist',
       score: 0.91,
-      sourceArtistAid: 'artist-rated',
-      sourceArtistName: 'Rated Artist',
+      sourceId: 'artist-rated',
+      sourceName: 'Rated Artist',
       generatedAt: 1735862400,
     },
   ],
@@ -207,7 +207,7 @@ describe('frontend API caching', () => {
       updatedAt: 1735948800,
     };
     queueJsonResponse({ rating: updatedRating });
-    await api.putRating(updatedRating.artistAid, { score: 4, status: 'rated' });
+    await api.putRating(updatedRating.artistId, { score: 4, status: 'rated' });
 
     const allRatings = await api.listRatings();
     const ratedRatings = await api.listRatings('rated');
@@ -229,7 +229,7 @@ describe('frontend API caching', () => {
     await api.listRatings('todo');
 
     queueNoContentResponse();
-    await api.deleteRating(todoArtist.artistAid);
+    await api.deleteRating(todoArtist.artistId);
 
     const allRatings = await api.listRatings();
     const ratedRatings = await api.listRatings('rated');
@@ -251,7 +251,7 @@ describe('frontend API caching', () => {
       recommendations: [
         {
           ...recommendations.recommendations[0],
-          artistAid: 'artist-rec-2',
+          artistId: 'artist-rec-2',
           artistName: 'Fresh Recommendation',
           generatedAt: 1735948800,
         },

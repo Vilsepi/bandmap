@@ -131,15 +131,15 @@ function showView(name: ViewName): void {
   link?.classList.add('active');
 }
 
-async function navigateToArtist(aid: string): Promise<void> {
+async function navigateToArtist(artistId: string): Promise<void> {
   if (!routerNavigate) return;
-  await routerNavigate({ view: 'search', artistAid: aid });
+  await routerNavigate({ view: 'search', artistId });
 }
 
 async function handleRoute(route: AppRoute): Promise<void> {
-  if (route.artistAid) {
+  if (route.artistId) {
     showView('search');
-    await showArtistDetail(route.artistAid, async (nextRoute) => {
+    await showArtistDetail(route.artistId, async (nextRoute) => {
       if (!routerNavigate) return;
       await routerNavigate(nextRoute);
     });

@@ -41,7 +41,7 @@ export interface ValidateInviteQuery {
 // ── Response types ───────────────────────────────────────────
 
 export interface SearchResult {
-  aid: string;
+  artistId: string;
   name: string;
   lastFmUrl: string;
 }
@@ -55,7 +55,7 @@ export interface ArtistResponse {
 }
 
 export interface RelatedArtistsResponse {
-  sourceAid: string;
+  sourceId: string;
   related: RelatedArtist[];
 }
 
