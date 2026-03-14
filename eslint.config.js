@@ -1,9 +1,10 @@
+import { defineConfig, globalIgnores } from "eslint/config";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 
-export default tseslint.config(
+export default defineConfig(
   js.configs.recommended,
-  tseslint.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     rules: {
       "@typescript-eslint/no-unused-vars": [
@@ -13,7 +14,5 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
-  {
-    ignores: ["**/dist/", "**/node_modules/", "**/cdk.out/", "packages/web/vite.config.ts", "packages/infra/cdk.json"],
-  },
+  globalIgnores(["**/dist/", "**/node_modules/", "**/cdk.out/", "packages/web/vite.config.ts", "packages/infra/cdk.json"]),
 );
