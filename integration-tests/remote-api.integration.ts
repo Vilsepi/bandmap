@@ -55,10 +55,15 @@ describe('remote API integration', () => {
   const itLastFm = LASTFM_API_KEY ? it : it.skip;
 
   itLastFm('fetches artist info from Last.fm for Rosetta', async (t) => {
+    if (!LASTFM_API_KEY) {
+      t.skip('LASTFM_API_KEY is not set');
+      return;
+    }
+
     let artist;
     try {
       artist = await runRateLimited(() =>
-        fetchArtistInfo({ mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' }, LASTFM_API_KEY as string),
+        fetchArtistInfo({ mbid: '79489e1b-5658-4e5f-8841-3e313946dc4d' }, LASTFM_API_KEY),
       );
     } catch (error) {
       if (isNetworkUnavailable(error)) {
