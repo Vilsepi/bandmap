@@ -62,14 +62,6 @@ npm run lint
 npm run format
 ```
 
-## Run integration tests
-
-Integration tests make live, rate-limited requests to Last.fm and MusicBrainz, so they are not included in `npm run test`.
-
-```sh
-LASTFM_API_KEY=your_api_key_here npm run test:integration
-```
-
 ## Run the frontend locally
 
 You can directly serve the frontend without building it first:
@@ -79,6 +71,14 @@ npm run serve
 ```
 
 Then open http://localhost:5173 in your browser and login.
+
+## Run integration tests
+
+Integration tests make live, rate-limited requests to Last.fm and MusicBrainz, so they are not included in `npm run test`.
+
+```sh
+LASTFM_API_KEY=your_api_key_here npm run test:integration
+```
 
 ## Deploy to AWS
 
