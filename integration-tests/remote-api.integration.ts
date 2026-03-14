@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { fetchArtistInfo } from './lastfm/lastfm.js';
-import { getSpotifyUrl, searchArtistMbid } from './musicbrainz/musicbrainz.js';
+import { fetchArtistInfo } from '../packages/backend/src/lastfm/lastfm.js';
+import {
+  getSpotifyUrl,
+  searchArtistMbid,
+} from '../packages/backend/src/musicbrainz/musicbrainz.js';
 
 const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 const REMOTE_CALL_INTERVAL_MS = 1100;

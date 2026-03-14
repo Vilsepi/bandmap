@@ -14,7 +14,7 @@
     "build:frontend": "npm run --workspace @bandmap/web build",
     "clean": "tsc --build --clean",
     "lint": "eslint .",
-    "format": "prettier --write 'packages/*/src/**/*.ts'",
+    "format": "prettier --write 'packages/*/src/**/*.ts' 'integration-tests/**/*.ts'",
     "test": "npm run build && npm test --workspaces --if-present",
     "test:integration": "npm run build && npm run --workspace @bandmap/backend test:integration",
     "deploy:backend": "bash tools/deploy-backend.sh",
