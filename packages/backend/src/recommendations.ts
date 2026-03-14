@@ -10,7 +10,7 @@ import { getOrFetchArtist, getOrFetchRelatedArtists } from './cache.js';
 
 interface RecommendationDeps {
   listRatings: typeof db.listRatings;
-  getArtist: (aid: string) => Promise<Artist | null>;
+  getArtist: (artistId: string) => Promise<Artist | null>;
   putRecommendations: typeof db.putRecommendations;
   getOrFetchRelatedArtists: typeof getOrFetchRelatedArtists;
 }
@@ -45,8 +45,8 @@ export async function generateRecommendationsWithDeps(
   // 1. Get all user ratings to know what to exclude and what to seed from
   const allRatings = await deps.listRatings(userId);
 
-  // Set of all artist aids the user has interacted with
-  const interactedAids = new Set(allRatings.map((o) => o.artistAid));
+  // Set of all artist IDs the user has interacted with
+  const interactedArtistIds = new Set(allRatings.map((o) => o.artistId));
 
   // Liked artists sorted by score descending
   const likedRatings = allRatings
@@ -60,13 +60,13 @@ export async function generateRecommendationsWithDeps(
   }
 
   // 2. Fetch related artists for each liked artist
-  // Track: artistAid → { totalScore, artistName, bestSourceAid, bestSourceName }
+  // Track: artistId → { totalScore, artistName, bestSourceId, bestSourceName }
   const candidateMap = new Map<
     string,
     {
       totalScore: number;
       artistName: string;
-      bestSourceAid: string;
+      bestSourceId: string;
       bestSourceName: string;
       bestContribution: number;
     }
@@ -77,7 +77,7 @@ export async function generateRecommendationsWithDeps(
     likedRatings.map(async (rating) => {
       // Source artist names are only used for explanation copy, so keep
       // recommendation generation best-effort if that lookup fails.
-      const sourceArtistPromise = deps.getArtist(rating.artistAid).catch((error: unknown) => {
+      const sourceArtistPromise = deps.getArtist(rating.artistId).catch((error: unknown) => {
         const errorName = error instanceof Error ? error.name : typeof error;
         const errorStatusCode =
           typeof error === 'object' &&
@@ -88,7 +88,7 @@ export async function generateRecommendationsWithDeps(
             : undefined;
         console.warn('Recommendation source artist lookup failed', {
           userId,
-          sourceArtistAid: rating.artistAid,
+          sourceId: rating.artistId,
           errorName,
           errorStatusCode,
           error: error instanceof Error ? error.message : String(error),
@@ -96,13 +96,13 @@ export async function generateRecommendationsWithDeps(
         return null;
       });
       const [related, artist] = await Promise.all([
-        deps.getOrFetchRelatedArtists(rating.artistAid),
+        deps.getOrFetchRelatedArtists(rating.artistId),
         sourceArtistPromise,
       ]);
       if (artist === null) {
         console.warn('Recommendation source artist missing after lookup', {
           userId,
-          sourceArtistAid: rating.artistAid,
+          sourceId: rating.artistId,
           relatedCount: related.length,
         });
         return { rating, related, artistName: '' };
@@ -111,8 +111,8 @@ export async function generateRecommendationsWithDeps(
       if (artistName.length === 0) {
         console.warn('Recommendation source artist had invalid name', {
           userId,
-          sourceArtistAid: rating.artistAid,
-          sourceArtistName: artist.name,
+          sourceId: rating.artistId,
+          sourceName: artist.name,
           relatedCount: related.length,
         });
       }
@@ -125,23 +125,23 @@ export async function generateRecommendationsWithDeps(
 
     for (const rel of related) {
       // Skip artists the user already knows about
-      if (interactedAids.has(rel.targetAid)) continue;
+      if (interactedArtistIds.has(rel.targetId)) continue;
 
       const contribution = userScore * rel.match;
-      const existing = candidateMap.get(rel.targetAid);
+      const existing = candidateMap.get(rel.targetId);
 
       if (existing) {
         existing.totalScore += contribution;
         if (contribution > existing.bestContribution) {
-          existing.bestSourceAid = rating.artistAid;
+          existing.bestSourceId = rating.artistId;
           existing.bestSourceName = artistName;
           existing.bestContribution = contribution;
         }
       } else {
-        candidateMap.set(rel.targetAid, {
+        candidateMap.set(rel.targetId, {
           totalScore: contribution,
           artistName: rel.targetName,
-          bestSourceAid: rating.artistAid,
+          bestSourceId: rating.artistId,
           bestSourceName: artistName,
           bestContribution: contribution,
         });
@@ -154,13 +154,13 @@ export async function generateRecommendationsWithDeps(
   const recommendations: Recommendation[] = [...candidateMap.entries()]
     .sort((a, b) => b[1].totalScore - a[1].totalScore)
     .slice(0, RECOMMENDATION_MAX_RESULTS)
-    .map(([artistAid, data]) => ({
+    .map(([artistId, data]) => ({
       userId,
-      artistAid,
+      artistId,
       artistName: data.artistName,
       score: Math.round(data.totalScore * 100) / 100,
-      sourceArtistAid: data.bestSourceAid,
-      sourceArtistName: data.bestSourceName,
+      sourceId: data.bestSourceId,
+      sourceName: data.bestSourceName,
       generatedAt: now,
     }));
 

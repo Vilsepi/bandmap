@@ -3,7 +3,7 @@ import { escapeHtml } from '../utils.js';
 import { renderRatingCard } from './rating-card.js';
 
 export async function loadRatings(
-  navigateToArtist: (artistAid: string) => Promise<void>,
+  navigateToArtist: (artistId: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('ratings-list');
   if (!container) return;

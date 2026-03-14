@@ -39,7 +39,7 @@ export function showSearchResults(): void {
 }
 
 export async function showArtistDetail(
-  aid: string,
+  artistId: string,
   navigateToRoute: (route: AppRoute) => Promise<void>,
 ): Promise<void> {
   searchResultsEl.style.display = 'none';
@@ -48,12 +48,16 @@ export async function showArtistDetail(
 
   try {
     const [{ artist }, { related }, { ratings }] = await Promise.all([
-      getArtist(aid),
-      getRelatedArtists(aid),
+      getArtist(artistId),
+      getRelatedArtists(artistId),
       listRatings(),
     ]);
 
-    detailContentEl.innerHTML = renderArtistDetail(artist, related, findArtistRating(ratings, aid));
+    detailContentEl.innerHTML = renderArtistDetail(
+      artist,
+      related,
+      findArtistRating(ratings, artistId),
+    );
     attachDetailActions(artist, navigateToRoute);
   } catch (err) {
     detailContentEl.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
@@ -81,7 +85,7 @@ async function performSearch(
         <div class="card-title">${escapeHtml(result.name)}</div>
       `;
       card.addEventListener('click', () => {
-        void navigateToRoute({ view: 'search', artistAid: result.aid });
+        void navigateToRoute({ view: 'search', artistId: result.artistId });
       });
       searchResultsEl.appendChild(card);
     }
@@ -106,7 +110,7 @@ function attachDetailActions(
   stars.forEach((star) => {
     star.addEventListener('click', () => {
       const score = Number(star.dataset['score']);
-      void putRating(artist.aid, { score, status: 'rated' });
+      void putRating(artist.artistId, { score, status: 'rated' });
       stars.forEach((targetStar) => {
         targetStar.classList.toggle('active', Number(targetStar.dataset['score']) <= score);
       });
@@ -121,7 +125,7 @@ function attachDetailActions(
   });
 
   todoBtn?.addEventListener('click', () => {
-    void putRating(artist.aid, { score: null, status: 'todo' });
+    void putRating(artist.artistId, { score: null, status: 'todo' });
     stars.forEach((targetStar) => {
       targetStar.classList.remove('active');
     });
@@ -134,9 +138,9 @@ function attachDetailActions(
   const relatedItems = detailContentEl.querySelectorAll<HTMLElement>('.related-item');
   relatedItems.forEach((item) => {
     item.addEventListener('click', () => {
-      const aid = item.dataset['aid'];
-      if (aid) {
-        void navigateToRoute({ view: 'search', artistAid: aid });
+      const artistId = item.dataset['artistId'];
+      if (artistId) {
+        void navigateToRoute({ view: 'search', artistId });
       }
     });
   });

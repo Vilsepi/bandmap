@@ -3,7 +3,7 @@ import { escapeHtml } from '../utils.js';
 import { renderRatingCard } from './rating-card.js';
 
 export async function loadTodo(
-  navigateToArtist: (artistAid: string) => Promise<void>,
+  navigateToArtist: (artistId: string) => Promise<void>,
 ): Promise<void> {
   const container = document.getElementById('todo-list');
   if (!container) return;

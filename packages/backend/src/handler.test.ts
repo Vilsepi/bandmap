@@ -101,33 +101,33 @@ describe('handler', () => {
   describe('type contracts', () => {
     it('Artist type has required fields', () => {
       const artist: Artist = {
-        aid: 'test-aid',
+        artistId: 'test-artist-id',
         name: 'Test',
         lastFmUrl: 'https://last.fm/test',
         tags: ['rock'],
         fetchedAt: Math.floor(Date.now() / 1000),
       };
-      assert.ok(artist.aid);
+      assert.ok(artist.artistId);
       assert.ok(artist.fetchedAt);
     });
 
     it('RelatedArtist type has required fields', () => {
       const related: RelatedArtist = {
-        sourceAid: 'source',
-        targetAid: 'target',
+        sourceId: 'source',
+        targetId: 'target',
         targetName: 'Target Artist',
         targetLastFmUrl: 'https://last.fm/target',
         match: 0.85,
         fetchedAt: Math.floor(Date.now() / 1000),
       };
-      assert.ok(related.sourceAid);
+      assert.ok(related.sourceId);
       assert.ok(related.match >= 0 && related.match <= 1);
     });
 
     it('Rating type has required fields', () => {
       const rating: Rating = {
         userId: 'user-uuid',
-        artistAid: 'aid',
+        artistId: 'artist-id',
         score: 4,
         status: 'rated',
         updatedAt: Math.floor(Date.now() / 1000),
@@ -139,7 +139,7 @@ describe('handler', () => {
     it('Rating todo has null score', () => {
       const rating: Rating = {
         userId: 'user-uuid',
-        artistAid: 'aid',
+        artistId: 'artist-id',
         score: null,
         status: 'todo',
         updatedAt: Math.floor(Date.now() / 1000),
@@ -163,15 +163,15 @@ describe('handler', () => {
     it('Recommendation type has required fields', () => {
       const rec: Recommendation = {
         userId: 'user-uuid',
-        artistAid: 'aid',
+        artistId: 'artist-id',
         artistName: 'Band',
         score: 4.2,
-        sourceArtistAid: 'source-aid',
-        sourceArtistName: 'Source Band',
+        sourceId: 'source-id',
+        sourceName: 'Source Band',
         generatedAt: Math.floor(Date.now() / 1000),
       };
       assert.ok(rec.score > 0);
-      assert.ok(rec.sourceArtistAid);
+      assert.ok(rec.sourceId);
     });
   });
 });

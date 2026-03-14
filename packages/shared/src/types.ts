@@ -39,7 +39,7 @@ export interface Invite {
 /** Core artist record — pull-through cache of Last.fm artist.getInfo */
 export interface Artist {
   /** PRIMARY KEY — UUIDv4 surrogate artist ID */
-  aid: string;
+  artistId: string;
   name: string;
   /** Last.fm artist page — unique Last.fm identifier (always present) */
   lastFmUrl: string;
@@ -59,10 +59,10 @@ export interface Artist {
  * Note: Last.fm similarity is NOT symmetric — A→B may differ from B→A.
  */
 export interface RelatedArtist {
-  /** PK — FK → Artist.aid (the artist we queried) */
-  sourceAid: string;
-  /** SK — FK → Artist.aid (a similar artist) */
-  targetAid: string;
+  /** PK — FK → Artist.artistId (the artist we queried) */
+  sourceId: string;
+  /** SK — FK → Artist.artistId (a similar artist) */
+  targetId: string;
   /** denormalized — target may not be in the artists table yet */
   targetName: string;
   /** Last.fm URL of the target artist */
@@ -77,8 +77,8 @@ export interface RelatedArtist {
 export interface Rating {
   /** PK — FK → User.id */
   userId: string;
-  /** SK — FK → Artist.aid */
-  artistAid: string;
+  /** SK — FK → Artist.artistId */
+  artistId: string;
   /** 1–5 star rating (only set when status is "rated") */
   score: number | null;
   /** Status values: rated means user has scored it, or saved for later */
@@ -91,16 +91,16 @@ export interface Rating {
 export interface Recommendation {
   /** PK — FK → User.id */
   userId: string;
-  /** SK — FK → Artist.aid */
-  artistAid: string;
+  /** SK — FK → Artist.artistId */
+  artistId: string;
   /** denormalized artist name for display */
   artistName: string;
   /** computed relevance score (higher = more relevant) */
   score: number;
   /** the liked artist that led to this recommendation */
-  sourceArtistAid: string;
+  sourceId: string;
   /** denormalized source artist name */
-  sourceArtistName: string;
+  sourceName: string;
   /** Unix epoch seconds */
   generatedAt: number;
 }

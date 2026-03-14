@@ -48,7 +48,7 @@ export class BandmapBackendStack extends cdk.Stack {
 
     const artistsTable = new dynamodb.Table(this, 'ArtistsTable', {
       tableName: 'bandmap-artists',
-      partitionKey: { name: 'aid', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'artistId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -61,8 +61,8 @@ export class BandmapBackendStack extends cdk.Stack {
 
     const relatedArtistsTable = new dynamodb.Table(this, 'RelatedArtistsTable', {
       tableName: 'bandmap-related-artists',
-      partitionKey: { name: 'sourceAid', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'targetAid', type: dynamodb.AttributeType.STRING },
+      partitionKey: { name: 'sourceId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'targetId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -70,7 +70,7 @@ export class BandmapBackendStack extends cdk.Stack {
     const ratingsTable = new dynamodb.Table(this, 'RatingsTable', {
       tableName: 'bandmap-ratings',
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'artistAid', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'artistId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
@@ -78,7 +78,7 @@ export class BandmapBackendStack extends cdk.Stack {
     const recommendationsTable = new dynamodb.Table(this, 'RecommendationsTable', {
       tableName: 'bandmap-recommendations',
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'artistAid', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'artistId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });

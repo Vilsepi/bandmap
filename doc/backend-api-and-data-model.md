@@ -15,10 +15,10 @@ This document is verified against the current implementation in `packages/infra/
 |-------|---------------|----|----|-------------------|-------|
 | Users | `bandmap-users` | `id` | - | None | Stores app users. Username uniqueness is enforced in application logic, not by a DynamoDB index. |
 | Invites | `bandmap-invites` | `code` | - | None | `expiresAt` is both the expiry timestamp and the DynamoDB TTL attribute. |
-| Artists | `bandmap-artists` | `aid` | - | `lastFmUrl-index` on `lastFmUrl` | Artist records are keyed by Bandmap's internal artist ID, not by MusicBrainz ID. |
-| RelatedArtists | `bandmap-related-artists` | `sourceAid` | `targetAid` | None | Stores directed similarity edges from one artist to another. |
-| Ratings | `bandmap-ratings` | `userId` | `artistAid` | None | Stores both rated items and todo items. |
-| Recommendations | `bandmap-recommendations` | `userId` | `artistAid` | None | Recommendation rows are regenerated per user. |
+| Artists | `bandmap-artists` | `artistId` | - | `lastFmUrl-index` on `lastFmUrl` | Artist records are keyed by Bandmap's internal artist ID, not by MusicBrainz ID. |
+| RelatedArtists | `bandmap-related-artists` | `sourceId` | `targetId` | None | Stores directed similarity edges from one artist to another. |
+| Ratings | `bandmap-ratings` | `userId` | `artistId` | None | Stores both rated items and todo items. |
+| Recommendations | `bandmap-recommendations` | `userId` | `artistId` | None | Recommendation rows are regenerated per user. |
 | Searches | `bandmap-searches` | `query` | - | None | Search queries are cached under the normalized query string. |
 
 ## Entity-relationship diagram
@@ -52,7 +52,7 @@ erDiagram
 		number usedCount
 	}
 	ARTIST {
-		string aid PK
+		string artistId PK
 		string name
 		string lastFmUrl UK
 		string[] tags
@@ -61,8 +61,8 @@ erDiagram
 		string spotifyUrl
 	}
 	RELATED_ARTIST {
-		string sourceAid PK, FK
-		string targetAid PK, FK
+		string sourceId PK, FK
+		string targetId PK, FK
 		string targetName
 		string targetLastFmUrl
 		number match
@@ -70,18 +70,18 @@ erDiagram
 	}
 	RATING {
 		string userId PK, FK
-		string artistAid PK, FK
+		string artistId PK, FK
 		number score
 		string status
 		number updatedAt
 	}
 	RECOMMENDATION {
 		string userId PK, FK
-		string artistAid PK, FK
+		string artistId PK, FK
 		string artistName
 		number score
-		string sourceArtistAid FK
-		string sourceArtistName
+		string sourceId FK
+		string sourceName
 		number generatedAt
 	}
 	SEARCH_CACHE {
@@ -123,7 +123,7 @@ Invite behavior enforced in code:
 
 | Attribute | Type | Required | Notes |
 |-----------|------|----------|-------|
-| `aid` | string | Yes | Internal artist ID and table PK. |
+| `artistId` | string | Yes | Internal artist ID and table PK. |
 | `name` | string | Yes | Artist name. |
 | `lastFmUrl` | string | Yes | Last.fm canonical artist URL; queryable through `lastFmUrl-index`. |
 | `tags` | string[] | Yes | Last.fm tag names. |
@@ -140,8 +140,8 @@ Cache behavior enforced in code:
 
 | Attribute | Type | Required | Notes |
 |-----------|------|----------|-------|
-| `sourceAid` | string | Yes | Source artist ID and table PK. |
-| `targetAid` | string | Yes | Target artist ID and sort key. |
+| `sourceId` | string | Yes | Source artist ID and table PK. |
+| `targetId` | string | Yes | Target artist ID and sort key. |
 | `targetName` | string | Yes | Denormalized target artist name. |
 | `targetLastFmUrl` | string | Yes | Denormalized target Last.fm URL. |
 | `match` | number | Yes | Similarity score from Last.fm. |
@@ -150,14 +150,14 @@ Cache behavior enforced in code:
 Notes:
 
 - Similarity edges are directed: `A -> B` is stored independently from `B -> A`.
-- Refresh replaces the full set of rows for a given `sourceAid`.
+- Refresh replaces the full set of rows for a given `sourceId`.
 
 ### Ratings
 
 | Attribute | Type | Required | Notes |
 |-----------|------|----------|-------|
 | `userId` | string | Yes | User ID and table PK. |
-| `artistAid` | string | Yes | Artist ID and sort key. |
+| `artistId` | string | Yes | Artist ID and sort key. |
 | `score` | number or null | Yes | Required to be `1..5` when `status = rated`; `null` for todo rows. |
 | `status` | `rated` or `todo` | Yes | Distinguishes ratings from bookmarks. |
 | `updatedAt` | number | Yes | Unix epoch seconds. |
@@ -167,11 +167,11 @@ Notes:
 | Attribute | Type | Required | Notes |
 |-----------|------|----------|-------|
 | `userId` | string | Yes | User ID and table PK. |
-| `artistAid` | string | Yes | Recommended artist ID and sort key. |
+| `artistId` | string | Yes | Recommended artist ID and sort key. |
 | `artistName` | string | Yes | Denormalized recommended artist name. |
 | `score` | number | Yes | Computed recommendation score. |
-| `sourceArtistAid` | string | Yes | Seed artist that contributed the strongest signal. |
-| `sourceArtistName` | string | Yes | Denormalized seed artist name. |
+| `sourceId` | string | Yes | Seed artist that contributed the strongest signal. |
+| `sourceName` | string | Yes | Denormalized seed artist name. |
 | `generatedAt` | number | Yes | Unix epoch seconds. |
 
 ### Searches
@@ -197,11 +197,11 @@ Search cache behavior enforced in code:
 | `POST` | `/invites` | Yes, admin group required | Create one or more invite codes and invite URLs. |
 | `GET` | `/invites/validate?code=...` | No | Check whether an invite code exists and whether it is still valid. |
 | `POST` | `/invites/redeem` | No | Redeem an invite, create the Cognito user, and persist the Bandmap user record transactionally. |
-| `GET` | `/artists/{aid}` | Yes | Get an artist by internal artist ID, using pull-through cache refresh when stale. |
-| `GET` | `/artists/{aid}/related` | Yes | Get related artists for an internal artist ID, using pull-through cache refresh when stale. |
+| `GET` | `/artists/{artistId}` | Yes | Get an artist by internal artist ID, using pull-through cache refresh when stale. |
+| `GET` | `/artists/{artistId}/related` | Yes | Get related artists for an internal artist ID, using pull-through cache refresh when stale. |
 | `GET` | `/ratings` | Yes | List the caller's ratings and todo items. Optional query parameter: `status=rated` or `status=todo`. |
-| `PUT` | `/ratings/{aid}` | Yes | Create or replace a rating or todo entry for the given internal artist ID. |
-| `DELETE` | `/ratings/{aid}` | Yes | Delete the caller's rating or todo entry for the given internal artist ID. |
+| `PUT` | `/ratings/{artistId}` | Yes | Create or replace a rating or todo entry for the given internal artist ID. |
+| `DELETE` | `/ratings/{artistId}` | Yes | Delete the caller's rating or todo entry for the given internal artist ID. |
 | `GET` | `/recommendations` | Yes | Read the caller's currently stored recommendations. |
 | `POST` | `/recommendations/generate` | Yes | Regenerate recommendations from the caller's highly rated artists and replace previous rows. |
 
@@ -219,7 +219,7 @@ Search cache behavior enforced in code:
 - Username must match `^[a-zA-Z0-9._-]{3,32}$`.
 - Password must be at least 12 characters long.
 
-### `PUT /ratings/{aid}`
+### `PUT /ratings/{artistId}`
 
 - Request body: `{ "status": "rated" | "todo", "score": number | null }`
 - When `status` is `rated`, `score` must be a number from 1 to 5.

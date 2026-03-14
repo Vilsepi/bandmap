@@ -25,7 +25,7 @@ Object.assign(globalThis, {
 });
 
 const artist: Artist = {
-  aid: 'artist-1',
+  artistId: 'artist-1',
   name: 'Test Artist',
   lastFmUrl: 'https://example.com/artist-1',
   tags: ['post-metal', 'doom'],
@@ -34,8 +34,8 @@ const artist: Artist = {
 
 const related: RelatedArtist[] = [
   {
-    sourceAid: 'artist-1',
-    targetAid: 'artist-2',
+    sourceId: 'artist-1',
+    targetId: 'artist-2',
     targetName: 'Related Artist',
     targetLastFmUrl: 'https://example.com/artist-2',
     match: 0.81,
@@ -48,14 +48,14 @@ describe('artist detail view state', () => {
     const ratings: Rating[] = [
       {
         userId: 'user-1',
-        artistAid: 'artist-2',
+        artistId: 'artist-2',
         score: null,
         status: 'todo',
         updatedAt: 1735689600,
       },
       {
         userId: 'user-1',
-        artistAid: 'artist-1',
+        artistId: 'artist-1',
         score: 4,
         status: 'rated',
         updatedAt: 1735776000,
@@ -69,7 +69,7 @@ describe('artist detail view state', () => {
   it('renders the current star rating when the artist is rated', () => {
     const html = renderArtistDetail(artist, related, {
       userId: 'user-1',
-      artistAid: 'artist-1',
+      artistId: 'artist-1',
       score: 3,
       status: 'rated',
       updatedAt: 1735776000,
@@ -83,7 +83,7 @@ describe('artist detail view state', () => {
   it('renders the todo bookmark state when the artist is saved for later', () => {
     const html = renderArtistDetail(artist, related, {
       userId: 'user-1',
-      artistAid: 'artist-1',
+      artistId: 'artist-1',
       score: null,
       status: 'todo',
       updatedAt: 1735776000,
