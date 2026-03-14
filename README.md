@@ -2,20 +2,20 @@
 
 [music.heap.fi](https://music.heap.fi)
 
-Discover new music through similar artists you already like. Currently invite-only.
+Discover new music through similar artists you already like. A hobby project, currently in invite-only alpha testing.
 
 ![screenshot](doc/screenshot.jpg)
 
-Uses [Last.fm](https://www.last.fm) data, but does not require an account there.
+Uses [Last.fm](https://www.last.fm) and [MusicBrainz](https://musicbrainz.org/) data, but does not require accounts there.
 
-## Architecture
+## Main components
 
-- **Frontend** (`packages/web`): Vite SPA for invite redemption, Cognito-backed login, search, ratings, todo list, recommendations, and an artist similarity graph
-- **Backend** (`packages/backend`): Two AWS Lambda handlers behind API Gateway — the main API serves auth, cached Last.fm data, ratings, and recommendations; a dedicated invite API manages invite creation, validation, and invite redemption
+- **Frontend** (`packages/web`): Vite SPA for artist search, ratings, todo list, recommendations as well as sign-up and login process
+- **Backend** (`packages/backend`): Two AWS Lambda handlers behind API Gateway — the main API serves auth, cached remote API data, ratings, and recommendations; a dedicated invite API manages user invite creation, validation, and sign-up
 - **Authentication** (AWS Cognito): Username/password sign-in via a Cognito user pool and app client. Self-sign-up is disabled; new users are provisioned through invite redemption, and admins can create invite links via the `admin` Cognito group
 - **Data** (DynamoDB): Stores app users, invites, cached Last.fm responses, ratings, recommendations, and cached searches
 - **Infrastructure** (`packages/infra`): AWS CDK stacks for backend API, DynamoDB tables, Cognito resources, and separate frontend hosting
-- **Shared** (`packages/shared`): TypeScript types and constants shared between frontend and backend
+- **Shared types** (`packages/shared`): TypeScript types and constants shared between frontend and backend
 
 Detailed backend route and DynamoDB schema documentation is in [doc/backend-api-and-data-model.md](doc/backend-api-and-data-model.md).
 
@@ -39,7 +39,7 @@ erDiagram
 ## Prerequisites
 
 - Node.js >= 24
-- A [Last.fm API key](https://www.last.fm/api/account/create)
+- A [Last.fm API key](https://www.last.fm/api/account/create) (for deployment)
 - AWS account + credentials (for deployment)
 
 ## Install dependencies
@@ -62,6 +62,16 @@ npm run lint
 npm run format
 ```
 
+## Run the frontend locally
+
+You can directly serve the frontend without building it first:
+
+```sh
+npm run serve
+```
+
+Then open http://localhost:5173 in your browser and login.
+
 ## Deploy to AWS
 
 To deploy the backend AWS infra resources and the backend Lambda code:
@@ -81,13 +91,3 @@ To upload the static frontend assets to the CDN:
 ```sh
 npm run deploy:assets
 ```
-
-## Run the frontend locally
-
-You can directly serve the frontend without building it first:
-
-```sh
-npm run serve
-```
-
-Then open http://localhost:5173 in your browser and enter your API key in the settings panel.
