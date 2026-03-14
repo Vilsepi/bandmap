@@ -14,6 +14,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["**/dist/", "**/node_modules/", "cdk.out/", "packages/web/vite.config.ts", "packages/infra/cdk.json"],
+    ignores: ["**/dist/", "**/node_modules/", "**/cdk.out/", "packages/web/vite.config.ts", "packages/infra/cdk.json"],
   },
 );
