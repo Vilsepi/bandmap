@@ -36,10 +36,19 @@ class LocalStorageMock implements Storage {
 }
 
 class CookieJarMock {
-  private readonly cookies = new Map<string, string>();
+  private readonly cookies = new Map<string, { value: string; expiresAt?: number }>();
+
+  private sweepExpiredCookies(): void {
+    for (const [name, cookie] of this.cookies.entries()) {
+      if (cookie.expiresAt !== undefined && cookie.expiresAt <= Date.now()) {
+        this.cookies.delete(name);
+      }
+    }
+  }
 
   get cookie(): string {
-    return [...this.cookies.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+    this.sweepExpiredCookies();
+    return [...this.cookies.entries()].map(([k, v]) => `${k}=${v.value}`).join('; ');
   }
 
   set cookie(assignment: string) {
@@ -51,15 +60,17 @@ class CookieJarMock {
     const value = nameValue.slice(eqIdx + 1);
 
     const expiresPart = parts.find((p) => p.toLowerCase().startsWith('expires='));
+    const expiresAt = expiresPart
+      ? new Date(expiresPart.slice(expiresPart.indexOf('=') + 1)).getTime()
+      : undefined;
     if (expiresPart) {
-      const expiresDate = new Date(expiresPart.slice(expiresPart.indexOf('=') + 1));
-      if (expiresDate.getTime() <= Date.now()) {
+      if ((expiresAt ?? 0) <= Date.now()) {
         this.cookies.delete(name);
         return;
       }
     }
 
-    this.cookies.set(name, value);
+    this.cookies.set(name, { value, expiresAt });
   }
 
   clear(): void {
@@ -132,6 +143,18 @@ let fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
 let now = 0;
 const originalDateNow = Date.now;
 
+function requestUrl(input: URL | RequestInfo): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.href;
+  }
+
+  return input.url;
+}
+
 before(async () => {
   process.env.VITE_API_BASE_URL = 'https://api.example.test';
   api = await import('../api.js');
@@ -147,7 +170,7 @@ beforeEach(() => {
   globalThis.fetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
     const nextResponse = queuedResponses.shift();
     assert.ok(nextResponse, 'Expected a queued fetch response');
-    fetchCalls.push({ url: String(input), init });
+    fetchCalls.push({ url: requestUrl(input), init });
     return nextResponse;
   }) as typeof fetch;
   api.setSession(session);
@@ -171,6 +194,14 @@ function queueNoContentResponse(): void {
 }
 
 describe('frontend API caching', () => {
+  it('keeps the session for 30 days', () => {
+    now = session.session.expiresIn * 1000 + 1;
+    assert.equal(api.hasSession(), true);
+
+    now = 30 * 24 * 60 * 60 * 1000 + 1;
+    assert.equal(api.hasSession(), false);
+  });
+
   it('caches ratings responses for at least one minute', async () => {
     const firstResponse: RatingsListResponse = { ratings: [ratedArtist] };
     const secondResponse: RatingsListResponse = { ratings: [olderRatedArtist] };

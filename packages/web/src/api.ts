@@ -27,6 +27,7 @@ function readEnvVar(name: string): string | undefined {
 const API_BASE = (readEnvVar('VITE_API_BASE_URL') ?? '').replace(/\/+$/, '');
 const CACHE_PREFIX = 'bandmap:v1';
 const SESSION_STORAGE_KEY = 'bandmap-session';
+const SESSION_PERSISTENCE_MS = 30 * 24 * 60 * 60 * 1000;
 const ARTIST_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const RATINGS_CACHE_TTL_MS = 60 * 1000;
 const RECOMMENDATIONS_CACHE_TTL_MS = 60 * 1000;
@@ -118,7 +119,7 @@ function readStoredSession(): StoredSession | null {
 }
 
 function writeStoredSession(session: StoredSession): void {
-  writeCookie(SESSION_STORAGE_KEY, JSON.stringify(session), session.expiresAt);
+  writeCookie(SESSION_STORAGE_KEY, JSON.stringify(session), Date.now() + SESSION_PERSISTENCE_MS);
 }
 
 export function setSession(authSession: AuthSessionResponse): void {
