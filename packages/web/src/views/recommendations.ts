@@ -1,9 +1,8 @@
-import type { Recommendation } from '@bandmap/shared';
+import { RECOMMENDATION_MAX_RESULTS, type Recommendation } from '@bandmap/shared';
 import { normalizeRecommendationSourceArtistName } from '@bandmap/shared/recommendations';
 import { generateRecommendations, getArtist, getRecommendations, putRating } from '../api.js';
 import { escapeHtml } from '../utils.js';
 
-const MAX_RECOMMENDATIONS = 15;
 const MAX_TAGS_PER_RECOMMENDATION = 8;
 
 let isInitialized = false;
@@ -82,7 +81,7 @@ async function renderRecommendations(
 
   const sortedRecommendations = [...recommendations]
     .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_RECOMMENDATIONS);
+    .slice(0, RECOMMENDATION_MAX_RESULTS);
 
   const artistTagsById = new Map<string, string[]>();
   await Promise.all(

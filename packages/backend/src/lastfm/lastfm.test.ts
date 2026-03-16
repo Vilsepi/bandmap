@@ -2,6 +2,7 @@ import { describe, it, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { LASTFM_MAX_RETRIES } from '@bandmap/shared';
 import {
   fetchArtistInfo,
   fetchSimilarArtists,
@@ -415,8 +416,7 @@ describe('lastfm', () => {
           return true;
         },
       );
-      // 1 initial + 3 retries = 4 total
-      assert.equal(callCount, 4);
+      assert.equal(callCount, LASTFM_MAX_RETRIES + 1);
     });
   });
 
