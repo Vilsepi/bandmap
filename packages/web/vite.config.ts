@@ -29,10 +29,26 @@ function buildInfoPlugin() {
     },
     closeBundle() {
       const buildInfoFile = resolve(__dirname, outputDirectory, 'buildinfo.json');
-      const buildInfo = {
+      const githubSha = process.env['GITHUB_SHA'];
+      const githubRunId = process.env['GITHUB_RUN_ID'];
+      const githubRepository = process.env['GITHUB_REPOSITORY'];
+
+      const buildInfo: Record<string, string> = {
         timestamp: new Date().toISOString(),
         buildIdentifier: getBuildIdentifier(),
       };
+
+      if (githubSha) {
+        buildInfo.githubSha = githubSha;
+      }
+
+      if (githubRunId) {
+        buildInfo.githubRunId = githubRunId;
+      }
+
+      if (githubRepository && githubRunId) {
+        buildInfo.deploymentUrl = `https://github.com/${githubRepository}/actions/runs/${githubRunId}`;
+      }
 
       mkdirSync(resolve(__dirname, outputDirectory), { recursive: true });
       writeFileSync(buildInfoFile, `${JSON.stringify(buildInfo, null, 2)}\n`, 'utf8');

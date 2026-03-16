@@ -1,5 +1,6 @@
 import { initGlobalConfig } from './config.js';
 import { createRouter, type AppRoute, type ViewName } from './router.js';
+import { escapeHtml } from './utils.js';
 import { loadRatings } from './views/ratings.js';
 import { initRecommendationsView, loadRecommendations } from './views/recommendations.js';
 import { initSearchView, showArtistDetail, showSearchResults } from './views/search.js';
@@ -8,6 +9,9 @@ import { loadTodo } from './views/todo.js';
 interface BuildInfo {
   timestamp: string;
   buildIdentifier: string;
+  githubSha?: string;
+  githubRunId?: string;
+  deploymentUrl?: string;
 }
 
 const navLinks = document.querySelectorAll<HTMLAnchorElement>('.nav-link');
@@ -111,7 +115,26 @@ async function loadBuildInfo(): Promise<void> {
       throw new TypeError('buildinfo.json has invalid shape');
     }
 
-    buildInfoText.innerHTML = `Frontend version: <a href="https://github.com/Vilsepi/bandmap/commit/${buildInfo.buildIdentifier}" target="_blank" rel="noopener noreferrer">${buildInfo.buildIdentifier}</a><br>${buildInfo.timestamp}`;
+    const buildInfoLines = [
+      `Frontend version: <a href="https://github.com/Vilsepi/bandmap/commit/${escapeHtml(buildInfo.buildIdentifier)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buildInfo.buildIdentifier)}</a>`,
+      `Built at: ${escapeHtml(buildInfo.timestamp)}`,
+    ];
+
+    if (typeof buildInfo.githubSha === 'string') {
+      buildInfoLines.push(`GitHub SHA: ${escapeHtml(buildInfo.githubSha)}`);
+    }
+
+    if (typeof buildInfo.githubRunId === 'string') {
+      if (typeof buildInfo.deploymentUrl === 'string') {
+        buildInfoLines.push(
+          `Deployment: <a href="${escapeHtml(buildInfo.deploymentUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(buildInfo.githubRunId)}</a>`,
+        );
+      } else {
+        buildInfoLines.push(`Deployment: ${escapeHtml(buildInfo.githubRunId)}`);
+      }
+    }
+
+    buildInfoText.innerHTML = buildInfoLines.join('<br>');
   } catch {
     buildInfoText.innerHTML = 'No build info<br>Local development?';
   }
