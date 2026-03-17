@@ -75,13 +75,6 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
 }
 
-.auth-eyebrow {
-  color: var(--brand-accent);
-  font-size: var(--font-size-small);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .auth-card h1 {
   color: var(--brand-text-strong);
   font-size: 2rem;
@@ -307,23 +300,6 @@ body.topbar-menu-open {
   display: block;
 }
 
-.view h2 {
-  font-size: var(--font-size-heading);
-  color: var(--brand-text-strong);
-  margin-bottom: 16px;
-}
-
-.view-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.view-header h2 {
-  margin-bottom: 0;
-}
-
 /* ── Search ─────────────────────────────────────────────── */
 
 .search-box {
@@ -500,12 +476,6 @@ body.topbar-menu-open {
 .card-remove-btn:hover {
   background: var(--brand-bg-muted);
   color: var(--brand-danger);
-}
-
-.card-actions {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
 }
 
 .card-link {
@@ -694,12 +664,6 @@ body.topbar-menu-open {
   background: var(--brand-bg-muted);
 }
 
-.btn-small {
-  padding: 4px 10px;
-  font-size: var(--font-size-small);
-  border-radius: 4px;
-}
-
 .btn-icon {
   width: 32px;
   height: 32px;
@@ -719,26 +683,6 @@ body.topbar-menu-open {
 
 .btn-bookmark:disabled {
   cursor: default;
-}
-
-.btn-danger {
-  border: 1px solid var(--brand-danger);
-  background: transparent;
-  color: var(--brand-danger);
-  cursor: pointer;
-}
-
-.btn-danger:hover {
-  background: var(--brand-bg-muted);
-}
-
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  background: var(--brand-bg-muted);
-  border-radius: 10px;
-  font-size: var(--font-size-small);
-  color: var(--brand-text-secondary);
 }
 
 @keyframes spin {
@@ -776,15 +720,6 @@ body.topbar-menu-open {
 
 .hidden {
   display: none !important;
-}
-
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-size: var(--font-size-regular);
-  color: var(--brand-text-muted);
 }
 
 @media (min-width: 900px) {
