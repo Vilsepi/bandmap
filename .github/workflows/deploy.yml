@@ -45,7 +45,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      - run: npm run build --workspace=packages/shared
 
       - run: npm run deploy:backend
 
