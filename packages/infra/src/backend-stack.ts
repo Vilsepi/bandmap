@@ -207,7 +207,7 @@ export class BandmapBackendStack extends cdk.Stack {
 
     fn.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['cognito-idp:InitiateAuth'],
+        actions: ['cognito-idp:InitiateAuth', 'cognito-idp:AdminListGroupsForUser'],
         resources: [userPool.userPoolArn],
       }),
     );
@@ -218,6 +218,7 @@ export class BandmapBackendStack extends cdk.Stack {
           'cognito-idp:AdminCreateUser',
           'cognito-idp:AdminDeleteUser',
           'cognito-idp:AdminGetUser',
+          'cognito-idp:AdminListGroupsForUser',
           'cognito-idp:AdminSetUserPassword',
         ],
         resources: [userPool.userPoolArn],
@@ -308,6 +309,12 @@ export class BandmapBackendStack extends cdk.Stack {
 
     httpApi.addRoutes({
       path: '/invites/validate',
+      methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.OPTIONS],
+      integration: inviteIntegration,
+    });
+
+    httpApi.addRoutes({
+      path: '/invites/latest',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.OPTIONS],
       integration: inviteIntegration,
     });

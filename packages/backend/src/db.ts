@@ -124,6 +124,58 @@ export async function putInvite(invite: Invite): Promise<void> {
   );
 }
 
+export async function getLatestActiveInvite(
+  nowEpoch = Math.floor(Date.now() / 1000),
+): Promise<Invite | null> {
+  let exclusiveStartKey: Record<string, unknown> | undefined;
+  let bestInvite: Invite | null = null;
+
+  do {
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: tableName('INVITES_TABLE'),
+        ExclusiveStartKey: exclusiveStartKey,
+      }),
+    );
+
+    const invites = (result.Items as Invite[] | undefined) ?? [];
+    for (const invite of invites) {
+      const remainingUses = invite.maxUses - invite.usedCount;
+      if (invite.expiresAt <= nowEpoch || remainingUses <= 0) {
+        continue;
+      }
+
+      if (!bestInvite) {
+        bestInvite = invite;
+        continue;
+      }
+
+      const bestRemainingUses = bestInvite.maxUses - bestInvite.usedCount;
+      if (remainingUses > bestRemainingUses) {
+        bestInvite = invite;
+        continue;
+      }
+
+      if (remainingUses === bestRemainingUses && invite.createdAt > bestInvite.createdAt) {
+        bestInvite = invite;
+        continue;
+      }
+
+      if (
+        remainingUses === bestRemainingUses &&
+        invite.createdAt === bestInvite.createdAt &&
+        invite.code.localeCompare(bestInvite.code) > 0
+      ) {
+        bestInvite = invite;
+      }
+    }
+
+    exclusiveStartKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (exclusiveStartKey);
+
+  return bestInvite;
+}
+
 export async function redeemInvite(
   inviteCode: string,
   user: User,
