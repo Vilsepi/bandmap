@@ -11,25 +11,44 @@ interface SearchViewOptions {
 const DELAY_BEFORE_SEARCHING_IN_MS = 1000;
 
 const searchInput = document.getElementById('search') as HTMLInputElement;
+const searchClearButton = document.getElementById('search-clear') as HTMLButtonElement;
+const searchSpinner = document.getElementById('search-spinner') as HTMLElement;
 const searchResultsEl = document.getElementById('search-results')!;
 const artistDetailEl = document.getElementById('artist-detail')!;
 const detailContentEl = document.getElementById('detail-content')!;
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+let activeSearchRequestId = 0;
 
 export function initSearchView({ navigateToRoute }: SearchViewOptions): void {
+  updateSearchClearButton();
+
   searchInput.addEventListener('input', () => {
     const query = searchInput.value.trim();
-    if (searchTimeout) clearTimeout(searchTimeout);
+    updateSearchClearButton();
+    clearPendingSearch();
+    activeSearchRequestId += 1;
+    setSearchLoading(false);
 
     if (query.length < 2) {
       searchResultsEl.innerHTML = '';
       return;
     }
 
+    const requestId = activeSearchRequestId;
     searchTimeout = setTimeout(() => {
-      void performSearch(query, navigateToRoute);
+      void performSearch(query, requestId, navigateToRoute);
     }, DELAY_BEFORE_SEARCHING_IN_MS);
+  });
+
+  searchClearButton.addEventListener('click', () => {
+    searchInput.value = '';
+    updateSearchClearButton();
+    clearPendingSearch();
+    activeSearchRequestId += 1;
+    setSearchLoading(false);
+    searchResultsEl.innerHTML = '';
+    searchInput.focus();
   });
 }
 
@@ -66,11 +85,20 @@ export async function showArtistDetail(
 
 async function performSearch(
   query: string,
+  requestId: number,
   navigateToRoute: (route: AppRoute) => Promise<void>,
 ): Promise<void> {
+  setSearchLoading(true);
+
   try {
     const { results } = await searchArtists(query);
+
+    if (requestId !== activeSearchRequestId || searchInput.value.trim() !== query) {
+      return;
+    }
+
     searchResultsEl.innerHTML = '';
+    searchResultsEl.style.display = '';
     artistDetailEl.classList.add('hidden');
 
     if (results.length === 0) {
@@ -90,8 +118,32 @@ async function performSearch(
       searchResultsEl.appendChild(card);
     }
   } catch (err) {
+    if (requestId !== activeSearchRequestId || searchInput.value.trim() !== query) {
+      return;
+    }
+
+    searchResultsEl.style.display = '';
     searchResultsEl.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
+  } finally {
+    if (requestId === activeSearchRequestId) {
+      setSearchLoading(false);
+    }
   }
+}
+
+function clearPendingSearch(): void {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+    searchTimeout = null;
+  }
+}
+
+function updateSearchClearButton(): void {
+  searchClearButton.classList.toggle('hidden', searchInput.value.length === 0);
+}
+
+function setSearchLoading(isLoading: boolean): void {
+  searchSpinner.classList.toggle('hidden', !isLoading);
 }
 
 function attachDetailActions(

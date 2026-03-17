@@ -14,6 +14,8 @@ export interface User {
   id: string;
   /** Unique username chosen by the user */
   username: string;
+  /** Whether the user currently has administrator privileges via Cognito group membership */
+  isAdmin: boolean;
   /** Cognito subject used as the auth linkage */
   cognitoSub: string;
   /** Unix epoch seconds */

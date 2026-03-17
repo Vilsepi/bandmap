@@ -1,6 +1,6 @@
 import type { Rating } from '@bandmap/shared';
 import { deleteRating, getArtist } from '../api.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, getExternalLinkIconClass } from '../utils.js';
 
 export function renderRatingCard(
   rating: Rating,
@@ -12,19 +12,14 @@ export function renderRatingCard(
 
   const scoreDisplay =
     rating.status === 'rated' && rating.score !== null
-      ? '&#9733;'.repeat(rating.score) + '&#9734;'.repeat(5 - rating.score)
+      ? `<i class="card-score-star fa-solid fa-star" aria-hidden="true"></i><span class="card-score-value">${rating.score}</span>`
+      : '';
+  const scoreLabel =
+    rating.status === 'rated' && rating.score !== null
+      ? ` aria-label="Rated ${rating.score} out of 5"`
       : '';
 
   card.innerHTML = `
-    <button
-      class="card-remove-btn"
-      data-action="delete"
-      data-artist-id="${escapeHtml(rating.artistId)}"
-      aria-label="Remove artist"
-      title="Remove"
-    >
-      &times;
-    </button>
     <div class="card-row card-main-row">
       <div class="card-title-row">
         <div class="card-title clickable-text" data-artist-id="${escapeHtml(rating.artistId)}">
@@ -32,7 +27,7 @@ export function renderRatingCard(
         </div>
         <div class="card-title-actions">
           <a
-            class="card-link card-title-link hidden"
+            class="card-link card-title-action card-title-link hidden"
             data-role="play-link"
             href="#"
             target="_blank"
@@ -40,7 +35,16 @@ export function renderRatingCard(
             aria-label="Open artist on Spotify or Last.fm"
             title="Open artist on Spotify or Last.fm"
           ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
-          <div class="card-score">${scoreDisplay}</div>
+          <div class="card-score card-title-action"${scoreLabel}>${scoreDisplay}</div>
+          <button
+            class="card-remove-btn card-title-action"
+            data-action="delete"
+            data-artist-id="${escapeHtml(rating.artistId)}"
+            aria-label="Remove artist"
+            title="Remove"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -59,6 +63,12 @@ export function renderRatingCard(
         const url = artist.spotifyUrl ?? artist.lastFmUrl;
         window.open(url, '_blank', 'noopener,noreferrer');
       });
+      const playIconEl = playLinkEl.querySelector('i');
+      const playLinkUrl = artist.spotifyUrl ?? artist.lastFmUrl;
+      if (playIconEl) {
+        playIconEl.className = getExternalLinkIconClass(playLinkUrl);
+        playIconEl.setAttribute('aria-hidden', 'true');
+      }
       playLinkEl.classList.remove('hidden');
     }
   });

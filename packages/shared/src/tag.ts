@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { sha256 } from '@noble/hashes/sha2.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 /**
  * Normalize a tag name for consistent comparison and ID generation.
@@ -17,5 +18,5 @@ export function normalizeTagName(name: string): string {
  */
 export function tagId(name: string): string {
   const normalized = normalizeTagName(name);
-  return createHash('sha256').update(normalized).digest('hex').slice(0, 16);
+  return bytesToHex(sha256(utf8ToBytes(normalized))).slice(0, 16);
 }

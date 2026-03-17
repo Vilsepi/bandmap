@@ -9,7 +9,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
-import { Construct } from 'constructs';
+import type { Construct } from 'constructs';
 import { resolve } from 'node:path';
 
 export interface BandmapBackendStackProps extends cdk.StackProps {
@@ -207,7 +207,7 @@ export class BandmapBackendStack extends cdk.Stack {
 
     fn.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ['cognito-idp:InitiateAuth'],
+        actions: ['cognito-idp:InitiateAuth', 'cognito-idp:AdminListGroupsForUser'],
         resources: [userPool.userPoolArn],
       }),
     );
@@ -218,6 +218,7 @@ export class BandmapBackendStack extends cdk.Stack {
           'cognito-idp:AdminCreateUser',
           'cognito-idp:AdminDeleteUser',
           'cognito-idp:AdminGetUser',
+          'cognito-idp:AdminListGroupsForUser',
           'cognito-idp:AdminSetUserPassword',
         ],
         resources: [userPool.userPoolArn],
@@ -308,6 +309,12 @@ export class BandmapBackendStack extends cdk.Stack {
 
     httpApi.addRoutes({
       path: '/invites/validate',
+      methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.OPTIONS],
+      integration: inviteIntegration,
+    });
+
+    httpApi.addRoutes({
+      path: '/invites/latest',
       methods: [apigatewayv2.HttpMethod.GET, apigatewayv2.HttpMethod.OPTIONS],
       integration: inviteIntegration,
     });

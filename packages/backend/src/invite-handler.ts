@@ -5,13 +5,19 @@ import type {
   CreateInvitesResponse,
   ErrorResponse,
   Invite,
+  InviteLinkResponse,
   RedeemInviteRequest,
   RedeemInviteResponse,
   User,
   ValidateInviteResponse,
 } from '@bandmap/shared';
-import { authenticate, isAdmin } from './auth.js';
-import { assertUsernameAvailable, createInvitedUser, deleteCognitoUser } from './cognito.js';
+import { authenticate } from './auth.js';
+import {
+  assertUsernameAvailable,
+  createInvitedUser,
+  deleteCognitoUser,
+  isCognitoUserAdmin,
+} from './cognito.js';
 import * as db from './db.js';
 import {
   corsResponse,
@@ -20,6 +26,10 @@ import {
   normalizeIncomingPath,
   parseBody,
 } from './http.js';
+
+type AdminAuthResult =
+  | { ok: true; authContext: NonNullable<Awaited<ReturnType<typeof authenticate>>> }
+  | { ok: false; response: APIGatewayProxyResultV2 };
 
 const INVITE_VALIDITY_DAYS = 30;
 const INVITE_MAX_USES = 10;
@@ -43,6 +53,10 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
       return handleValidateInvite(event);
     }
 
+    if (method === 'GET' && path === '/invites/latest') {
+      return handleGetLatestInvite(event);
+    }
+
     if (method === 'POST' && path === '/invites/redeem') {
       return handleRedeemInvite(event);
     }
@@ -57,13 +71,9 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
 async function handleCreateInvites(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
-  const authContext = await authenticate(normalizeHeaders(event.headers));
-  if (!authContext) {
-    return jsonResponse<ErrorResponse>(401, { error: 'Invalid or missing session token' });
-  }
-
-  if (!isAdmin(authContext)) {
-    return jsonResponse<ErrorResponse>(403, { error: 'Admin access is required' });
+  const adminAuth = await requireAdminAuth(event);
+  if (!adminAuth.ok) {
+    return adminAuth.response;
   }
 
   const body = parseBody<CreateInvitesRequest>(event.body) ?? {};
@@ -80,7 +90,7 @@ async function handleCreateInvites(
 
   const invites: CreateInvitesResponse['invites'] = [];
   for (let index = 0; index < requestedCount; index += 1) {
-    const invite = buildInvite(authContext.userId);
+    const invite = buildInvite(adminAuth.authContext.userId);
     await db.putInvite(invite);
     invites.push({
       code: invite.code,
@@ -107,35 +117,40 @@ async function handleValidateInvite(
   });
 }
 
+async function handleGetLatestInvite(
+  event: APIGatewayProxyEventV2,
+): Promise<APIGatewayProxyResultV2> {
+  const adminAuth = await requireAdminAuth(event);
+  if (!adminAuth.ok) {
+    return adminAuth.response;
+  }
+
+  const invite = await db.getLatestActiveInvite();
+  if (!invite) {
+    return jsonResponse<ErrorResponse>(404, { error: 'No active invite link found' });
+  }
+
+  const remainingUses = Math.max(invite.maxUses - invite.usedCount, 0);
+  return jsonResponse<InviteLinkResponse>(200, {
+    invite: {
+      code: invite.code,
+      inviteUrl: buildInviteUrl(invite.code),
+      createdAt: invite.createdAt,
+      expiresAt: invite.expiresAt,
+      remainingUses,
+    },
+  });
+}
+
 async function handleRedeemInvite(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   const body = parseBody<RedeemInviteRequest>(event.body);
-  if (!body?.code || !body.username || !body.password) {
-    return jsonResponse<ErrorResponse>(400, {
-      error: 'Invite code, username, and password are required',
-    });
+  const validationError = await validateRedeemInviteRequest(body);
+  if (validationError) {
+    return validationError;
   }
 
-  const username = body.username.trim();
-  if (!USERNAME_PATTERN.test(username)) {
-    return jsonResponse<ErrorResponse>(400, {
-      error:
-        'Username must be 3-32 characters using letters, numbers, dots, underscores, or hyphens',
-    });
-  }
-
-  if (body.password.length < 12) {
-    return jsonResponse<ErrorResponse>(400, {
-      error: 'Password must be at least 12 characters long',
-    });
-  }
-
-  const invite = await db.getInvite(body.code);
-  const inviteValidation = toInviteValidation(invite);
-  if (!inviteValidation.isValid) {
-    return jsonResponse<ErrorResponse>(400, {
-      error: 'Invite code is invalid, expired, or exhausted',
-    });
-  }
+  const redeemRequest = body as RedeemInviteRequest;
+  const username = redeemRequest.username.trim();
 
   const existingUser = await db.getUserByUsername(username);
   if (existingUser) {
@@ -156,36 +171,23 @@ async function handleRedeemInvite(event: APIGatewayProxyEventV2): Promise<APIGat
     const cognitoUser = await createInvitedUser({
       userId,
       username,
-      password: body.password,
+      password: redeemRequest.password,
     });
 
     const user: User = {
       id: userId,
       username,
+      isAdmin: false,
       cognitoSub: cognitoUser.cognitoSub,
       createdAt: nowEpochSeconds(),
     };
 
-    await db.redeemInvite(body.code, user, nowEpochSeconds());
+    await db.redeemInvite(redeemRequest.code, user, nowEpochSeconds());
     return jsonResponse<RedeemInviteResponse>(201, { user });
   } catch (error) {
     console.error('Invite redemption failed', error);
-
-    if (cognitoUsername) {
-      try {
-        await deleteCognitoUser(cognitoUsername);
-      } catch (deleteError) {
-        console.error('Failed to roll back Cognito user creation', deleteError);
-      }
-    }
-
-    const message =
-      isConditionalCheckFailure(error) || isUsernameExistsError(error)
-        ? 'Invite code is invalid, expired, exhausted, or the username already exists'
-        : 'Unable to redeem invite';
-    const statusCode = isConditionalCheckFailure(error) || isUsernameExistsError(error) ? 409 : 500;
-
-    return jsonResponse<ErrorResponse>(statusCode, { error: message });
+    await rollbackCognitoUser(cognitoUsername);
+    return redemptionErrorResponse(error);
   }
 }
 
@@ -231,6 +233,108 @@ function toInviteValidation(invite: Invite | null): ValidateInviteResponse['invi
     remainingUses,
     isValid: invite.expiresAt > nowEpochSeconds() && remainingUses > 0,
   };
+}
+
+export function chooseLatestInvite(invites: Invite[], nowEpoch = nowEpochSeconds()): Invite | null {
+  const activeInvites = invites.filter((invite) => {
+    const remainingUses = invite.maxUses - invite.usedCount;
+    return invite.expiresAt > nowEpoch && remainingUses > 0;
+  });
+
+  if (activeInvites.length === 0) {
+    return null;
+  }
+
+  const sortedInvites = activeInvites.toSorted((left, right) => {
+    const remainingLeft = left.maxUses - left.usedCount;
+    const remainingRight = right.maxUses - right.usedCount;
+    if (remainingRight !== remainingLeft) {
+      return remainingRight - remainingLeft;
+    }
+
+    if (right.createdAt !== left.createdAt) {
+      return right.createdAt - left.createdAt;
+    }
+
+    return right.code.localeCompare(left.code);
+  });
+
+  return sortedInvites[0] ?? null;
+}
+
+async function requireAdminAuth(event: APIGatewayProxyEventV2): Promise<AdminAuthResult> {
+  const authContext = await authenticate(normalizeHeaders(event.headers));
+  if (!authContext) {
+    return {
+      ok: false,
+      response: jsonResponse<ErrorResponse>(401, { error: 'Invalid or missing session token' }),
+    };
+  }
+
+  const isAdmin = await isCognitoUserAdmin(authContext.username);
+  if (!isAdmin) {
+    return {
+      ok: false,
+      response: jsonResponse<ErrorResponse>(403, { error: 'Forbidden' }),
+    };
+  }
+
+  return { ok: true, authContext };
+}
+
+async function validateRedeemInviteRequest(
+  body: RedeemInviteRequest | null,
+): Promise<APIGatewayProxyResultV2 | null> {
+  if (!body?.code || !body.username || !body.password) {
+    return jsonResponse<ErrorResponse>(400, {
+      error: 'Invite code, username, and password are required',
+    });
+  }
+
+  const username = body.username.trim();
+  if (!USERNAME_PATTERN.test(username)) {
+    return jsonResponse<ErrorResponse>(400, {
+      error:
+        'Username must be 3-32 characters using letters, numbers, dots, underscores, or hyphens',
+    });
+  }
+
+  if (body.password.length < 12) {
+    return jsonResponse<ErrorResponse>(400, {
+      error: 'Password must be at least 12 characters long',
+    });
+  }
+
+  const invite = await db.getInvite(body.code);
+  const inviteValidation = toInviteValidation(invite);
+  if (!inviteValidation.isValid) {
+    return jsonResponse<ErrorResponse>(400, {
+      error: 'Invite code is invalid, expired, or exhausted',
+    });
+  }
+
+  return null;
+}
+
+async function rollbackCognitoUser(username: string | null): Promise<void> {
+  if (!username) {
+    return;
+  }
+
+  try {
+    await deleteCognitoUser(username);
+  } catch (deleteError) {
+    console.error('Failed to roll back Cognito user creation', deleteError);
+  }
+}
+
+function redemptionErrorResponse(error: unknown): APIGatewayProxyResultV2 {
+  const isConflict = isConditionalCheckFailure(error) || isUsernameExistsError(error);
+  return jsonResponse<ErrorResponse>(isConflict ? 409 : 500, {
+    error: isConflict
+      ? 'Invite code is invalid, expired, exhausted, or the username already exists'
+      : 'Unable to redeem invite',
+  });
 }
 
 function nowEpochSeconds(): number {

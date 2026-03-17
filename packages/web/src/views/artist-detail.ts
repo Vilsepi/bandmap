@@ -1,5 +1,5 @@
 import type { Artist, Rating, RelatedArtist } from '@bandmap/shared';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, getExternalLinkIconClass } from '../utils.js';
 
 export function findArtistRating(ratings: Rating[], artistId: string): Rating | null {
   return ratings.find((rating) => rating.artistId === artistId) ?? null;
@@ -10,20 +10,25 @@ export function renderArtistDetail(
   related: RelatedArtist[],
   rating: Rating | null,
 ): string {
+  const playLinkUrl = artist.spotifyUrl ?? artist.lastFmUrl;
+  const playIconClass = getExternalLinkIconClass(playLinkUrl);
   const tagBadges = (artist.tags ?? [])
     .map((tag) => `<span class="tag-badge">${escapeHtml(tag)}</span>`)
     .join('');
 
   const relatedList = related
     .slice(0, 30)
-    .map(
-      (relation) => `
-      <li class="related-item" data-artist-id="${escapeHtml(relation.targetId)}">
-        <span>${escapeHtml(relation.targetName)}</span>
-        <span class="match-score">${(relation.match * 100).toFixed(0)}%</span>
+    .map((relation) => {
+      const matchPercent = (relation.match * 100).toFixed(0);
+      return `
+      <li class="related-item" data-artist-id="${escapeHtml(relation.targetId)}" style="--related-match-width: ${matchPercent}%">
+        <span class="related-item-content">
+          <span class="related-name">${escapeHtml(relation.targetName)}</span>
+          <span class="match-score">${matchPercent}%</span>
+        </span>
       </li>
-    `,
-    )
+    `;
+    })
     .join('');
 
   const selectedScore = rating?.status === 'rated' ? (rating.score ?? 0) : 0;
@@ -38,7 +43,7 @@ export function renderArtistDetail(
         id="detail-play-link"
         aria-label="Open artist on Spotify or Last.fm"
         title="Open artist on Spotify or Last.fm"
-      ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
+      ><i class="${playIconClass}" aria-hidden="true"></i></a>
     </div>
     <div class="tag-list">${tagBadges}</div>
     <div class="action-bar">
@@ -60,7 +65,7 @@ export function renderArtistDetail(
         <i class="${isTodo ? 'fa-solid' : 'fa-regular'} fa-bookmark" aria-hidden="true"></i>
       </button>
     </div>
-    <h4>Related Artists</h4>
+    <h4>Related artists</h4>
     <ul class="related-list">${relatedList}</ul>
   `;
 }

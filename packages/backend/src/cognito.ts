@@ -2,6 +2,7 @@ import {
   AdminCreateUserCommand,
   AdminDeleteUserCommand,
   AdminGetUserCommand,
+  AdminListGroupsForUserCommand,
   AdminSetUserPasswordCommand,
   CognitoIdentityProviderClient,
   InitiateAuthCommand,
@@ -39,7 +40,10 @@ function getAuthResult(authenticationResult: AuthenticationResultType | undefine
   };
 }
 
-async function userFromSessionToken(sessionToken: string): Promise<User> {
+async function userFromSessionToken(sessionToken: string): Promise<{
+  authContext: NonNullable<Awaited<ReturnType<typeof verifySessionToken>>>;
+  user: User;
+}> {
   const authContext = await verifySessionToken(sessionToken);
   if (!authContext) {
     throw new Error('Unable to verify Cognito session token');
@@ -50,7 +54,25 @@ async function userFromSessionToken(sessionToken: string): Promise<User> {
     throw new Error('Authenticated user was not found');
   }
 
-  return user;
+  return { authContext, user };
+}
+
+function withAdminFlag(user: User, isAdmin: boolean): User {
+  return {
+    ...user,
+    isAdmin,
+  };
+}
+
+export async function isCognitoUserAdmin(username: string): Promise<boolean> {
+  const response = await client.send(
+    new AdminListGroupsForUserCommand({
+      UserPoolId: env('COGNITO_USER_POOL_ID'),
+      Username: username,
+    }),
+  );
+
+  return response.Groups?.some((group) => group.GroupName?.toLowerCase() === 'admin') ?? false;
 }
 
 export async function loginWithUsernamePassword(
@@ -69,10 +91,11 @@ export async function loginWithUsernamePassword(
   );
 
   const session = getAuthResult(response.AuthenticationResult);
-  const user = await userFromSessionToken(session.sessionToken);
+  const { authContext, user } = await userFromSessionToken(session.sessionToken);
+  const isAdmin = await isCognitoUserAdmin(authContext.username);
 
   return {
-    user,
+    user: withAdminFlag(user, isAdmin),
     session: {
       sessionToken: session.sessionToken,
       refreshToken: session.refreshToken ?? '',
@@ -93,10 +116,11 @@ export async function refreshLoginSession(refreshToken: string): Promise<AuthSes
   );
 
   const session = getAuthResult(response.AuthenticationResult);
-  const user = await userFromSessionToken(session.sessionToken);
+  const { authContext, user } = await userFromSessionToken(session.sessionToken);
+  const isAdmin = await isCognitoUserAdmin(authContext.username);
 
   return {
-    user,
+    user: withAdminFlag(user, isAdmin),
     session: {
       sessionToken: session.sessionToken,
       refreshToken,

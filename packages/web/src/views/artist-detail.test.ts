@@ -27,7 +27,7 @@ Object.assign(globalThis, {
 const artist: Artist = {
   artistId: 'artist-1',
   name: 'Test Artist',
-  lastFmUrl: 'https://example.com/artist-1',
+  lastFmUrl: 'https://www.last.fm/music/Test+Artist',
   tags: ['post-metal', 'doom'],
   fetchedAt: 1735689600,
 };
@@ -93,5 +93,31 @@ describe('artist detail view state', () => {
     assert.match(html, /aria-label="Added to todo"/);
     assert.match(html, /id="btn-todo"[\s\S]*disabled/);
     assert.match(html, /fa-solid fa-bookmark/);
+  });
+
+  it('renders a Last.fm icon when the external link points to Last.fm', () => {
+    const html = renderArtistDetail(artist, related, null);
+
+    assert.match(html, /fa-brands fa-lastfm/);
+  });
+
+  it('renders a Spotify icon when the external link points to Spotify', () => {
+    const html = renderArtistDetail(
+      {
+        ...artist,
+        spotifyUrl: 'https://open.spotify.com/artist/123',
+      },
+      related,
+      null,
+    );
+
+    assert.match(html, /fa-brands fa-spotify/);
+  });
+
+  it('renders each related artist with a score-width background bar', () => {
+    const html = renderArtistDetail(artist, related, null);
+
+    assert.match(html, /style="--related-match-width: 81%"/);
+    assert.match(html, /class="related-item-content"/);
   });
 });
