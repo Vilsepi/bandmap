@@ -120,13 +120,23 @@ function readStoredSessionRaw(): StoredSession | null {
 }
 
 function readStoredSession(): StoredSession | null {
-  const session = readStoredSessionRaw();
-  if (!session) {
-    clearSession();
+  const raw = readCookie(SESSION_STORAGE_KEY);
+  if (!raw) {
     return null;
   }
 
-  return session;
+  try {
+    const session = parseStoredSession(raw);
+    if (!session) {
+      deleteCookie(SESSION_STORAGE_KEY);
+      return null;
+    }
+
+    return session;
+  } catch {
+    deleteCookie(SESSION_STORAGE_KEY);
+    return null;
+  }
 }
 
 function writeStoredSession(session: StoredSession): void {
@@ -171,7 +181,12 @@ function clearCacheByPrefix(prefix: string): void {
 }
 
 export function clearSession(): void {
+  const hadSessionCookie = readCookie(SESSION_STORAGE_KEY) !== null;
   const userId = readStoredSessionRaw()?.user.id;
+  if (!hadSessionCookie && !userId) {
+    return;
+  }
+
   deleteCookie(SESSION_STORAGE_KEY);
   if (userId) {
     clearCacheByPrefix(`${CACHE_PREFIX}:user:${userId}:`);

@@ -80,6 +80,7 @@ class CookieJarMock {
 
 const localStorage = new LocalStorageMock();
 const cookieJar = new CookieJarMock();
+const originalDispatchEvent = globalThis.dispatchEvent;
 
 const session: AuthSessionResponse = {
   user: {
@@ -181,6 +182,7 @@ beforeEach(() => {
 
 afterEach(() => {
   Date.now = originalDateNow;
+  globalThis.dispatchEvent = originalDispatchEvent;
 });
 
 function queueJsonResponse(body: unknown): void {
@@ -228,6 +230,41 @@ describe('frontend API caching', () => {
 
     now = 30 * 24 * 60 * 60 * 1000 + 1;
     assert.equal(api.hasSession(), false);
+  });
+
+  it('does not dispatch session updates while reading a missing session', () => {
+    cookieJar.clear();
+
+    let sessionUpdateCount = 0;
+    globalThis.dispatchEvent = ((event: Event) => {
+      if (event.type === 'bandmap:session-updated') {
+        sessionUpdateCount += 1;
+      }
+      return true;
+    }) as typeof globalThis.dispatchEvent;
+
+    assert.equal(api.hasSession(), false);
+    assert.equal(api.getCurrentUser(), null);
+
+    assert.equal(sessionUpdateCount, 0);
+  });
+
+  it('clears malformed session cookies without dispatching a session update', () => {
+    cookieJar.clear();
+    cookieJar.cookie = 'bandmap-session=not-json; path=/; SameSite=Strict';
+
+    let sessionUpdateCount = 0;
+    globalThis.dispatchEvent = ((event: Event) => {
+      if (event.type === 'bandmap:session-updated') {
+        sessionUpdateCount += 1;
+      }
+      return true;
+    }) as typeof globalThis.dispatchEvent;
+
+    assert.equal(api.getCurrentUser(), null);
+    assert.equal(cookieJar.cookie, '');
+
+    assert.equal(sessionUpdateCount, 0);
   });
 
   it('caches ratings responses for at least one minute', async () => {
