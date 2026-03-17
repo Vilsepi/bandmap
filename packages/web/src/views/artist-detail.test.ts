@@ -113,4 +113,11 @@ describe('artist detail view state', () => {
 
     assert.match(html, /fa-brands fa-spotify/);
   });
+
+  it('renders each related artist with a score-width background bar', () => {
+    const html = renderArtistDetail(artist, related, null);
+
+    assert.match(html, /style="--related-match-width: 81%"/);
+    assert.match(html, /class="related-item-content"/);
+  });
 });
