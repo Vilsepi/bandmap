@@ -79,6 +79,7 @@ export function renderRatingCard(
 
   card.querySelector('[data-action="delete"]')?.addEventListener('click', async (event) => {
     event.stopPropagation();
+    if (!confirm('Are you sure you want to remove this artist?')) return;
     await deleteRating(rating.artistId);
     card.remove();
   });
