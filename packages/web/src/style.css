@@ -7,16 +7,22 @@
 :root {
   --app-max-width: 800px;
 
+  /* Reserved for artist detail title and call-to-action play button */
+  --font-size-massive: 1.6rem;
+  --font-size-massive-button: 2rem;
+
   --font-size-heading: 1.375rem;
   --font-size-regular: 1rem;
   --font-size-small: 0.8rem;
+  --font-size-navmenu: 0.65rem;
+
   --font-size-icon: 18px;
   --font-size-play: 24px;
 
   --brand-bg-app: #0f0f0f;
   --brand-bg-surface: #141414;
   --brand-bg-muted: #1e1e1e;
-  --brand-border-default: #111;
+  --brand-border-default: #1a1a1a;
   --brand-border-strong: #444;
   --brand-text-strong: #fff;
   --brand-text-primary: #e0e0e0;
@@ -24,8 +30,8 @@
   --brand-text-muted: #888;
   --brand-accent: #FFDE3B;
 
-  --related-artist-bar-start: #0f0f0f;
-  --related-artist-bar-end: rgba(255, 247, 208, 0.12);
+  --related-artist-bar-start: #101010;
+  --related-artist-bar-end: rgba(138, 138, 138, 0.1);
 
   --brand-danger: #ff5f5f;
 }
@@ -283,7 +289,7 @@ body.settings-menu-open {
   gap: 6px;
   color: var(--brand-text-secondary);
   text-decoration: none;
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-navmenu);
   transition: background 0.15s, color 0.15s;
 }
 
@@ -385,8 +391,8 @@ body.settings-menu-open {
   position: relative;
   background: var(--brand-bg-surface);
   border: 1px solid var(--brand-border-default);
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 6px;
+  padding: 6px 14px;
   transition: background 0.15s;
 }
 
@@ -412,7 +418,7 @@ body.settings-menu-open {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--font-size-regular);
-  color: var(--brand-accent);
+  color: var(--brand-text-primary);
   font-weight: 500;
 }
 
@@ -533,7 +539,7 @@ body.settings-menu-open {
 }
 
 #detail-content h3 {
-  font-size: var(--font-size-heading);
+  font-size: var(--font-size-massive);
   color: var(--brand-text-strong);
   margin-bottom: 0;
 }
@@ -562,19 +568,19 @@ body.settings-menu-open {
   color: var(--brand-text-secondary);
 }
 
-.external-link {
+.cta-link {
   display: inline-flex;
   align-items: center;
   color: var(--brand-accent);
-  font-size: var(--font-size-play);
+  font-size: var(--font-size-massive-button);
   text-decoration: none;
   margin-bottom: 0;
-  padding: 4px;
+  padding: 10px;
   -webkit-tap-highlight-color: transparent;
 }
 
-.external-link:hover,
-.external-link:active {
+.cta-link:hover,
+.cta-link:active {
   text-decoration: none;
 }
 
@@ -607,7 +613,7 @@ body.settings-menu-open {
 
 h4 {
   font-size: var(--font-size-heading);
-  margin: 10px 0px;
+  margin: 30px 0px 10px 0px;
 }
 
 .related-list {
@@ -616,11 +622,11 @@ h4 {
 
 .related-item {
   font-size: var(--font-size-regular);
-  color: var(--brand-text-strong);
+  color: var(--brand-text-primary);
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  border-bottom: 3px solid var(--brand-border-default);
+  margin-bottom: 4px;
 }
 
 .related-item::before {
@@ -635,7 +641,7 @@ h4 {
 .related-item-content {
   position: relative;
   z-index: 1;
-  padding: 6px 12px;
+  padding: 5px 12px;
   display: flex;
   justify-content: space-between;
   gap: 12px;

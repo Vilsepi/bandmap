@@ -39,7 +39,7 @@ export function renderArtistDetail(
       <h3>${escapeHtml(artist.name)}</h3>
       <a
         href="#"
-        class="external-link detail-title-link"
+        class="cta-link detail-title-link"
         id="detail-play-link"
         aria-label="Open artist on Spotify or Last.fm"
         title="Open artist on Spotify or Last.fm"
