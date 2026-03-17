@@ -1,6 +1,6 @@
 import type { Rating } from '@bandmap/shared';
 import { deleteRating, getArtist } from '../api.js';
-import { escapeHtml } from '../utils.js';
+import { escapeHtml, getExternalLinkIconClass } from '../utils.js';
 
 export function renderRatingCard(
   rating: Rating,
@@ -59,6 +59,12 @@ export function renderRatingCard(
         const url = artist.spotifyUrl ?? artist.lastFmUrl;
         window.open(url, '_blank', 'noopener,noreferrer');
       });
+      const playIconEl = playLinkEl.querySelector('i');
+      const playLinkUrl = artist.spotifyUrl ?? artist.lastFmUrl;
+      if (playIconEl) {
+        playIconEl.className = getExternalLinkIconClass(playLinkUrl);
+        playIconEl.setAttribute('aria-hidden', 'true');
+      }
       playLinkEl.classList.remove('hidden');
     }
   });
