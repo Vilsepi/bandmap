@@ -23,6 +23,10 @@
   --brand-text-secondary: #aaa;
   --brand-text-muted: #888;
   --brand-accent: #FFDE3B;
+
+  --related-artist-bar-start: #0f0f0f;
+  --related-artist-bar-end: rgba(255, 247, 208, 0.12);
+
   --brand-danger: #ff5f5f;
 }
 
@@ -593,17 +597,44 @@ body.settings-menu-open {
   color: var(--brand-accent);
 }
 
+h4 {
+  font-size: var(--font-size-heading);
+  margin: 10px 0px;
+}
+
 .related-list {
   list-style: none;
 }
 
 .related-item {
-  padding: 6px 0;
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-regular);
+  color: var(--brand-text-strong);
   cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 3px solid var(--brand-border-default);
+}
+
+.related-item::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--related-match-width, 0%);
+  background: linear-gradient(90deg, var(--related-artist-bar-start), var(--related-artist-bar-end));
+  pointer-events: none;
+}
+
+.related-item-content {
+  position: relative;
+  z-index: 1;
+  padding: 6px 12px;
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid var(--brand-border-default);
+  gap: 12px;
+}
+
+.related-name {
+  min-width: 0;
 }
 
 .related-item:hover {
@@ -613,6 +644,7 @@ body.settings-menu-open {
 .match-score {
   color: var(--brand-text-muted);
   font-size: var(--font-size-small);
+  flex-shrink: 0;
 }
 
 /* ── Buttons ────────────────────────────────────────────── */
