@@ -11,21 +11,27 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
 
       - run: npm ci
-
       - run: npm run clean
-
       - run: npm run build
-
       - run: npm run lint
-
       - run: npm test
+
+      - run: npx playwright install --with-deps firefox
+      - run: npm run --workspace @bandmap/web test:smoke
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-firefox-artifacts
+          path: |
+            packages/web/playwright-report/
+            packages/web/test-results/
+          if-no-files-found: ignore
