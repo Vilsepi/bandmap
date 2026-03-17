@@ -9,7 +9,7 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
-import { Construct } from 'constructs';
+import type { Construct } from 'constructs';
 import { resolve } from 'node:path';
 
 export interface BandmapBackendStackProps extends cdk.StackProps {
