@@ -1,3 +1,4 @@
+import { getCurrentUser, getLatestInviteLink } from './api.js';
 import { initGlobalConfig } from './config.js';
 import { createRouter, type AppRoute, type ViewName } from './router.js';
 import { escapeHtml } from './utils.js';
@@ -25,7 +26,10 @@ const topbarMenuIcon = topbarMenuToggle?.querySelector<HTMLElement>('i') ?? null
 const topbarMenuPanel = document.querySelector<HTMLElement>(
   '#topbar-menu-dropdown .topbar-menu-panel',
 );
+const adminInviteLink = document.getElementById('admin-invite-link') as HTMLAnchorElement | null;
+const adminInviteStatus = document.getElementById('admin-invite-status');
 let topbarMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
+let adminInviteListenerInitialized = false;
 
 const VIEW_TITLES: Record<ViewName, string> = {
   search: 'Search artist',
@@ -140,6 +144,49 @@ async function loadBuildInfo(): Promise<void> {
   }
 }
 
+async function loadAdminInviteLink(): Promise<void> {
+  if (!adminInviteLink || !adminInviteStatus) {
+    return;
+  }
+
+  const currentUser = getCurrentUser();
+  const isAdmin = currentUser?.isAdmin === true;
+  adminInviteLink.classList.toggle('hidden', !isAdmin);
+  adminInviteStatus.classList.toggle('hidden', !isAdmin);
+
+  if (!isAdmin) {
+    adminInviteLink.removeAttribute('href');
+    adminInviteLink.textContent = 'Latest invite link';
+    adminInviteStatus.textContent = '';
+    return;
+  }
+
+  adminInviteStatus.textContent = 'Loading latest invite link...';
+
+  try {
+    const response = await getLatestInviteLink();
+    adminInviteLink.href = response.invite.inviteUrl;
+    adminInviteLink.textContent = 'Latest invite link';
+    adminInviteStatus.textContent = `${response.invite.remainingUses} use(s) left · ${new Date(response.invite.createdAt * 1000).toLocaleString()}`;
+  } catch (error) {
+    adminInviteLink.removeAttribute('href');
+    adminInviteLink.textContent = 'Latest invite link unavailable';
+    adminInviteStatus.textContent =
+      error instanceof Error ? error.message : 'Unable to load invite link.';
+  }
+}
+
+function initializeAdminInviteLink(): void {
+  if (adminInviteListenerInitialized) {
+    return;
+  }
+
+  adminInviteListenerInitialized = true;
+  globalThis.addEventListener('bandmap:session-updated', () => {
+    void loadAdminInviteLink();
+  });
+}
+
 function showView(name: ViewName): void {
   views.forEach((view) => view.classList.remove('active'));
   navLinks.forEach((link) => link.classList.remove('active'));
@@ -192,6 +239,8 @@ async function initializeApp(): Promise<void> {
   appInitialized = true;
 
   initializeTopbarMenu();
+  initializeAdminInviteLink();
+  void loadAdminInviteLink();
 
   const router = createRouter(handleRoute);
   routerNavigate = async (route: AppRoute) => {

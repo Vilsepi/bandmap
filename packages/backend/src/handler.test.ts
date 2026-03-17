@@ -152,6 +152,7 @@ describe('handler', () => {
       const user: User = {
         id: 'user-uuid',
         username: 'test-user',
+        isAdmin: false,
         cognitoSub: 'cognito-sub-123',
         createdAt: Math.floor(Date.now() / 1000),
       };

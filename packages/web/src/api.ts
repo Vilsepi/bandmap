@@ -4,6 +4,7 @@ import type {
   ArtistResponse,
   CreateInvitesRequest,
   CreateInvitesResponse,
+  InviteLinkResponse,
   RelatedArtistsResponse,
   RedeemInviteRequest,
   RedeemInviteResponse,
@@ -47,11 +48,13 @@ type CacheRecord<T> = {
 };
 
 function isStoredUser(user: unknown): user is StoredSession['user'] {
+  const isAdmin = (user as { isAdmin?: unknown })?.isAdmin;
   return (
     typeof user === 'object' &&
     user !== null &&
     typeof (user as StoredSession['user']).id === 'string' &&
     typeof (user as StoredSession['user']).username === 'string' &&
+    (typeof isAdmin === 'boolean' || isAdmin === undefined) &&
     typeof (user as StoredSession['user']).cognitoSub === 'string' &&
     typeof (user as StoredSession['user']).createdAt === 'number'
   );
@@ -68,7 +71,15 @@ function parseStoredSession(raw: string): StoredSession | null {
     return null;
   }
 
-  return parsed as StoredSession;
+  return {
+    sessionToken: parsed.sessionToken,
+    refreshToken: parsed.refreshToken,
+    expiresAt: parsed.expiresAt,
+    user: {
+      ...parsed.user,
+      isAdmin: parsed.user.isAdmin ?? false,
+    },
+  };
 }
 
 function cookieSecureFlag(): string {
@@ -122,6 +133,18 @@ function writeStoredSession(session: StoredSession): void {
   writeCookie(SESSION_STORAGE_KEY, JSON.stringify(session), Date.now() + SESSION_PERSISTENCE_MS);
 }
 
+function notifySessionUpdated(): void {
+  if (typeof globalThis.dispatchEvent !== 'function') {
+    return;
+  }
+
+  try {
+    globalThis.dispatchEvent(new Event('bandmap:session-updated'));
+  } catch {
+    return;
+  }
+}
+
 export function setSession(authSession: AuthSessionResponse): void {
   writeStoredSession({
     sessionToken: authSession.session.sessionToken,
@@ -129,6 +152,7 @@ export function setSession(authSession: AuthSessionResponse): void {
     expiresAt: Date.now() + authSession.session.expiresIn * 1000,
     user: authSession.user,
   });
+  notifySessionUpdated();
 }
 
 function clearCacheByPrefix(prefix: string): void {
@@ -152,6 +176,7 @@ export function clearSession(): void {
   if (userId) {
     clearCacheByPrefix(`${CACHE_PREFIX}:user:${userId}:`);
   }
+  notifySessionUpdated();
 }
 
 export function clearCachedData(): void {
@@ -165,6 +190,10 @@ export function hasSession(): boolean {
 
 export function getCurrentUser(): AuthSessionResponse['user'] | null {
   return readStoredSession()?.user ?? null;
+}
+
+export function isCurrentUserAdmin(): boolean {
+  return getCurrentUser()?.isAdmin === true;
 }
 
 export function isApiConfigured(): boolean {
@@ -348,6 +377,44 @@ async function parseApiResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+function buildRequestHeaders(
+  init: RequestInit | undefined,
+  options: { includeSession?: boolean },
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+
+  const session = readStoredSession();
+  if (options.includeSession !== false && session?.sessionToken) {
+    headers['Authorization'] = `Bearer ${session.sessionToken}`;
+  }
+
+  return headers;
+}
+
+async function retryRequestAfterDelay(attempt: number): Promise<void> {
+  await sleep(getRetryDelayMs(attempt));
+}
+
+function shouldRefreshSession(
+  response: Response,
+  options: { includeSession?: boolean; allowRefresh?: boolean },
+): boolean {
+  return (
+    response.status === 401 &&
+    options.allowRefresh !== false &&
+    options.includeSession !== false &&
+    !!readStoredSession()?.refreshToken
+  );
+}
+
+async function createApiError(response: Response): Promise<Error> {
+  const errorBody = await response.text();
+  return new Error(`API error ${response.status}: ${errorBody}`);
+}
+
 async function sendRequest<T>(
   path: string,
   init: RequestInit | undefined,
@@ -359,15 +426,7 @@ async function sendRequest<T>(
     );
   }
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(init?.headers as Record<string, string> | undefined),
-  };
-
-  const session = readStoredSession();
-  if (options.includeSession !== false && session?.sessionToken) {
-    headers['Authorization'] = `Bearer ${session.sessionToken}`;
-  }
+  const headers = buildRequestHeaders(init, options);
 
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= MAX_API_RETRIES; attempt += 1) {
@@ -379,33 +438,25 @@ async function sendRequest<T>(
       if (attempt === MAX_API_RETRIES) {
         throw error;
       }
-      await sleep(getRetryDelayMs(attempt));
+      await retryRequestAfterDelay(attempt);
       continue;
     }
 
-    if (!response.ok) {
-      if (
-        response.status === 401 &&
-        options.allowRefresh !== false &&
-        options.includeSession !== false &&
-        session?.refreshToken
-      ) {
-        await refreshSession();
-        return sendRequest<T>(path, init, { ...options, allowRefresh: false });
-      }
-
-      const errorBody = await response.text();
-      lastError = new Error(`API error ${response.status}: ${errorBody}`);
-
-      if (attempt === MAX_API_RETRIES || !shouldRetryStatus(response.status)) {
-        throw lastError;
-      }
-
-      await sleep(getRetryDelayMs(attempt));
-      continue;
+    if (response.ok) {
+      return parseApiResponse<T>(response);
     }
 
-    return parseApiResponse<T>(response);
+    if (shouldRefreshSession(response, options)) {
+      await refreshSession();
+      return sendRequest<T>(path, init, { ...options, allowRefresh: false });
+    }
+
+    lastError = await createApiError(response);
+    if (attempt === MAX_API_RETRIES || !shouldRetryStatus(response.status)) {
+      throw lastError;
+    }
+
+    await retryRequestAfterDelay(attempt);
   }
 
   throw lastError ?? new Error('Request failed after retries');
@@ -472,6 +523,10 @@ export async function createInvites(request: CreateInvitesRequest): Promise<Crea
     method: 'POST',
     body: JSON.stringify(request),
   });
+}
+
+export async function getLatestInviteLink(): Promise<InviteLinkResponse> {
+  return apiFetch<InviteLinkResponse>('/invites/latest');
 }
 
 export async function searchArtists(query: string): Promise<SearchResponse> {

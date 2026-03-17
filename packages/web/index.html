@@ -71,6 +71,15 @@
               <div class="topbar-menu-panel" role="menu" aria-label="Top bar menu">
                 <h2 class="menu-panel-title">Settings</h2>
                 <span id="build-info-text" class="menu-build-info" role="note">Loading build info...</span>
+                <a
+                  id="admin-invite-link"
+                  class="menu-action-link hidden"
+                  href=""
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  role="menuitem"
+                >Latest invite link</a>
+                <span id="admin-invite-status" class="menu-build-info hidden" role="note"></span>
                 <button id="clear-cache-button" class="menu-action-link" type="button" role="menuitem">Clear local storage cache</button>
                 <button id="logout-button" class="menu-action-link" type="button" role="menuitem">Logout</button>
               </div>
@@ -132,7 +141,7 @@
           <span>Later</span>
         </a>
         <a href="#/ratings" data-view="ratings" class="nav-link" aria-label="Rated artists">
-          <i class="fa-regular fa-star" aria-hidden="true"></i>
+          <i class="fa-solid fa-ranking-star" aria-hidden="true"></i>
           <span>Rated</span>
         </a>
       </nav>

@@ -110,6 +110,16 @@ export interface InviteResponse {
   invite: Invite;
 }
 
+export interface InviteLinkResponse {
+  invite: {
+    code: string;
+    inviteUrl: string;
+    createdAt: number;
+    expiresAt: number;
+    remainingUses: number;
+  };
+}
+
 export interface ErrorResponse {
   error: string;
 }

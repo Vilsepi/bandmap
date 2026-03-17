@@ -85,6 +85,7 @@ const session: AuthSessionResponse = {
   user: {
     id: 'user-1',
     username: 'tester',
+    isAdmin: true,
     cognitoSub: 'cognito-sub-1',
     createdAt: 1735689600,
   },
@@ -194,6 +195,31 @@ function queueNoContentResponse(): void {
 }
 
 describe('frontend API caching', () => {
+  it('upgrades stored sessions that predate the admin flag', () => {
+    cookieJar.cookie = `bandmap-session=${encodeURIComponent(
+      JSON.stringify({
+        sessionToken: 'legacy-session-token',
+        refreshToken: 'legacy-refresh-token',
+        expiresAt: 60_000,
+        user: {
+          id: 'legacy-user',
+          username: 'legacy',
+          cognitoSub: 'legacy-cognito-sub',
+          createdAt: 1735689600,
+        },
+      }),
+    )}; path=/; SameSite=Strict`;
+
+    assert.equal(api.hasSession(), true);
+    assert.deepEqual(api.getCurrentUser(), {
+      id: 'legacy-user',
+      username: 'legacy',
+      isAdmin: false,
+      cognitoSub: 'legacy-cognito-sub',
+      createdAt: 1735689600,
+    });
+  });
+
   it('keeps the session for 30 days', () => {
     now = session.session.expiresIn * 1000 + 1;
     assert.equal(api.hasSession(), true);
@@ -300,5 +326,27 @@ describe('frontend API caching', () => {
     assert.equal(fetchCalls.length, 2);
     assert.equal(fetchCalls[0]?.url, 'https://api.example.test/recommendations');
     assert.equal(fetchCalls[1]?.url, 'https://api.example.test/recommendations/generate');
+  });
+
+  it('loads the latest invite link for admin sessions', async () => {
+    queueJsonResponse({
+      invite: {
+        code: 'INVITE-1',
+        inviteUrl: 'https://music.heap.fi/#invite?code=INVITE-1',
+        createdAt: 1735862400,
+        expiresAt: 1738454400,
+        remainingUses: 8,
+      },
+    });
+
+    const response = await api.getLatestInviteLink();
+
+    assert.equal(response.invite.code, 'INVITE-1');
+    assert.equal(fetchCalls.length, 1);
+    assert.equal(fetchCalls[0]?.url, 'https://api.example.test/invites/latest');
+    assert.equal(
+      (fetchCalls[0]?.init?.headers as Record<string, string> | undefined)?.['Authorization'],
+      'Bearer session-token',
+    );
   });
 });

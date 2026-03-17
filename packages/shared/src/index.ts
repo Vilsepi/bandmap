@@ -22,6 +22,7 @@ export type {
   ValidateInviteResponse,
   RedeemInviteResponse,
   InviteResponse,
+  InviteLinkResponse,
   ErrorResponse,
 } from './api.js';
 export {
