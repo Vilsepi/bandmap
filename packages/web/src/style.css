@@ -402,10 +402,6 @@ body.topbar-menu-open {
   transition: background 0.15s;
 }
 
-.card-main-row {
-  padding-right: 28px;
-}
-
 .card-title-row {
   display: flex;
   align-items: center;
@@ -436,7 +432,14 @@ body.topbar-menu-open {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+}
+
+.card-title-action {
+  width: 1.9rem;
+  height: 1.9rem;
+  flex-shrink: 0;
+  border-radius: 999px;
 }
 
 .card-subtitle {
@@ -455,10 +458,9 @@ body.topbar-menu-open {
   position: relative;
   display: inline-grid;
   place-items: center;
-  min-width: 1.9rem;
-  min-height: 1.9rem;
+  width: 1.9rem;
+  height: 1.9rem;
   color: var(--brand-accent);
-  flex-shrink: 0;
 }
 
 .card-score:empty {
@@ -467,15 +469,15 @@ body.topbar-menu-open {
 
 .card-score-star {
   grid-area: 1 / 1;
-  font-size: 1.45rem;
+  font-size: var(--font-size-icon);
   line-height: 1;
 }
 
 .card-score-value {
   grid-area: 1 / 1;
-  font-size: 0.87rem;
+  font-size: 0.8rem;
+  padding-bottom: 3px;
   line-height: 1;
-  padding-bottom: 2px;
   text-align: center;
   font-weight: 700;
   color: var(--brand-bg-app);
@@ -483,18 +485,16 @@ body.topbar-menu-open {
 }
 
 .card-remove-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
-  border-radius: 999px;
   background: transparent;
   color: var(--brand-danger);
-  font-size: var(--font-size-regular);
+  font-size: var(--font-size-icon);
   line-height: 1;
   cursor: pointer;
+  padding: 0;
 }
 
 .card-remove-btn:hover {
@@ -512,7 +512,8 @@ body.topbar-menu-open {
   color: var(--brand-accent);
   font-size: var(--font-size-play);
   text-decoration: none;
-  padding: 4px;
+  justify-content: center;
+  padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -598,7 +599,7 @@ body.topbar-menu-open {
 .action-bar {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
   margin-bottom: 20px;
 }
 
