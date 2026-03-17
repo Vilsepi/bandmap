@@ -12,7 +12,11 @@ export function renderRatingCard(
 
   const scoreDisplay =
     rating.status === 'rated' && rating.score !== null
-      ? '&#9733;'.repeat(rating.score) + '&#9734;'.repeat(5 - rating.score)
+      ? `<i class="card-score-star fa-solid fa-star" aria-hidden="true"></i><span class="card-score-value">${rating.score}</span>`
+      : '';
+  const scoreLabel =
+    rating.status === 'rated' && rating.score !== null
+      ? ` aria-label="Rated ${rating.score} out of 5"`
       : '';
 
   card.innerHTML = `
@@ -40,7 +44,7 @@ export function renderRatingCard(
             aria-label="Open artist on Spotify or Last.fm"
             title="Open artist on Spotify or Last.fm"
           ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
-          <div class="card-score">${scoreDisplay}</div>
+          <div class="card-score"${scoreLabel}>${scoreDisplay}</div>
         </div>
       </div>
     </div>
