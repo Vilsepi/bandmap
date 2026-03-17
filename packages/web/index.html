@@ -95,6 +95,15 @@
         <div id="view-search" class="view active">
           <div class="search-box">
             <input type="text" id="search" placeholder="Search for an artist..." autocomplete="off" />
+            <button
+              id="search-clear"
+              class="search-clear-btn hidden"
+              type="button"
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
           </div>
           <div id="search-results" class="card-list"></div>
           <div id="artist-detail" class="hidden">
