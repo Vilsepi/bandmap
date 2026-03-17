@@ -1,5 +1,6 @@
 import { getCurrentUser, getLatestInviteLink } from './api.js';
 import { escapeHtml, formatEpochSeconds } from './utils.js';
+import type { AuthSessionResponse } from '@bandmap/shared';
 
 interface BuildInfo {
   timestamp: string;
@@ -19,12 +20,20 @@ const settingsMenuIcon = settingsMenuToggle?.querySelector<HTMLElement>('i') ?? 
 const settingsMenuPanel = document.querySelector<HTMLElement>(
   '#settings-menu-dropdown .settings-menu-panel',
 );
+const currentUserStatus = document.getElementById('current-user-status');
 const adminInviteLink = document.getElementById('admin-invite-link') as HTMLAnchorElement | null;
-const adminInviteStatus = document.getElementById('admin-invite-status');
 
 let settingsMenuCloseTimer: ReturnType<typeof setTimeout> | null = null;
 let settingsMenuInitialized = false;
-let adminInviteListenerInitialized = false;
+let sessionListenerInitialized = false;
+
+export function formatCurrentUserStatus(user: AuthSessionResponse['user'] | null): string | null {
+  if (!user) {
+    return null;
+  }
+
+  return `Signed in as ${user.username}${user.isAdmin ? ' (Admin role)' : ''}`;
+}
 
 function setSettingsMenuOpen(isOpen: boolean): void {
   if (!settingsMenuToggle || !settingsMenuDropdown) {
@@ -143,44 +152,54 @@ async function loadBuildInfo(): Promise<void> {
 }
 
 async function loadAdminInviteLink(): Promise<void> {
-  if (!adminInviteLink || !adminInviteStatus) {
+  if (!adminInviteLink) {
     return;
   }
 
   const currentUser = getCurrentUser();
   const isAdmin = currentUser?.isAdmin === true;
   adminInviteLink.classList.toggle('hidden', !isAdmin);
-  adminInviteStatus.classList.toggle('hidden', !isAdmin);
 
   if (!isAdmin) {
     adminInviteLink.removeAttribute('href');
     adminInviteLink.textContent = 'Latest invite link';
-    adminInviteStatus.textContent = '';
     return;
   }
 
-  adminInviteStatus.textContent = 'Loading latest invite link...';
+  adminInviteLink.textContent = 'Loading invite link...';
 
   try {
     const response = await getLatestInviteLink();
+    const inviteStatus = `${response.invite.remainingUses} uses left · expires ${formatEpochSeconds(response.invite.expiresAt)}`;
     adminInviteLink.href = response.invite.inviteUrl;
-    adminInviteLink.textContent = 'Latest invite link';
-    adminInviteStatus.textContent = `${response.invite.remainingUses} use(s) left · ${formatEpochSeconds(response.invite.createdAt)}`;
+    adminInviteLink.innerHTML = `<i class="fa-solid fa-link"></i> Copy invite link from here<br>${inviteStatus}`;
   } catch (error) {
     adminInviteLink.removeAttribute('href');
-    adminInviteLink.textContent = 'Latest invite link unavailable';
-    adminInviteStatus.textContent =
+    adminInviteLink.textContent =
       error instanceof Error ? error.message : 'Unable to load invite link.';
   }
 }
 
-function initializeAdminInviteLink(): void {
-  if (adminInviteListenerInitialized) {
+ // "admin-invite-status"
+
+function loadCurrentUserStatus(): void {
+  if (!currentUserStatus) {
     return;
   }
 
-  adminInviteListenerInitialized = true;
+  const summary = formatCurrentUserStatus(getCurrentUser());
+  currentUserStatus.textContent = summary ?? '';
+  currentUserStatus.classList.toggle('hidden', summary === null);
+}
+
+function initializeSessionListener(): void {
+  if (sessionListenerInitialized) {
+    return;
+  }
+
+  sessionListenerInitialized = true;
   globalThis.addEventListener('bandmap:session-updated', () => {
+    loadCurrentUserStatus();
     void loadAdminInviteLink();
   });
 }
@@ -192,7 +211,8 @@ export function initializeSettingsMenu(): void {
 
   settingsMenuInitialized = true;
   initializeMenuInteractions();
-  initializeAdminInviteLink();
+  initializeSessionListener();
+  loadCurrentUserStatus();
   void loadBuildInfo();
   void loadAdminInviteLink();
 }

@@ -69,6 +69,7 @@
             <div id="settings-menu-dropdown" class="settings-menu-dropdown hidden">
               <div class="settings-menu-panel" role="menu" aria-label="Settings menu">
                 <h2 class="menu-panel-title">Settings</h2>
+                <span id="current-user-status" class="menu-session-info hidden" role="note"></span>
                 <span id="build-info-text" class="menu-build-info" role="note">Loading build info...</span>
                 <a
                   id="admin-invite-link"
@@ -78,9 +79,8 @@
                   rel="noopener noreferrer"
                   role="menuitem"
                 >Latest invite link</a>
-                <span id="admin-invite-status" class="menu-build-info hidden" role="note"></span>
-                <button id="clear-cache-button" class="menu-action-link" type="button" role="menuitem">Clear local storage cache</button>
-                <button id="logout-button" class="menu-action-link" type="button" role="menuitem">Logout</button>
+                <button id="clear-cache-button" class="menu-action-link" type="button" role="menuitem"><i class="fa-solid fa-triangle-exclamation"></i> Clear local cache</button>
+                <button id="logout-button" class="menu-action-link" type="button" role="menuitem"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
               </div>
             </div>
           </div>

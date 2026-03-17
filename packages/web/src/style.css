@@ -217,9 +217,16 @@ body.settings-menu-open {
   margin: 0 0 8px;
 }
 
+.menu-session-info {
+  font-size: var(--font-size-regular);
+  margin: 12px 0 0;
+  color: var(--brand-text-secondary);
+  line-height: 1.35;
+}
+
 .menu-build-info {
-  font-size: var(--font-size-small);
-  margin: 20px 0 40px 0;
+  font-size: var(--font-size-regular);
+  margin: 16px 0 40px 0;
   color: var(--brand-text-muted);
   line-height: 1.35;
 }
@@ -237,13 +244,14 @@ body.settings-menu-open {
 
 .menu-action-link {
   display: block;
+  max-width: 450px;
   border: 1px solid var(--brand-danger);
   border-radius: 6px;
-  background: none;
+  background: var(--brand-bg-muted);
   color: var(--brand-danger);
   text-align: left;
-  margin: 10px 40px;
-  padding: 10px;
+  margin: 4px 0px;
+  padding: 12px;
   font-size: var(--font-size-regular);
   cursor: pointer;
   text-decoration: none;
