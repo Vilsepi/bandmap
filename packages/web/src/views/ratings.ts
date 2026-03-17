@@ -29,7 +29,9 @@ export async function loadRatings(
     container.innerHTML = '';
     for (const rating of sortedRatings) {
       const card = renderRatingCard(rating, navigateToArtist, {
-        onRemove: () => putRating(rating.artistId, { score: null, todo: rating.todo }),
+        onRemove: async () => {
+          await putRating(rating.artistId, { score: null, todo: rating.todo });
+        },
       });
       container.appendChild(card);
     }

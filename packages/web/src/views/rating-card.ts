@@ -7,7 +7,7 @@ export function renderRatingCard(
   navigateToArtist: (artistId: string) => Promise<void>,
   options: {
     showPlayLink?: boolean;
-    onRemove: () => Promise<unknown>;
+    onRemove: () => Promise<void>;
   },
 ): HTMLElement {
   const card = document.createElement('div');
@@ -17,10 +17,7 @@ export function renderRatingCard(
     rating.score !== null
       ? `<i class="card-score-star fa-solid fa-star" aria-hidden="true"></i><span class="card-score-value">${rating.score}</span>`
       : '';
-  const scoreLabel =
-    rating.score !== null
-      ? ` aria-label="Rated ${rating.score} out of 5"`
-      : '';
+  const scoreLabel = rating.score !== null ? ` aria-label="Rated ${rating.score} out of 5"` : '';
 
   card.innerHTML = `
     <div class="card-row card-main-row">

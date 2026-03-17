@@ -358,7 +358,8 @@ export async function listRatings(userId: string, status?: 'rated' | 'todo'): Pr
     params.ExpressionAttributeNames = { '#s': 'status' };
   } else if (status === 'rated') {
     // Match new items (score is a Number) OR legacy items (status = 'rated')
-    params.FilterExpression = 'attribute_type(score, :numType) OR #s = :statusRated';
+    params.FilterExpression =
+      '(attribute_exists(score) AND attribute_type(score, :numType)) OR #s = :statusRated';
     params.ExpressionAttributeValues[':numType'] = 'N';
     params.ExpressionAttributeValues[':statusRated'] = 'rated';
     params.ExpressionAttributeNames = { '#s': 'status' };
