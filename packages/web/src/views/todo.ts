@@ -21,7 +21,9 @@ export async function loadTodo(
     for (const rating of ratings) {
       const card = renderRatingCard(rating, navigateToArtist, {
         showPlayLink: true,
-        onRemove: () => putRating(rating.artistId, { score: rating.score, todo: false }),
+        onRemove: async () => {
+          await putRating(rating.artistId, { score: rating.score, todo: false });
+        },
       });
       container.appendChild(card);
     }
