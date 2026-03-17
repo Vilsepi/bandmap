@@ -20,15 +20,6 @@ export function renderRatingCard(
       : '';
 
   card.innerHTML = `
-    <button
-      class="card-remove-btn"
-      data-action="delete"
-      data-artist-id="${escapeHtml(rating.artistId)}"
-      aria-label="Remove artist"
-      title="Remove"
-    >
-      &times;
-    </button>
     <div class="card-row card-main-row">
       <div class="card-title-row">
         <div class="card-title clickable-text" data-artist-id="${escapeHtml(rating.artistId)}">
@@ -36,7 +27,7 @@ export function renderRatingCard(
         </div>
         <div class="card-title-actions">
           <a
-            class="card-link card-title-link hidden"
+            class="card-link card-title-action card-title-link hidden"
             data-role="play-link"
             href="#"
             target="_blank"
@@ -44,7 +35,16 @@ export function renderRatingCard(
             aria-label="Open artist on Spotify or Last.fm"
             title="Open artist on Spotify or Last.fm"
           ><i class="fa-regular fa-circle-play" aria-hidden="true"></i></a>
-          <div class="card-score"${scoreLabel}>${scoreDisplay}</div>
+          <div class="card-score card-title-action"${scoreLabel}>${scoreDisplay}</div>
+          <button
+            class="card-remove-btn card-title-action"
+            data-action="delete"
+            data-artist-id="${escapeHtml(rating.artistId)}"
+            aria-label="Remove artist"
+            title="Remove"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
         </div>
       </div>
     </div>
