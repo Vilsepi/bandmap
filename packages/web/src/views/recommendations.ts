@@ -1,4 +1,5 @@
-import { RECOMMENDATION_MAX_RESULTS, type Recommendation } from '@bandmap/shared';
+import { RECOMMENDATION_MAX_RESULTS } from '@bandmap/shared';
+import type { Recommendation } from '@bandmap/shared';
 import { normalizeRecommendationSourceArtistName } from '@bandmap/shared/recommendations';
 import { generateRecommendations, getArtist, getRecommendations, putRating } from '../api.js';
 import { escapeHtml } from '../utils.js';

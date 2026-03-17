@@ -1,6 +1,7 @@
 import { getCurrentUser, getLatestInviteLink } from './api.js';
 import { initGlobalConfig } from './config.js';
-import { createRouter, type AppRoute, type ViewName } from './router.js';
+import type { AppRoute, ViewName } from './router.js';
+import { createRouter } from './router.js';
 import { escapeHtml } from './utils.js';
 import { loadRatings } from './views/ratings.js';
 import { initRecommendationsView, loadRecommendations } from './views/recommendations.js';

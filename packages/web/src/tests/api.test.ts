@@ -136,9 +136,11 @@ const recommendations: RecommendationsResponse = {
 
 Object.assign(globalThis, { localStorage, document: cookieJar });
 
-type ApiModule = typeof import('../api.js');
+async function importApiModule() {
+  return import('../api.js');
+}
 
-let api: ApiModule;
+let api: Awaited<ReturnType<typeof importApiModule>>;
 let queuedResponses: Response[] = [];
 let fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
 let now = 0;
@@ -158,7 +160,7 @@ function requestUrl(input: URL | RequestInfo): string {
 
 before(async () => {
   process.env.VITE_API_BASE_URL = 'https://api.example.test';
-  api = await import('../api.js');
+  api = await importApiModule();
 });
 
 beforeEach(() => {
