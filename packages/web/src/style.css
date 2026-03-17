@@ -317,13 +317,14 @@ body.topbar-menu-open {
 
 .search-box {
   position: relative;
+  width: 100%;
+  max-width: 500px;
   margin-bottom: 16px;
 }
 
 .search-box input {
   width: 100%;
-  max-width: 500px;
-  padding: 10px 14px;
+  padding: 10px 42px 10px 14px;
   border: 1px solid var(--brand-border-strong);
   border-radius: 8px;
   background: var(--brand-bg-muted);
@@ -334,6 +335,29 @@ body.topbar-menu-open {
 
 .search-box input:focus {
   border-color: var(--brand-accent);
+}
+
+.search-clear-btn {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--brand-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.search-clear-btn:hover,
+.search-clear-btn:focus-visible {
+  background: var(--brand-bg-surface);
+  color: var(--brand-text-primary);
 }
 
 /* ── Cards ──────────────────────────────────────────────── */

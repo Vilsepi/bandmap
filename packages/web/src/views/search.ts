@@ -11,6 +11,7 @@ interface SearchViewOptions {
 const DELAY_BEFORE_SEARCHING_IN_MS = 1000;
 
 const searchInput = document.getElementById('search') as HTMLInputElement;
+const searchClearButton = document.getElementById('search-clear') as HTMLButtonElement;
 const searchResultsEl = document.getElementById('search-results')!;
 const artistDetailEl = document.getElementById('artist-detail')!;
 const detailContentEl = document.getElementById('detail-content')!;
@@ -18,9 +19,12 @@ const detailContentEl = document.getElementById('detail-content')!;
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function initSearchView({ navigateToRoute }: SearchViewOptions): void {
+  updateSearchClearButton();
+
   searchInput.addEventListener('input', () => {
     const query = searchInput.value.trim();
-    if (searchTimeout) clearTimeout(searchTimeout);
+    updateSearchClearButton();
+    clearPendingSearch();
 
     if (query.length < 2) {
       searchResultsEl.innerHTML = '';
@@ -30,6 +34,14 @@ export function initSearchView({ navigateToRoute }: SearchViewOptions): void {
     searchTimeout = setTimeout(() => {
       void performSearch(query, navigateToRoute);
     }, DELAY_BEFORE_SEARCHING_IN_MS);
+  });
+
+  searchClearButton.addEventListener('click', () => {
+    searchInput.value = '';
+    updateSearchClearButton();
+    clearPendingSearch();
+    searchResultsEl.innerHTML = '';
+    searchInput.focus();
   });
 }
 
@@ -92,6 +104,17 @@ async function performSearch(
   } catch (err) {
     searchResultsEl.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
   }
+}
+
+function clearPendingSearch(): void {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+    searchTimeout = null;
+  }
+}
+
+function updateSearchClearButton(): void {
+  searchClearButton.classList.toggle('hidden', searchInput.value.length === 0);
 }
 
 function attachDetailActions(
