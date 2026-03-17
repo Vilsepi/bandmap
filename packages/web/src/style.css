@@ -227,6 +227,17 @@ body.topbar-menu-open {
   line-height: 1.35;
 }
 
+.menu-build-info a {
+  color: var(--brand-text-primary);
+  text-decoration-color: var(--brand-text-muted);
+}
+
+.menu-build-info a:hover,
+.menu-build-info a:focus-visible {
+  color: var(--brand-accent);
+  text-decoration-color: currentColor;
+}
+
 .menu-action-link {
   display: block;
   border: 1px solid var(--brand-danger);
