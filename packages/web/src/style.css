@@ -441,9 +441,34 @@ body.topbar-menu-open {
 }
 
 .card-score {
-  font-size: var(--font-size-small);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.9rem;
+  min-height: 1.9rem;
   color: var(--brand-accent);
-  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.card-score:empty {
+  display: none;
+}
+
+.card-score-star {
+  grid-area: 1 / 1;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.card-score-value {
+  grid-area: 1 / 1;
+  font-size: 0.87rem;
+  line-height: 1;
+  padding-bottom: 2px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--brand-bg-app);
+  transform: translateY(1px);
 }
 
 .card-remove-btn {
