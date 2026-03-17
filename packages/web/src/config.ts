@@ -188,12 +188,14 @@ export function initGlobalConfig({ onAuthenticated }: GlobalConfigOptions): void
   });
 
   logoutButton?.addEventListener('click', () => {
+    if (!confirm('Are you sure you want to log out?')) return;
     clearSession();
     showAuthGate();
     updateGateForLocation();
   });
 
   clearCacheButton?.addEventListener('click', () => {
+    if (!confirm('Are you sure you want to clear the local storage cache?')) return;
     clearCachedData();
   });
 
