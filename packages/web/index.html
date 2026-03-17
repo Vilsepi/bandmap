@@ -95,6 +95,9 @@
         <div id="view-search" class="view active">
           <div class="search-box">
             <input type="text" id="search" placeholder="Search for an artist..." autocomplete="off" />
+            <span id="search-spinner" class="search-spinner hidden" aria-hidden="true">
+              <i class="fa-solid fa-spinner loading-spinner" aria-hidden="true"></i>
+            </span>
             <button
               id="search-clear"
               class="search-clear-btn hidden"
@@ -116,7 +119,10 @@
           <div id="recommendations-list" class="card-list">
             <p class="empty-state">Loading...</p>
           </div>
-          <button id="refresh-recommendations" class="btn-primary">Refresh</button>
+          <button id="refresh-recommendations" class="btn-primary" type="button">
+            <i class="fa-solid fa-spinner loading-spinner hidden" aria-hidden="true"></i>
+            <span>Refresh</span>
+          </button>
         </div>
 
         <!-- Bookmark view -->
