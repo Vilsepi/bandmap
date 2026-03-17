@@ -9,13 +9,25 @@ export function formatEpochSeconds(timestamp: number): string {
 }
 
 export function getExternalLinkIconClass(url: string | undefined): string {
-  if (url?.includes('last.fm')) {
+  if (isHostname(url, ['last.fm', 'www.last.fm'])) {
     return 'fa-brands fa-lastfm';
   }
 
-  if (url?.includes('spotify.com')) {
+  if (isHostname(url, ['spotify.com', 'open.spotify.com'])) {
     return 'fa-brands fa-spotify';
   }
 
   return 'fa-regular fa-circle-play';
+}
+
+function isHostname(url: string | undefined, allowedHosts: string[]): boolean {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    return allowedHosts.includes(new URL(url).hostname);
+  } catch {
+    return false;
+  }
 }
