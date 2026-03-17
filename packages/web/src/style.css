@@ -324,7 +324,7 @@ body.topbar-menu-open {
 
 .search-box input {
   width: 100%;
-  padding: 10px 42px 10px 14px;
+  padding: 10px 76px 10px 14px;
   border: 1px solid var(--brand-border-strong);
   border-radius: 8px;
   background: var(--brand-bg-muted);
@@ -335,6 +335,19 @@ body.topbar-menu-open {
 
 .search-box input:focus {
   border-color: var(--brand-accent);
+}
+
+.search-spinner {
+  position: absolute;
+  top: 50%;
+  right: 44px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: var(--brand-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-clear-btn {
@@ -597,6 +610,10 @@ body.topbar-menu-open {
 
 /* ── Buttons ────────────────────────────────────────────── */
 
+.loading-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
 .btn-primary {
   padding: 8px 16px;
   border: none;
@@ -606,10 +623,19 @@ body.topbar-menu-open {
   font-size: var(--font-size-regular);
   cursor: pointer;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .btn-primary:hover {
   background: var(--brand-accent);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 #refresh-recommendations {
@@ -676,6 +702,16 @@ body.topbar-menu-open {
   border-radius: 10px;
   font-size: var(--font-size-small);
   color: var(--brand-text-secondary);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Misc ───────────────────────────────────────────────── */

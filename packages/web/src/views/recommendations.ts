@@ -7,6 +7,7 @@ import { escapeHtml } from '../utils.js';
 const MAX_TAGS_PER_RECOMMENDATION = 8;
 
 let isInitialized = false;
+let isRefreshingRecommendations = false;
 
 export function initRecommendationsView(
   navigateToArtist: (artistId: string) => Promise<void>,
@@ -40,9 +41,15 @@ export async function loadRecommendations(
 async function refreshRecommendations(
   navigateToArtist: (artistId: string) => Promise<void>,
 ): Promise<void> {
+  if (isRefreshingRecommendations) {
+    return;
+  }
+
   const container = document.getElementById('recommendations-list');
   if (!container) return;
 
+  isRefreshingRecommendations = true;
+  setRefreshRecommendationsLoading(true);
   container.innerHTML = '<p class="empty-state">Generating recommendations...</p>';
 
   try {
@@ -51,7 +58,25 @@ async function refreshRecommendations(
   } catch (err) {
     console.error('Failed to generate recommendations', err);
     container.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
+  } finally {
+    isRefreshingRecommendations = false;
+    setRefreshRecommendationsLoading(false);
   }
+}
+
+function setRefreshRecommendationsLoading(isLoading: boolean): void {
+  const refreshButton = document.getElementById(
+    'refresh-recommendations',
+  ) as HTMLButtonElement | null;
+  const spinnerIcon = refreshButton?.querySelector<HTMLElement>('.loading-spinner');
+
+  if (!refreshButton || !spinnerIcon) {
+    return;
+  }
+
+  refreshButton.disabled = isLoading;
+  refreshButton.setAttribute('aria-busy', String(isLoading));
+  spinnerIcon.classList.toggle('hidden', !isLoading);
 }
 
 function getRecommendationReason(recommendation: Recommendation): string {
