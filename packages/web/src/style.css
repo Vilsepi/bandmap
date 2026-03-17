@@ -142,16 +142,16 @@ body {
   font-size: var(--font-size-heading);
 }
 
-#topbar-menu-container {
+#settings-menu-container {
   position: relative;
   z-index: 60;
 }
 
-body.topbar-menu-open {
+body.settings-menu-open {
   overflow: hidden;
 }
 
-.topbar-menu-toggle {
+.settings-menu-toggle {
   position: relative;
   z-index: 61;
   width: 36px;
@@ -166,7 +166,7 @@ body.topbar-menu-open {
   cursor: pointer;
 }
 
-.topbar-menu-dropdown {
+.settings-menu-dropdown {
   position: fixed;
   inset: 0;
   display: flex;
@@ -180,13 +180,13 @@ body.topbar-menu-open {
   z-index: 50;
 }
 
-.topbar-menu-dropdown.is-open {
+.settings-menu-dropdown.is-open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-.topbar-menu-panel {
+.settings-menu-panel {
   width: min(100vw, var(--app-max-width));
   min-height: 100vh;
   min-height: 100dvh;
@@ -202,7 +202,7 @@ body.topbar-menu-open {
   transition: transform 0.24s ease;
 }
 
-.topbar-menu-dropdown.is-open .topbar-menu-panel {
+.settings-menu-dropdown.is-open .settings-menu-panel {
   transform: translateX(0);
 }
 
@@ -451,8 +451,8 @@ body.topbar-menu-open {
 
 .card-score-value {
   grid-area: 1 / 1;
-  font-size: 0.8rem;
-  padding-bottom: 3px;
+  font-size: 0.7rem;
+  padding-bottom: 1px;
   line-height: 1;
   text-align: center;
   font-weight: 700;
