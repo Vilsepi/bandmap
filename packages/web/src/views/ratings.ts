@@ -1,4 +1,4 @@
-import { listRatings } from '../api.js';
+import { listRatings, putRating } from '../api.js';
 import { escapeHtml } from '../utils.js';
 import { renderRatingCard } from './rating-card.js';
 
@@ -28,7 +28,9 @@ export async function loadRatings(
 
     container.innerHTML = '';
     for (const rating of sortedRatings) {
-      const card = renderRatingCard(rating, navigateToArtist);
+      const card = renderRatingCard(rating, navigateToArtist, {
+        onRemove: () => putRating(rating.artistId, { score: null, todo: rating.todo }),
+      });
       container.appendChild(card);
     }
   } catch (err) {

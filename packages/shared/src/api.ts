@@ -8,7 +8,7 @@ export interface SearchQuery {
 
 export interface PutRatingBody {
   score: number | null;
-  status: 'rated' | 'todo';
+  todo: boolean;
 }
 
 export interface ListRatingsQuery {

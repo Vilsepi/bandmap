@@ -303,10 +303,15 @@ function upsertRating(
   expectedStatus?: 'rated' | 'todo',
 ): Rating[] {
   const remainingRatings = ratings.filter((rating) => rating.artistId !== nextRating.artistId);
-  if (expectedStatus && nextRating.status !== expectedStatus) {
+  if (expectedStatus === 'rated' && nextRating.score === null) {
     return remainingRatings;
   }
-
+  if (expectedStatus === 'todo' && !nextRating.todo) {
+    return remainingRatings;
+  }
+  if (!expectedStatus && nextRating.score === null && !nextRating.todo) {
+    return remainingRatings;
+  }
   return [...remainingRatings, nextRating];
 }
 
@@ -592,12 +597,19 @@ export async function listRatings(status?: 'rated' | 'todo'): Promise<RatingsLis
   return response;
 }
 
-export async function putRating(artistId: string, body: PutRatingBody): Promise<RatingResponse> {
-  const response = await apiFetch<RatingResponse>(`/ratings/${artistId}`, {
+export async function putRating(
+  artistId: string,
+  body: PutRatingBody,
+): Promise<RatingResponse | undefined> {
+  const response = await apiFetch<RatingResponse | undefined>(`/ratings/${artistId}`, {
     method: 'PUT',
     body: JSON.stringify(body),
   });
-  updateCachedRatings(response.rating);
+  if (response?.rating) {
+    updateCachedRatings(response.rating);
+  } else {
+    removeCachedRating(artistId);
+  }
   return response;
 }
 

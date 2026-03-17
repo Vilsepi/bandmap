@@ -50,14 +50,14 @@ describe('artist detail view state', () => {
         userId: 'user-1',
         artistId: 'artist-2',
         score: null,
-        status: 'todo',
+        todo: true,
         updatedAt: 1735689600,
       },
       {
         userId: 'user-1',
         artistId: 'artist-1',
         score: 4,
-        status: 'rated',
+        todo: false,
         updatedAt: 1735776000,
       },
     ];
@@ -71,7 +71,7 @@ describe('artist detail view state', () => {
       userId: 'user-1',
       artistId: 'artist-1',
       score: 3,
-      status: 'rated',
+      todo: false,
       updatedAt: 1735776000,
     });
 
@@ -85,13 +85,27 @@ describe('artist detail view state', () => {
       userId: 'user-1',
       artistId: 'artist-1',
       score: null,
-      status: 'todo',
+      todo: true,
       updatedAt: 1735776000,
     });
 
     assert.equal(html.match(/class="star active"/g)?.length ?? 0, 0);
-    assert.match(html, /aria-label="Added to todo"/);
-    assert.match(html, /id="btn-todo"[\s\S]*disabled/);
+    assert.match(html, /aria-label="Remove from todo"/);
+    assert.doesNotMatch(html, /id="btn-todo"[\s\S]*disabled/);
+    assert.match(html, /fa-solid fa-bookmark/);
+  });
+
+  it('renders both star rating and todo bookmark simultaneously', () => {
+    const html = renderArtistDetail(artist, related, {
+      userId: 'user-1',
+      artistId: 'artist-1',
+      score: 4,
+      todo: true,
+      updatedAt: 1735776000,
+    });
+
+    assert.equal(html.match(/class="star active"/g)?.length, 4);
+    assert.match(html, /aria-label="Remove from todo"/);
     assert.match(html, /fa-solid fa-bookmark/);
   });
 

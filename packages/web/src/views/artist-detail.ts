@@ -31,8 +31,8 @@ export function renderArtistDetail(
     })
     .join('');
 
-  const selectedScore = rating?.status === 'rated' ? (rating.score ?? 0) : 0;
-  const isTodo = rating?.status === 'todo';
+  const selectedScore = rating?.score ?? 0;
+  const isTodo = rating?.todo ?? false;
 
   return `
     <div class="detail-title-row">
@@ -58,9 +58,8 @@ export function renderArtistDetail(
       <button
         class="btn-icon btn-bookmark"
         id="btn-todo"
-        aria-label="${isTodo ? 'Added to todo' : 'Add to todo'}"
-        title="${isTodo ? 'Added to todo' : 'Add to todo'}"
-        ${isTodo ? 'disabled' : ''}
+        aria-label="${isTodo ? 'Remove from todo' : 'Add to todo'}"
+        title="${isTodo ? 'Remove from todo' : 'Add to todo'}"
       >
         <i class="${isTodo ? 'fa-solid' : 'fa-regular'} fa-bookmark" aria-hidden="true"></i>
       </button>

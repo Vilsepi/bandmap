@@ -231,23 +231,29 @@ async function handlePutRating(
     return jsonResponse<ErrorResponse>(400, { error: 'Invalid request body' });
   }
 
-  if (body.status !== 'rated' && body.status !== 'todo') {
-    return jsonResponse<ErrorResponse>(400, { error: 'Status must be "rated" or "todo"' });
+  if (typeof body.todo !== 'boolean') {
+    return jsonResponse<ErrorResponse>(400, { error: '"todo" must be a boolean' });
   }
 
-  if (body.status === 'rated') {
+  if (body.score !== null) {
     if (typeof body.score !== 'number' || body.score < 1 || body.score > 5) {
       return jsonResponse<ErrorResponse>(400, {
-        error: 'Score must be a number between 1 and 5 when status is "rated"',
+        error: 'Score must be null or a number between 1 and 5',
       });
     }
+  }
+
+  // When both score and todo are cleared the item carries no information — delete it
+  if (body.score === null && !body.todo) {
+    await db.deleteRating(userId, artistId);
+    return jsonResponse(204, null);
   }
 
   const rating = {
     userId,
     artistId,
-    score: body.status === 'rated' ? body.score : null,
-    status: body.status,
+    score: body.score,
+    todo: body.todo,
     updatedAt: Math.floor(Date.now() / 1000),
   };
 

@@ -101,7 +101,7 @@ const ratedArtist: Rating = {
   userId: 'user-1',
   artistId: 'artist-rated',
   score: 5,
-  status: 'rated',
+  todo: false,
   updatedAt: 1735689600,
 };
 
@@ -109,7 +109,7 @@ const todoArtist: Rating = {
   userId: 'user-1',
   artistId: 'artist-todo',
   score: null,
-  status: 'todo',
+  todo: true,
   updatedAt: 1735776000,
 };
 
@@ -117,7 +117,7 @@ const olderRatedArtist: Rating = {
   userId: 'user-1',
   artistId: 'artist-old-rated',
   score: 3,
-  status: 'rated',
+  todo: false,
   updatedAt: 1735603200,
 };
 
@@ -296,14 +296,15 @@ describe('frontend API caching', () => {
     await api.listRatings('rated');
     await api.listRatings('todo');
 
+    // Rate the todo artist — todo flag is preserved alongside the new score
     const updatedRating: Rating = {
       ...todoArtist,
       score: 4,
-      status: 'rated',
+      todo: true,
       updatedAt: 1735948800,
     };
     queueJsonResponse({ rating: updatedRating });
-    await api.putRating(updatedRating.artistId, { score: 4, status: 'rated' });
+    await api.putRating(updatedRating.artistId, { score: 4, todo: true });
 
     const allRatings = await api.listRatings();
     const ratedRatings = await api.listRatings('rated');
@@ -312,7 +313,8 @@ describe('frontend API caching', () => {
     assert.equal(fetchCalls.length, 4);
     assert.deepEqual(allRatings.ratings, [olderRatedArtist, updatedRating]);
     assert.deepEqual(ratedRatings.ratings, [olderRatedArtist, updatedRating]);
-    assert.deepEqual(todoRatings.ratings, []);
+    // Artist still in todo because todo was preserved when rating was saved
+    assert.deepEqual(todoRatings.ratings, [updatedRating]);
   });
 
   it('removes deleted artists from cached rating lists', async () => {

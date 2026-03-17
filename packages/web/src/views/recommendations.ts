@@ -155,7 +155,7 @@ async function renderRecommendations(
     const addToTodoButton = card.querySelector<HTMLButtonElement>('[data-action="add-todo"]');
     addToTodoButton?.addEventListener('click', async (event) => {
       event.stopPropagation();
-      await putRating(recommendation.artistId, { score: null, status: 'todo' });
+      await putRating(recommendation.artistId, { score: null, todo: true });
       if (addToTodoButton) {
         addToTodoButton.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
         addToTodoButton.setAttribute('aria-label', 'Added to todo');

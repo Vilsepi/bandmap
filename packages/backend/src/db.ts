@@ -302,6 +302,30 @@ export async function putRelatedArtists(sourceId: string, items: RelatedArtist[]
 
 // ── Ratings ──────────────────────────────────────────────────
 
+/** Shape of rating items written before the todo/score decoupling */
+interface LegacyRating {
+  userId: string;
+  artistId: string;
+  score: number | null;
+  status: 'rated' | 'todo';
+  updatedAt: number;
+}
+
+/** Normalise a DynamoDB item that may still use the old `status` field. */
+function normalizeLegacyRating(item: Record<string, unknown>): Rating {
+  if ('status' in item && !('todo' in item)) {
+    const legacy = item as unknown as LegacyRating;
+    return {
+      userId: legacy.userId,
+      artistId: legacy.artistId,
+      score: legacy.score,
+      todo: legacy.status === 'todo',
+      updatedAt: legacy.updatedAt,
+    };
+  }
+  return item as unknown as Rating;
+}
+
 export async function getRating(userId: string, artistId: string): Promise<Rating | null> {
   const result = await docClient.send(
     new GetCommand({
@@ -309,33 +333,39 @@ export async function getRating(userId: string, artistId: string): Promise<Ratin
       Key: { userId, artistId },
     }),
   );
-  return (result.Item as Rating | undefined) ?? null;
+  const item = result.Item as Record<string, unknown> | undefined;
+  return item ? normalizeLegacyRating(item) : null;
 }
 
 export async function listRatings(userId: string, status?: 'rated' | 'todo'): Promise<Rating[]> {
   const params: {
     TableName: string;
     KeyConditionExpression: string;
-    ExpressionAttributeValues: Record<string, string>;
+    ExpressionAttributeValues: Record<string, unknown>;
     FilterExpression?: string;
+    ExpressionAttributeNames?: Record<string, string>;
   } = {
     TableName: tableName('RATINGS_TABLE'),
     KeyConditionExpression: 'userId = :id',
     ExpressionAttributeValues: { ':id': userId },
   };
 
-  if (status) {
-    params.FilterExpression = '#s = :status';
-    params.ExpressionAttributeValues[':status'] = status;
+  if (status === 'todo') {
+    // Match new items (todo = true) OR legacy items (status = 'todo')
+    params.FilterExpression = 'todo = :true OR #s = :statusTodo';
+    params.ExpressionAttributeValues[':true'] = true;
+    params.ExpressionAttributeValues[':statusTodo'] = 'todo';
+    params.ExpressionAttributeNames = { '#s': 'status' };
+  } else if (status === 'rated') {
+    // Match new items (score is a Number) OR legacy items (status = 'rated')
+    params.FilterExpression = 'attribute_type(score, :numType) OR #s = :statusRated';
+    params.ExpressionAttributeValues[':numType'] = 'N';
+    params.ExpressionAttributeValues[':statusRated'] = 'rated';
+    params.ExpressionAttributeNames = { '#s': 'status' };
   }
 
-  const result = await docClient.send(
-    new QueryCommand({
-      ...params,
-      ...(status ? { ExpressionAttributeNames: { '#s': 'status' } } : {}),
-    }),
-  );
-  return (result.Items as Rating[] | undefined) ?? [];
+  const result = await docClient.send(new QueryCommand(params));
+  return ((result.Items as Record<string, unknown>[] | undefined) ?? []).map(normalizeLegacyRating);
 }
 
 export async function putRating(rating: Rating): Promise<void> {
