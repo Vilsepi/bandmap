@@ -2,7 +2,7 @@
 
 [music.heap.fi](https://music.heap.fi)
 
-Discover new music through similar artists you already like. A hobby project, currently in invite-only alpha testing.
+Discover new music through similar artists you already like. A hobby project, currently in invite-only beta testing.
 
 ![screenshot](doc/screenshot.jpg)
 

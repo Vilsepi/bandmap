@@ -180,8 +180,6 @@ async function loadAdminInviteLink(): Promise<void> {
   }
 }
 
- // "admin-invite-status"
-
 function loadCurrentUserStatus(): void {
   if (!currentUserStatus) {
     return;
