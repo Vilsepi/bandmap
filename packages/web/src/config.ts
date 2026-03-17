@@ -8,6 +8,7 @@ import {
   refreshSession,
   validateInvite,
 } from './api.js';
+import { formatEpochSeconds } from './utils.js';
 
 interface GlobalConfigOptions {
   onAuthenticated: () => void;
@@ -113,7 +114,7 @@ export function initGlobalConfig({ onAuthenticated }: GlobalConfigOptions): void
 
       setMessage(
         inviteStatus,
-        `Invite valid. ${response.invite.remainingUses} spot(s) left until ${new Date(response.invite.expiresAt).toLocaleString()}.`,
+        `Invite valid. ${response.invite.remainingUses} spot(s) left until ${formatEpochSeconds(response.invite.expiresAt)}.`,
       );
       inviteUsernameInput?.focus();
     } catch (error) {

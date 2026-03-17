@@ -2,7 +2,7 @@ import { getCurrentUser, getLatestInviteLink } from './api.js';
 import { initGlobalConfig } from './config.js';
 import type { AppRoute, ViewName } from './router.js';
 import { createRouter } from './router.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, formatEpochSeconds } from './utils.js';
 import { loadRatings } from './views/ratings.js';
 import { initRecommendationsView, loadRecommendations } from './views/recommendations.js';
 import { initSearchView, showArtistDetail, showSearchResults } from './views/search.js';
@@ -168,7 +168,7 @@ async function loadAdminInviteLink(): Promise<void> {
     const response = await getLatestInviteLink();
     adminInviteLink.href = response.invite.inviteUrl;
     adminInviteLink.textContent = 'Latest invite link';
-    adminInviteStatus.textContent = `${response.invite.remainingUses} use(s) left · ${new Date(response.invite.createdAt * 1000).toLocaleString()}`;
+    adminInviteStatus.textContent = `${response.invite.remainingUses} use(s) left · ${formatEpochSeconds(response.invite.createdAt)}`;
   } catch (error) {
     adminInviteLink.removeAttribute('href');
     adminInviteLink.textContent = 'Latest invite link unavailable';
