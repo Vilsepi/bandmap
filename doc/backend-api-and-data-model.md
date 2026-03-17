@@ -17,7 +17,7 @@ This document is verified against the current implementation in `packages/infra/
 | Invites | `bandmap-invites` | `code` | - | None | `expiresAt` is both the expiry timestamp and the DynamoDB TTL attribute. |
 | Artists | `bandmap-artists` | `artistId` | - | `lastFmUrl-index` on `lastFmUrl` | Artist records are keyed by Bandmap's internal artist ID, not by MusicBrainz ID. |
 | RelatedArtists | `bandmap-related-artists` | `sourceId` | `targetId` | None | Stores directed similarity edges from one artist to another. |
-| Ratings | `bandmap-ratings` | `userId` | `artistId` | None | Stores both rated items and todo items. |
+| Ratings | `bandmap-ratings` | `userId` | `artistId` | None | Stores star ratings and/or todo bookmarks per user–artist pair. |
 | Recommendations | `bandmap-recommendations` | `userId` | `artistId` | None | Recommendation rows are regenerated per user. |
 | Searches | `bandmap-searches` | `query` | - | None | Search queries are cached under the normalized query string. |
 
@@ -72,7 +72,7 @@ erDiagram
 		string userId PK, FK
 		string artistId PK, FK
 		number score
-		string status
+		boolean todo
 		number updatedAt
 	}
 	RECOMMENDATION {
@@ -158,9 +158,11 @@ Notes:
 |-----------|------|----------|-------|
 | `userId` | string | Yes | User ID and table PK. |
 | `artistId` | string | Yes | Artist ID and sort key. |
-| `score` | number or null | Yes | Required to be `1..5` when `status = rated`; `null` for todo rows. |
-| `status` | `rated` or `todo` | Yes | Distinguishes ratings from bookmarks. |
+| `score` | number or null | Yes | 1–5 star rating; `null` when the artist has not been scored. |
+| `todo` | boolean | Yes | Whether the artist is bookmarked for later listening. Independent of `score`. |
 | `updatedAt` | number | Yes | Unix epoch seconds. |
+
+An item must have at least one of `score` (non-null) or `todo = true`; items where both are cleared are deleted automatically.
 
 ### Recommendations
 
@@ -221,9 +223,10 @@ Search cache behavior enforced in code:
 
 ### `PUT /ratings/{artistId}`
 
-- Request body: `{ "status": "rated" | "todo", "score": number | null }`
-- When `status` is `rated`, `score` must be a number from 1 to 5.
-- When `status` is `todo`, the backend stores `score` as `null`.
+- Request body: `{ "score": number | null, "todo": boolean }`
+- `score` must be `null` or a number from 1 to 5.
+- `todo` and `score` are independent: setting one does not affect the other.
+- If both `score` is `null` and `todo` is `false`, the item is deleted and the endpoint returns `204 No Content`.
 
 ## CORS and routing notes
 

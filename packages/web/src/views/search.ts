@@ -1,4 +1,4 @@
-import type { Artist } from '@bandmap/shared';
+import type { Artist, Rating } from '@bandmap/shared';
 import { getArtist, getRelatedArtists, listRatings, putRating, searchArtists } from '../api.js';
 import type { AppRoute } from '../router.js';
 import { escapeHtml } from '../utils.js';
@@ -72,12 +72,9 @@ export async function showArtistDetail(
       listRatings(),
     ]);
 
-    detailContentEl.innerHTML = renderArtistDetail(
-      artist,
-      related,
-      findArtistRating(ratings, artistId),
-    );
-    attachDetailActions(artist, navigateToRoute);
+    const currentRating = findArtistRating(ratings, artistId);
+    detailContentEl.innerHTML = renderArtistDetail(artist, related, currentRating);
+    attachDetailActions(artist, currentRating, navigateToRoute);
   } catch (err) {
     detailContentEl.innerHTML = `<p class="empty-state">Error: ${escapeHtml(String(err))}</p>`;
   }
@@ -148,6 +145,7 @@ function setSearchLoading(isLoading: boolean): void {
 
 function attachDetailActions(
   artist: Artist,
+  initialRating: Rating | null,
   navigateToRoute: (route: AppRoute) => Promise<void>,
 ): void {
   const playLink = detailContentEl.querySelector<HTMLAnchorElement>('#detail-play-link');
@@ -157,34 +155,28 @@ function attachDetailActions(
     window.open(url, '_blank', 'noopener,noreferrer');
   });
 
+  let currentScore: number | null = initialRating?.score ?? null;
+  let currentTodo: boolean = initialRating?.todo ?? false;
+
   const stars = detailContentEl.querySelectorAll<HTMLButtonElement>('.star');
   const todoBtn = detailContentEl.querySelector<HTMLButtonElement>('#btn-todo');
   stars.forEach((star) => {
     star.addEventListener('click', () => {
       const score = Number(star.dataset['score']);
-      void putRating(artist.artistId, { score, status: 'rated' });
+      currentScore = score;
+      void putRating(artist.artistId, { score, todo: currentTodo });
       stars.forEach((targetStar) => {
         targetStar.classList.toggle('active', Number(targetStar.dataset['score']) <= score);
       });
-
-      if (todoBtn) {
-        todoBtn.innerHTML = '<i class="fa-regular fa-bookmark" aria-hidden="true"></i>';
-        todoBtn.setAttribute('aria-label', 'Add to todo');
-        todoBtn.setAttribute('title', 'Add to todo');
-        todoBtn.disabled = false;
-      }
     });
   });
 
   todoBtn?.addEventListener('click', () => {
-    void putRating(artist.artistId, { score: null, status: 'todo' });
-    stars.forEach((targetStar) => {
-      targetStar.classList.remove('active');
-    });
-    todoBtn.innerHTML = '<i class="fa-solid fa-bookmark" aria-hidden="true"></i>';
-    todoBtn.setAttribute('aria-label', 'Added to todo');
-    todoBtn.setAttribute('title', 'Added to todo');
-    todoBtn.disabled = true;
+    currentTodo = !currentTodo;
+    void putRating(artist.artistId, { score: currentScore, todo: currentTodo });
+    todoBtn.innerHTML = `<i class="${currentTodo ? 'fa-solid' : 'fa-regular'} fa-bookmark" aria-hidden="true"></i>`;
+    todoBtn.setAttribute('aria-label', currentTodo ? 'Remove from todo' : 'Add to todo');
+    todoBtn.setAttribute('title', currentTodo ? 'Remove from todo' : 'Add to todo');
   });
 
   const relatedItems = detailContentEl.querySelectorAll<HTMLElement>('.related-item');

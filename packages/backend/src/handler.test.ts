@@ -74,7 +74,7 @@ describe('handler', () => {
     it('makeEvent produces valid API Gateway v2 event shape', () => {
       const event = makeEvent('PUT', '/ratings/test-mbid', {
         headers: { authorization: 'Bearer test-session-token' },
-        body: JSON.stringify({ score: 5, status: 'rated' }),
+        body: JSON.stringify({ score: 5, todo: false }),
       });
 
       assert.equal(event.requestContext.http.method, 'PUT');
@@ -129,23 +129,35 @@ describe('handler', () => {
         userId: 'user-uuid',
         artistId: 'artist-id',
         score: 4,
-        status: 'rated',
+        todo: false,
         updatedAt: Math.floor(Date.now() / 1000),
       };
-      assert.equal(rating.status, 'rated');
+      assert.equal(rating.todo, false);
       assert.equal(rating.score, 4);
     });
 
-    it('Rating todo has null score', () => {
+    it('Rating with todo and no score', () => {
       const rating: Rating = {
         userId: 'user-uuid',
         artistId: 'artist-id',
         score: null,
-        status: 'todo',
+        todo: true,
         updatedAt: Math.floor(Date.now() / 1000),
       };
-      assert.equal(rating.status, 'todo');
+      assert.equal(rating.todo, true);
       assert.equal(rating.score, null);
+    });
+
+    it('Rating can have both score and todo set simultaneously', () => {
+      const rating: Rating = {
+        userId: 'user-uuid',
+        artistId: 'artist-id',
+        score: 5,
+        todo: true,
+        updatedAt: Math.floor(Date.now() / 1000),
+      };
+      assert.equal(rating.todo, true);
+      assert.equal(rating.score, 5);
     });
 
     it('User type has required fields', () => {

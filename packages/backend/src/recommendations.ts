@@ -50,7 +50,7 @@ export async function generateRecommendationsWithDeps(
 
   // Liked artists sorted by score descending
   const likedRatings = allRatings
-    .filter((o) => o.status === 'rated' && o.score !== null && o.score >= RECOMMENDATION_MIN_SCORE)
+    .filter((o) => o.score !== null && o.score >= RECOMMENDATION_MIN_SCORE)
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .slice(0, RECOMMENDATION_MAX_SEEDS);
 

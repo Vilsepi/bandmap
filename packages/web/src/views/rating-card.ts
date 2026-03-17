@@ -1,21 +1,24 @@
 import type { Rating } from '@bandmap/shared';
-import { deleteRating, getArtist } from '../api.js';
+import { getArtist } from '../api.js';
 import { escapeHtml, getExternalLinkIconClass } from '../utils.js';
 
 export function renderRatingCard(
   rating: Rating,
   navigateToArtist: (artistId: string) => Promise<void>,
-  showPlayLink = false,
+  options: {
+    showPlayLink?: boolean;
+    onRemove: () => Promise<unknown>;
+  },
 ): HTMLElement {
   const card = document.createElement('div');
   card.className = 'card';
 
   const scoreDisplay =
-    rating.status === 'rated' && rating.score !== null
+    rating.score !== null
       ? `<i class="card-score-star fa-solid fa-star" aria-hidden="true"></i><span class="card-score-value">${rating.score}</span>`
       : '';
   const scoreLabel =
-    rating.status === 'rated' && rating.score !== null
+    rating.score !== null
       ? ` aria-label="Rated ${rating.score} out of 5"`
       : '';
 
@@ -57,7 +60,7 @@ export function renderRatingCard(
     }
 
     const playLinkEl = card.querySelector<HTMLAnchorElement>('[data-role="play-link"]');
-    if (playLinkEl && showPlayLink) {
+    if (playLinkEl && options.showPlayLink) {
       playLinkEl.addEventListener('click', (event) => {
         event.preventDefault();
         const url = artist.spotifyUrl ?? artist.lastFmUrl;
@@ -80,7 +83,7 @@ export function renderRatingCard(
   card.querySelector('[data-action="delete"]')?.addEventListener('click', async (event) => {
     event.stopPropagation();
     if (!confirm('Are you sure you want to remove this artist?')) return;
-    await deleteRating(rating.artistId);
+    await options.onRemove();
     card.remove();
   });
 

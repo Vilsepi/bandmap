@@ -10,7 +10,7 @@ function makeRating(artistId: string, score: number): Rating {
     userId: USER_ID,
     artistId,
     score,
-    status: 'rated',
+    todo: false,
     updatedAt: Math.floor(Date.now() / 1000),
   };
 }

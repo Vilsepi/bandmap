@@ -75,16 +75,16 @@ export interface RelatedArtist {
   fetchedAt: number;
 }
 
-/** A user's rating on an artist — rated or bookmarked for later */
+/** A user's rating on an artist — star score and/or todo bookmark are independent */
 export interface Rating {
   /** PK — FK → User.id */
   userId: string;
   /** SK — FK → Artist.artistId */
   artistId: string;
-  /** 1–5 star rating (only set when status is "rated") */
+  /** 1–5 star rating; null when the artist has not been rated */
   score: number | null;
-  /** Status values: rated means user has scored it, or saved for later */
-  status: 'rated' | 'todo';
+  /** Whether the artist is bookmarked for later listening; independent of score */
+  todo: boolean;
   /** Unix epoch seconds */
   updatedAt: number;
 }
