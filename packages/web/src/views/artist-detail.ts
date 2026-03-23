@@ -23,7 +23,7 @@ export function renderArtistDetail(
       return `
       <li class="related-item" data-artist-id="${escapeHtml(relation.targetId)}" style="--related-match-width: ${matchPercent}%">
         <span class="related-item-content">
-          <span class="related-name">${escapeHtml(relation.targetName)}</span>
+          <a class="related-name" href="#/artists/${encodeURIComponent(relation.targetId)}">${escapeHtml(relation.targetName)}</a>
           <span class="match-score">${matchPercent}%</span>
         </span>
       </li>

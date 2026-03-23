@@ -22,9 +22,9 @@ export function renderRatingCard(
   card.innerHTML = `
     <div class="card-row card-main-row">
       <div class="card-title-row">
-        <div class="card-title clickable-text" data-artist-id="${escapeHtml(rating.artistId)}">
+        <a class="card-title" href="#/artists/${encodeURIComponent(rating.artistId)}" data-artist-id="${escapeHtml(rating.artistId)}">
           ${escapeHtml(rating.artistId)}
-        </div>
+        </a>
         <div class="card-title-actions">
           <a
             class="card-link card-title-action card-title-link hidden"
@@ -73,7 +73,9 @@ export function renderRatingCard(
     }
   });
 
-  card.querySelector('.card-title')?.addEventListener('click', () => {
+  card.querySelector<HTMLAnchorElement>('.card-title')?.addEventListener('click', (event) => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+    event.preventDefault();
     void navigateToArtist(rating.artistId);
   });
 
