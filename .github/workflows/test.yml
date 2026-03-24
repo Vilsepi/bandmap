@@ -28,7 +28,7 @@ jobs:
       - run: npx playwright install --with-deps firefox
       - run: npm run --workspace @bandmap/web test:smoke
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-firefox-artifacts
           path: |
