@@ -136,7 +136,7 @@ async function renderRecommendations(
     card.className = 'card clickable';
     card.innerHTML = `
       <div class="card-row">
-        <div class="card-title">${escapeHtml(recommendation.artistName)}</div>
+        <a class="card-title" href="#/artists/${encodeURIComponent(recommendation.artistId)}">${escapeHtml(recommendation.artistName)}</a>
         <button
           class="btn-icon btn-bookmark"
           type="button"
@@ -164,7 +164,9 @@ async function renderRecommendations(
       }
     });
 
-    card.addEventListener('click', () => {
+    card.querySelector<HTMLAnchorElement>('.card-title')?.addEventListener('click', (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
       void navigateToArtist(recommendation.artistId);
     });
     container.appendChild(card);

@@ -107,9 +107,11 @@ async function performSearch(
       const card = document.createElement('div');
       card.className = 'card clickable';
       card.innerHTML = `
-        <div class="card-title">${escapeHtml(result.name)}</div>
+        <a class="card-title" href="#/artists/${encodeURIComponent(result.artistId)}">${escapeHtml(result.name)}</a>
       `;
-      card.addEventListener('click', () => {
+      card.querySelector<HTMLAnchorElement>('.card-title')!.addEventListener('click', (event) => {
+        if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+        event.preventDefault();
         void navigateToRoute({ view: 'search', artistId: result.artistId });
       });
       searchResultsEl.appendChild(card);
@@ -181,7 +183,9 @@ function attachDetailActions(
 
   const relatedItems = detailContentEl.querySelectorAll<HTMLElement>('.related-item');
   relatedItems.forEach((item) => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey) return;
+      event.preventDefault();
       const artistId = item.dataset['artistId'];
       if (artistId) {
         void navigateToRoute({ view: 'search', artistId });
