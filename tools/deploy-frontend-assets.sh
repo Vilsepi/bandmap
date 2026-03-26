@@ -7,8 +7,10 @@ if [ -f .env ]; then
   set +a
 fi
 
-npm run clean
-npm run build --workspace=packages/shared
+if [ -z "${CI:-}" ]; then
+  npm run clean
+  npm run build --workspace=packages/shared
+fi
 
 API_URL=$(aws cloudformation describe-stacks \
   --stack-name BandmapBackendStack \
