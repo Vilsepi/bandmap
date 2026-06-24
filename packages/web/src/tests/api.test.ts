@@ -198,6 +198,10 @@ function queueNoContentResponse(): void {
   queuedResponses.push(new Response(null, { status: 204 }));
 }
 
+function getRequestHeaders(index: number): Record<string, string> {
+  return (fetchCalls[index]?.init?.headers as Record<string, string> | undefined) ?? {};
+}
+
 describe('frontend API caching', () => {
   it('upgrades stored sessions that predate the admin flag', () => {
     cookieJar.cookie = `bandmap-session=${encodeURIComponent(
@@ -285,6 +289,39 @@ describe('frontend API caching', () => {
     assert.equal(fetchCalls.length, 2);
     assert.equal(fetchCalls[0]?.url, 'https://api.example.test/ratings?status=rated');
     assert.equal(fetchCalls[1]?.url, 'https://api.example.test/ratings?status=rated');
+  });
+
+  it('omits Content-Type for GET requests without a body', async () => {
+    queueJsonResponse({ ratings: [ratedArtist] } satisfies RatingsListResponse);
+
+    await api.listRatings('rated');
+
+    const headers = getRequestHeaders(0);
+    assert.equal(headers['Content-Type'], undefined);
+    assert.equal(headers['Authorization']?.startsWith('Bearer '), true);
+  });
+
+  it('omits Authorization and Content-Type for unauthenticated search requests', async () => {
+    queueJsonResponse({ results: [] });
+
+    await api.searchArtists('Rosetta');
+
+    assert.deepEqual(getRequestHeaders(0), {});
+  });
+
+  it('keeps Content-Type for JSON requests with a body', async () => {
+    const updatedRating: Rating = {
+      ...todoArtist,
+      score: 4,
+      updatedAt: 1735948800,
+    };
+    queueJsonResponse({ rating: updatedRating });
+
+    await api.putRating(updatedRating.artistId, { score: 4, todo: true });
+
+    const headers = getRequestHeaders(0);
+    assert.equal(headers['Content-Type'], 'application/json');
+    assert.equal(headers['Authorization']?.startsWith('Bearer '), true);
   });
 
   it('updates cached ratings lists after saving a rating', async () => {

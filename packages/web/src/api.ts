@@ -402,9 +402,12 @@ function buildRequestHeaders(
   options: { includeSession?: boolean },
 ): Record<string, string> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(init?.headers as Record<string, string> | undefined),
   };
+
+  if (init?.body !== undefined && init.body !== null && headers['Content-Type'] === undefined) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const session = readStoredSession();
   if (options.includeSession !== false && session?.sessionToken) {
@@ -551,8 +554,8 @@ export async function getLatestInviteLink(): Promise<InviteLinkResponse> {
 
 export async function searchArtists(query: string): Promise<SearchResponse> {
   return sendRequest<SearchResponse>(`/search?q=${encodeURIComponent(query)}`, undefined, {
-    includeSession: true,
-    allowRefresh: true,
+    includeSession: false,
+    allowRefresh: false,
   });
 }
 
