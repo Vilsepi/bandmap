@@ -325,12 +325,25 @@ export class BandmapBackendStack extends cdk.Stack {
       integration: inviteIntegration,
     });
 
-    // Catch-all route → single Lambda
-    httpApi.addRoutes({
-      path: '/{proxy+}',
-      methods: [apigatewayv2.HttpMethod.ANY],
-      integration,
-    });
+    // Only supported routes reach Lambda. API Gateway rejects scanner paths with 404.
+    const apiRoutes = [
+      { path: '/search', methods: [apigatewayv2.HttpMethod.GET] },
+      { path: '/auth/login', methods: [apigatewayv2.HttpMethod.POST] },
+      { path: '/auth/refresh', methods: [apigatewayv2.HttpMethod.POST] },
+      { path: '/artists/{artistId}', methods: [apigatewayv2.HttpMethod.GET] },
+      { path: '/artists/{artistId}/related', methods: [apigatewayv2.HttpMethod.GET] },
+      { path: '/ratings', methods: [apigatewayv2.HttpMethod.GET] },
+      {
+        path: '/ratings/{artistId}',
+        methods: [apigatewayv2.HttpMethod.PUT, apigatewayv2.HttpMethod.DELETE],
+      },
+      { path: '/recommendations', methods: [apigatewayv2.HttpMethod.GET] },
+      { path: '/recommendations/generate', methods: [apigatewayv2.HttpMethod.POST] },
+    ];
+
+    for (const route of apiRoutes) {
+      httpApi.addRoutes({ ...route, integration });
+    }
 
     // ── Outputs ────────────────────────────────────────────
 

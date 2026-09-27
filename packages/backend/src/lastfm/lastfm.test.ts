@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { LASTFM_MAX_RETRIES } from '@bandmap/shared';
+import { logger } from '../log.js';
 import {
   fetchArtistInfo,
   fetchSimilarArtists,
@@ -63,6 +64,20 @@ describe('lastfm', () => {
   });
 
   describe('fetchArtistInfo', () => {
+    it('does not include the API key in request logs', async (context) => {
+      const debug = context.mock.method(logger, 'debug');
+      const responses = new Map<string, unknown>([['artist.getinfo', sampleGetInfo]]);
+      globalThis.fetch = mockFetch(responses);
+
+      await fetchArtistInfo({ artistName: 'Rosetta' }, 'private-test-api-key');
+
+      assert.equal(debug.mock.callCount(), 1);
+      const logged = JSON.stringify(debug.mock.calls.map((call) => call.arguments));
+      assert.ok(logged.includes('artist.getinfo'));
+      assert.ok(!logged.includes('private-test-api-key'));
+      assert.ok(!logged.includes('api_key'));
+    });
+
     it('parses artist info from sample response', async () => {
       const responses = new Map<string, unknown>();
       responses.set('artist.getinfo', sampleGetInfo);
@@ -317,6 +332,39 @@ describe('lastfm', () => {
   });
 
   describe('retry with backoff', () => {
+    it('does not include the API key in production retry logs', async (context) => {
+      const warn = context.mock.method(console, 'warn', () => {});
+      const debug = context.mock.method(logger, 'debug', () => {});
+      const previousNodeEnv = process.env.NODE_ENV;
+      const responses = new Map<string, unknown>([['artist.getinfo', sampleGetInfo]]);
+      let callCount = 0;
+      globalThis.fetch = (async (input: FetchInput) => {
+        if (callCount++ === 0) {
+          return { ok: false, status: 429, statusText: 'Too Many Requests' } as Response;
+        }
+        return mockFetch(responses)(input);
+      }) as typeof globalThis.fetch;
+
+      try {
+        process.env.NODE_ENV = 'production';
+        await fetchArtistInfo({ artistName: 'Rosetta' }, 'private-test-api-key');
+      } finally {
+        if (previousNodeEnv === undefined) {
+          delete process.env.NODE_ENV;
+        } else {
+          process.env.NODE_ENV = previousNodeEnv;
+        }
+      }
+
+      assert.equal(warn.mock.callCount(), 1);
+      const logged = JSON.stringify(
+        [...warn.mock.calls, ...debug.mock.calls].map((call) => call.arguments),
+      );
+      assert.ok(logged.includes('artist.getinfo'));
+      assert.ok(!logged.includes('private-test-api-key'));
+      assert.ok(!logged.includes('api_key'));
+    });
+
     it('retries on 429 and eventually succeeds', async () => {
       let callCount = 0;
       const responses = new Map<string, unknown>();

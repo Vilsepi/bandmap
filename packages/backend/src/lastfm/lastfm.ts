@@ -220,7 +220,7 @@ async function lastfmRequestWithRetry(params: URLSearchParams): Promise<unknown>
             attempt: attempt + 1,
             maxRetries: LASTFM_MAX_RETRIES,
             delayMs: delay,
-            params: params.toString(),
+            method: params.get('method'),
           });
         }
         await sleep(delay);
@@ -239,7 +239,7 @@ function sleep(ms: number): Promise<void> {
 
 async function lastfmFetch(params: URLSearchParams): Promise<unknown> {
   const url = `${LASTFM_BASE_URL}?${params.toString()}`;
-  logger.debug(`Calling Last.fm API: ${url}`);
+  logger.debug({ method: params.get('method') }, 'Calling Last.fm API');
   const response = await fetch(url, {
     headers: {
       'User-Agent': LASTFM_USER_AGENT,

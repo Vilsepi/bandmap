@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
 import type { Artist, RelatedArtist, Rating, User, Recommendation } from '@bandmap/shared';
+import { handler } from './handler.js';
 
 // ── Module-level mocks ───────────────────────────────────────
 // We mock db, lastfm, cache, and recommendations by importing and overriding
@@ -60,15 +61,57 @@ describe('handler', () => {
 
   describe('routing', () => {
     it('returns 404 for unknown routes', async () => {
-      // Import handler dynamically after env is set
-      // For this test we need the DB modules to be available
-      // We'll test with a non-existent route to verify 404 handling
-      const event = makeEvent('GET', '/nonexistent');
+      const response = await handler(makeEvent('GET', '/nonexistent'));
+      assert.equal(typeof response, 'object');
+      assert.equal((response as { statusCode: number }).statusCode, 404);
+      assert.equal((response as { body: string }).body, '{"error":"Not found"}');
+    });
 
-      // Since handler depends on DynamoDB which we can't easily mock inline,
-      // we test the event construction and response format expectations.
-      assert.ok(event.requestContext.http.method === 'GET');
-      assert.ok(event.rawPath === '/nonexistent');
+    it('rejects sensitive-file probes without making network requests', async (context) => {
+      const fetchMock = context.mock.method(globalThis, 'fetch', () => {
+        throw new Error('Unexpected network request');
+      });
+      const probePaths = [
+        '/.env',
+        '/.env.example',
+        '/.env.production',
+        '/actuator/env',
+        '/actuator/configprops',
+        '/wp-config.php.bak',
+        '/storage/logs/laravel.log',
+        '/.git/config',
+        '/site/.git/config',
+        '/.codex/auth.json',
+        '/tmp/.codex/auth.json',
+        '/.claude/settings.json',
+        '/.claude/credentials.json',
+        '/',
+        '/robots.txt',
+      ];
+
+      for (const path of probePaths) {
+        for (const stage of ['$default', 'prod']) {
+          const event = makeEvent('GET', stage === 'prod' ? `/prod${path}` : path);
+          event.requestContext.stage = stage;
+          const response = await handler(event);
+          assert.equal((response as { statusCode: number }).statusCode, 404, event.rawPath);
+          assert.equal((response as { body: string }).body, '{"error":"Not found"}');
+        }
+      }
+
+      assert.equal(fetchMock.mock.callCount(), 0);
+    });
+
+    it('requires authentication before returning private data', async () => {
+      for (const path of [
+        '/ratings',
+        '/recommendations',
+        '/artists/test',
+        '/artists/test/related',
+      ]) {
+        const response = await handler(makeEvent('GET', path));
+        assert.equal((response as { statusCode: number }).statusCode, 401, path);
+      }
     });
 
     it('makeEvent produces valid API Gateway v2 event shape', () => {
